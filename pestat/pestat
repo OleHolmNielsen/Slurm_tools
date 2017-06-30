@@ -4,7 +4,7 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat or http://ftp.fysik.dtu.dk/pub/Slurm/pestat
-my_version="pestat version 0.40. Date: 09 May 2017"
+my_version="pestat version 0.41. Date: 15 June 2017"
 
 # CONFIGURE the paths of commands:
 # Directory where Slurm commands live:
@@ -119,11 +119,11 @@ BEGIN {
 	HOSTLIST=prefix "/scontrol show hostnames "
 	# Gather the list of running jobs
 	# Running jobs info: JobState JobId User NodeList
-	JOBLIST = prefix "/squeue -h -o \"%T %A %u %N\" " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %N\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
-		# Skip jobs if not in RUNNING state
-		if (JobState != "RUNNING") continue
+		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
+		# if (JobState != "RUNNING") continue
 		JobId=$2
 		User=$3
 		NodeList=$4

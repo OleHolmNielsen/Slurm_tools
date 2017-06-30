@@ -1,3 +1,7 @@
+version 0.41. Date: 15 June 2017
+--------------------------------
+
+Colored output is now printed also when all nodes are listed, and the logic has been cleaned up a bit. 
 
 version 0.40. Date: 09 May 2017
 -------------------------------
