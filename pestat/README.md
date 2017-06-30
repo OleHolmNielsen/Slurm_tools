@@ -29,9 +29,9 @@ where:
 	-V: Version information
 ```
 
-Global configuration file for pestat: /etc/pestat.conf
+Global configuration file for pestat: ```/etc/pestat.conf```
 
-Per-user configuration file for pestat: $HOME/.pestat.conf
+Per-user configuration file for pestat: ```$HOME/.pestat.conf```
 
 Configuration
 -------------
