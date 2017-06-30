@@ -3,14 +3,19 @@
 # Prints a Slurm cluster status with 1 line per node/partition and job info
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
-# URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat
-VERSION="pestat version 0.32. Date: 03 May 2017"
+# URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat or http://ftp.fysik.dtu.dk/pub/Slurm/pestat
+VERSION="pestat version 0.35. Date: 04 May 2017"
+
+# Directory where Slurm commands live:
+PREFIX=/usr/bin
+# The awk command
+AWK=$PREFIX/awk
 
 # Command usage:
 function usage()
 {
 	cat <<EOF
-Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-f] [-V] [-h]
+Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist] [-f] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
@@ -36,7 +41,7 @@ while getopts "p:u:q:s:hVf" options; do
 			echo Print only nodes in partition $OPTARG
 			;;
 		u )	username=$OPTARG
-			if test "`/usr/bin/sacctmgr -p -n show assoc where users=$username`"
+			if test "`$PREFIX/sacctmgr -p -n show assoc where users=$username`"
 			then
 				echo Select only user $username
 			else
@@ -45,7 +50,7 @@ while getopts "p:u:q:s:hVf" options; do
 			fi
 			;;
 		q )	qoslist=$OPTARG
-			if test "`/usr/bin/sacctmgr -n -p show qos $qoslist`"
+			if test "`$PREFIX/sacctmgr -n -p show qos $qoslist`"
 			then
 				echo Select only QOS=$qoslist
 			else
@@ -91,8 +96,9 @@ then
 fi
 
 # Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
-/usr/bin/sinfo -h -N $PARTITION $STATELIST -o "%N %P %C %O %m %t" | \
-	awk -v username=$username -v qoslist=$qoslist -v printallnodes=$printallnodes  -v colors=$colors '
+$PREFIX/sinfo -h -N $PARTITION $STATELIST -o "%N %P %C %O %m %t" | \
+	$AWK -v PREFIX=$PREFIX -v username=$username -v qoslist=$qoslist \
+		 -v printallnodes=$printallnodes  -v colors=$colors '
 BEGIN {
 	# Define terminal colors for the output if requested
 	if (colors != 0) {
@@ -103,13 +109,15 @@ BEGIN {
 		NORMAL="\033[0m"
 	}
 
-	if (username != "") selection = " -u " username
+	# Removed: We want all user jobs on nodes where username is running:
+	# if (username != "") selection = selection " -u " username
+
 	if (qoslist != "") selection = selection " -q " qoslist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
-	HOSTLIST="scontrol show hostnames "
+	HOSTLIST=PREFIX "/scontrol show hostnames "
 	# Gather the list of running jobs
 	# Running jobs: JobState JobId User NodeList
-	JOBLIST = "/usr/bin/squeue -h -o \"%T %A %u %N\" " selection
+	JOBLIST = PREFIX "/squeue -h -o \"%T %A %u %N\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Skip jobs if not in RUNNING state
@@ -121,11 +129,11 @@ BEGIN {
 		if (index(NodeList,"[") == 0) {
 			jobnodes[1] = NodeList
 		} else {
-			# Expand NodeList hostnames, edit them into a single line using "paste"
-			cmd = HOSTLIST NodeList "| paste -s -d ,"
-			cmd | getline exp_list
+			# Put hostname lines into an array jobnodes[]
+			cmd = HOSTLIST NodeList
+			i=0
+			while ((cmd | getline) > 0) jobnodes[++i] = $1
 			close (cmd)
-			split(exp_list, jobnodes, ",")
 		}
 		# Populate the node arrays with "JobId User" (multiple jobs may exist)
 		for (i in jobnodes) {
@@ -133,6 +141,8 @@ BEGIN {
 			hostname[n] = n
 			jobs[n] = jobs[n] JobId " " User " "
 			numjobs[n]++
+			# If username has been selected and node "n" runs job belonging to username:
+			if (User == username) selecteduser[n] = User
 		}
 		delete jobnodes
 	}
@@ -144,7 +154,9 @@ BEGIN {
 {
 	node=$1
 	# Selection of subset of nodes
-	if (selection != "" && jobs[node]=="") next
+	if (selection != "" && jobs[node] == "") next
+	if (username != "" && selecteduser[node] == "") next
+
 	partition=$2
 	# sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
 	split($3,cpulist,"/")
