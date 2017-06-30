@@ -1,3 +1,26 @@
+version 0.60. Date: 30 June 2017
+--------------------------------
+
+Add option -1 to show unique hostnames:
+Only 1 line is printed even if a node is in several partitions.
+
+Add option -j <joblist>
+
+Add configurable thresholds for flagging nodes:
+export cpuload_delta1=2.0       # CPU load delta from ideal load (RED)
+export cpuload_delta2=0.5       # CPU load delta from ideal load (MAGENTA)
+export memory_thres1=0.1        # Fraction of memory which is free (RED)
+export memory_thres2=0.2        # Fraction of memory which is free (MAGENTA)
+
+Introduced a sample pestat.conf configuration file:
+# Global configuration file for pestat
+export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
+# Per-user configuration file for pestat
+export PESTAT_CONFIG=$HOME/.pestat.conf
+
+Thanks to Vicker, Darby (JSC-EG311) <darby.vicker-1@nasa.gov>
+for suggesting and implementing these features.
+
 version 0.52. Date: 28 June 2017
 --------------------------------
 
