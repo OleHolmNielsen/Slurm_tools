@@ -1,3 +1,11 @@
+version 0.52. Date: 28 June 2017
+--------------------------------
+
+New features:
+
+1. The width of the hostname column can now be changed in the CONFIGURE section:
+export hostnamelength="8"
+Thanks to Markus Koeberl <markus.koeberl@tugraz.at> for suggesting this feature. 
 version 0.51. Date: 28 June 2017
 --------------------------------
 

@@ -4,13 +4,16 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat or http://ftp.fysik.dtu.dk/pub/Slurm/pestat
-my_version="pestat version 0.51. Date: 28 June 2017"
+my_version="pestat version 0.52. Date: 28 June 2017"
 
 # CONFIGURE the paths of commands:
 # Directory where Slurm commands live:
 export prefix=/usr/bin
 # The awk command
 my_awk=$prefix/awk
+# Variable width of the hostname column (default=8)
+export hostnamelength="8"
+# End of CONFIGURE lines
 
 # Command usage:
 function usage()
@@ -153,6 +156,7 @@ BEGIN {
 	free_mem_less=ENVIRON["free_mem_less"]
 	free_mem_more=ENVIRON["free_mem_more"]
 	printallnodes=ENVIRON["printallnodes"]
+	hostnamelength=ENVIRON["hostnamelength"]
 	colors=ENVIRON["colors"]
 	# Define terminal colors for the output if requested
 	if (colors != 0) {
@@ -166,6 +170,7 @@ BEGIN {
 	if (qoslist != "") selection = selection " -q " qoslist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
 	HOSTLIST=prefix "/scontrol show hostnames "
+
 	# Gather the list of running jobs
 	# Running jobs info: JobState JobId User NodeList
 	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %N\" " selection
@@ -198,9 +203,9 @@ BEGIN {
 		delete jobnodes
 	}
 	close (JOBLIST)
-	# Print a header line
-	printf("%8s %15s %8s %7s %8s %8s %8s  %s\n", "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
-	printf("%8s %15s %8s %7s %8s %8s %8s  %s\n", "", "", "State", "Use/Tot", "", "(MB)", "(MB)", "JobId User ...")
+	# Print a header line (variable hostnamelength)
+	printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
+	printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", "JobId User ...")
 }
 {
 	# Main section
@@ -282,7 +287,7 @@ BEGIN {
 	}
 		
 	if (listnode > 0) {
-		printf("%8s %15s ", node, partition)
+		printf("%*s %15s ", hostnamelength, node, partition)
 		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
 		printf("%s%3d%s %3d ", cpucolor, cpulist[1], NORMAL, cpulist[4])
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
