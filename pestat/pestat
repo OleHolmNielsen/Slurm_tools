@@ -4,20 +4,39 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat
-VERSION="pestat version 0.11.  Date: 30 April 2017"
+VERSION="pestat version 0.2.  Date: 30 April 2017"
 
 # Command usage:
 function usage()
 {
-	echo "Usage: pestat [-p partition(s)]"
+	echo "Usage: pestat [-p partition(s)] [-u username] [-q qoslist]"
 }
 
 export PARTITION=""
 
-while getopts "p:hV" options; do
+while getopts "p:u:q:hV" options; do
         case $options in
                 p )     export PARTITION="-p $OPTARG"
                         echo Listing only nodes in partition $OPTARG
+                        ;;
+                u )     username=$OPTARG
+			if test "`/usr/bin/sacctmgr -p -n show assoc where users=$username`"
+			then
+				echo Select only user $username
+			else
+				echo Error selecting Slurm username $username 
+				exit -1
+			fi
+                        ;;
+                q )     qoslist=$OPTARG
+			if test "`/usr/bin/sacctmgr -n -p show qos $qoslist`"
+			then
+				echo Select only QOS=$qoslist
+			else
+				echo Error selecting QOS $qoslist
+				echo List all available QOSes by: sacctmgr show qos
+				exit -1
+			fi
                         ;;
 		V ) echo $VERSION
                         exit 1;;
@@ -28,15 +47,24 @@ while getopts "p:hV" options; do
         esac
 done
 
+# Test for extraneous command line arguments
+if test $# -gt $(($OPTIND-1))
+then
+	echo ERROR: Too many command line arguments: $*
+	usage
+	exit 1
+fi
 
 # List all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
-/usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | awk '
+/usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | awk -v username=$username -v qoslist=$qoslist '
 BEGIN {
+	if (username != "") selection = " -u " username
+	if (qoslist != "") selection = selection " -q " qoslist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
 	HOSTLIST="scontrol show hostnames "
 	# Gather the list of running jobs
 	# Running jobs: JobState JobId User NodeList
-	JOBLIST = "/usr/bin/squeue -h -o \"%T %A %u %N\""
+	JOBLIST = "/usr/bin/squeue -h -o \"%T %A %u %N\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Skip jobs if not in RUNNING state
@@ -69,6 +97,8 @@ BEGIN {
 }
 {
 	node=$1
+	# Selection of subset of nodes
+	if (selection != "" && jobs[node]=="") next
 	partition=$2
 	# sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
 	split($3,cpulist,"/")
