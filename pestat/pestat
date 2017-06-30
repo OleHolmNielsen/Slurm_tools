@@ -4,7 +4,7 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat or http://ftp.fysik.dtu.dk/pub/Slurm/pestat
-my_version="pestat version 0.50. Date: 22 June 2017"
+my_version="pestat version 0.51. Date: 28 June 2017"
 
 # CONFIGURE the paths of commands:
 # Directory where Slurm commands live:
@@ -16,16 +16,19 @@ my_awk=$prefix/awk
 function usage()
 {
 	cat <<EOF
-Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist]
-	[-f | -m free_mem | -M free_mem ] [-V] [-h]
+Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist] [-n/-w hostlist]
+	[-f | -m free_mem | -M free_mem ] [-C/-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
 	-q qoslist: Print only QOS in the qoslist <qoslist>
 	-s statelist: Print only nodes with state in <statelist> 
+	-n/-w hostlist: Print only nodes in hostlist
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
+	-C: Color output is forced ON
+	-c: Color output is forced OFF
 	-h: Print this help information
 	-V: Version information
 EOF
@@ -40,12 +43,26 @@ export free_mem_more=-1
 # Colors may be used in the output (also controlled by the PESTAT_COLOR environment variable).
 # Colored output by default:
 export colors=1
+# Check user environment variable PESTAT_COLOR for color
+if test "$PESTAT_COLOR" = "0"
+then
+	export colors=0
+fi
+
+# Check if output is NOT a terminal: Turn colors off (can be overruled by "-c" flag).
+FD=1	# File Descriptor no. 1 = stdout
+if test ! -t $FD
+then
+	export colors=0
+fi
+
 # Print all nodes by default
 export printallnodes=1
 
 export partition=""
+export hostlist=""
 
-while getopts "p:u:q:s:m:M:hVf" options; do
+while getopts "p:u:q:s:n:w:m:M:CchVf" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -71,6 +88,9 @@ while getopts "p:u:q:s:m:M:hVf" options; do
 			;;
 		s )	statelist="--states $OPTARG"
 			echo Select only nodes with state=$OPTARG
+			;;
+		n|w )	hostlist="-n $OPTARG"
+			echo Select only nodes in hostlist=$OPTARG
 			;;
 		f )	flagging=1
 			if test $free_mem_less -ge 0 -o $free_mem_more -ge 0
@@ -99,6 +119,12 @@ while getopts "p:u:q:s:m:M:hVf" options; do
 			export printallnodes=0
 			echo Select only nodes with free memory GREATER than $free_mem_more MB
 			;;
+		C )	export colors=1
+			echo Force colors ON in output
+			;;
+		c )	export colors=0
+			echo Force colors OFF in output
+			;;
 		V ) echo $my_version
 			exit 1;;
 		h|? ) usage
@@ -116,21 +142,8 @@ then
 	exit 1
 fi
 
-# Check user environment variable PESTAT_COLOR for color
-if test "$PESTAT_COLOR" = "0"
-then
-	export colors=0
-fi
-
-# Check if output is NOT a terminal: Turn colors off (can be overruled by "-c" flag).
-FD=1	# File Descriptor no. 1 = stdout
-if test ! -t $FD
-then
-	export colors=0
-fi
-
 # Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY FREE_MEM STATE
-$prefix/sinfo -h -N $partition $statelist -o "%N %P %C %O %m %e %t" | $my_awk '
+$prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t" | $my_awk '
 BEGIN {
 	# Prologue section
 	# Read the required environment variables:
@@ -251,12 +264,12 @@ BEGIN {
 		}
 
 		# Free memory on the node
-		if (freemem < memory/10) {	# Very high memory usage (<10% free)
+		if (freemem < memory*0.1) {	# Very high memory usage (<10% free)
 			memflag="*"
 			freememcolor=RED
 			memcolor=GREEN
 			listnode++
-		} else if (freemem < memory/5) {	# High memory usage (<20% free)
+		} else if (freemem < memory*0.2) {	# High memory usage (<20% free)
 			memflag="*"
 			freememcolor=MAGENTA
 			memcolor=GREEN

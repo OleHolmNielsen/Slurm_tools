@@ -1,3 +1,19 @@
+version 0.51. Date: 28 June 2017
+--------------------------------
+
+New features:
+
+1. Turning on colors explicitly even when the output doesn't go to a terminal
+with the -C flag (and -c to turn off colors).
+Thanks to Fermin Molina <fmolina@nlhpc.cl> for requesting this!
+Fermin suggests to allow a nice continuous monitoring of "flagged" nodes with:
+
+# watch -n 60 --color 'pestat -f -C'
+
+2. Added -n/-w hostlist to select a subset of nodes. 
+The -n form is for compatibility with sinfo,
+whereas -w is compatible with pdsh and clush (ClusterShell). 
+
 version 0.50. Date: 22 June 2017
 --------------------------------
 
