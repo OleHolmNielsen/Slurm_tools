@@ -5,7 +5,11 @@ Prints a Slurm cluster nodes status with 1 line per node and job info.
 
 Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
 
-Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist]
+Usage
+-----
+
+```
+pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist]
 	[-f | -F | -m free_mem | -M free_mem ] [-1] [-C/-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
@@ -23,8 +27,10 @@ where:
 	-c: Color output is forced OFF
 	-h: Print this help information
 	-V: Version information
+```
 
 Global configuration file for pestat: /etc/pestat.conf
+
 Per-user configuration file for pestat: $HOME/.pestat.conf
 
 Configuration
