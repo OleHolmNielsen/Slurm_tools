@@ -23,6 +23,11 @@ export PESTAT_CONFIG=$HOME/.pestat.conf
 Thanks to Vicker, Darby (JSC-EG311) <darby.vicker-1@nasa.gov>
 for suggesting and implementing these features.
 
+Fixes:
+
+Broken nodes should be printed in RED color.  This didn't work for the default partition
+where the state is marked with "*" (like drain*), so now we strip the "*".
+
 version 0.52. Date: 28 June 2017
 --------------------------------
 
