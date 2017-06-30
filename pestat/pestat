@@ -4,7 +4,7 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat
-VERSION="pestat version 0.30.  Date: 02 May 2017"
+VERSION="pestat version 0.32. Date: 03 May 2017"
 
 # Command usage:
 function usage()
@@ -15,6 +15,7 @@ where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
 	-q qoslist: Print only QOS in the qoslist <qoslist>
+	-s statelist: Print only nodes with state in <statelist> 
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
 	-h: Print this help information
 	-V: Version information
@@ -29,7 +30,7 @@ printallnodes=0
 
 export PARTITION=""
 
-while getopts "p:u:q:hVf" options; do
+while getopts "p:u:q:s:hVf" options; do
 	case $options in
 		p )	export PARTITION="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -52,6 +53,9 @@ while getopts "p:u:q:hVf" options; do
 				echo Print all available QOSes by: sacctmgr show qos
 				exit -1
 			fi
+			;;
+		s )	STATELIST="--states $OPTARG"
+			echo Select only nodes with state=$OPTARG
 			;;
 		f )	printallnodes=1
 			echo Print only nodes that are flagged by \*
@@ -87,7 +91,7 @@ then
 fi
 
 # Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
-/usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | \
+/usr/bin/sinfo -h -N $PARTITION $STATELIST -o "%N %P %C %O %m %t" | \
 	awk -v username=$username -v qoslist=$qoslist -v printallnodes=$printallnodes  -v colors=$colors '
 BEGIN {
 	# Define terminal colors for the output if requested
@@ -194,7 +198,7 @@ BEGIN {
 	if (listnode > 0) {
 		printf("%8s %15s ", node, partition)
 		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
-		printf("%3d %3d ", cpulist[1], cpulist[4])
+		printf("%s%3d%s %3d ", cpucolor, cpulist[1], NORMAL, cpulist[4])
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
 		printf("%8d ", memory)
 		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
