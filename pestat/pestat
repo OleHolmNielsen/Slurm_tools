@@ -4,22 +4,37 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat
-VERSION="pestat version 0.2.  Date: 30 April 2017"
+VERSION="pestat version 0.30.  Date: 02 May 2017"
 
 # Command usage:
 function usage()
 {
-	echo "Usage: pestat [-p partition(s)] [-u username] [-q qoslist]"
+	cat <<EOF
+Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-f] [-V] [-h]
+where:
+	-p partition: Select only partion <partition>
+	-u username: Print only user <username> 
+	-q qoslist: Print only QOS in the qoslist <qoslist>
+	-f: Print only nodes that are flagged by * (unexpected load etc.)
+	-h: Print this help information
+	-V: Version information
+EOF
 }
+
+# Colors may be used in the output (also controlled by the PESTAT_COLOR environment variable).
+# Colored output by default:
+colors=1
+# Print all nodes by default
+printallnodes=0
 
 export PARTITION=""
 
-while getopts "p:u:q:hV" options; do
-        case $options in
-                p )     export PARTITION="-p $OPTARG"
-                        echo Listing only nodes in partition $OPTARG
-                        ;;
-                u )     username=$OPTARG
+while getopts "p:u:q:hVf" options; do
+	case $options in
+		p )	export PARTITION="-p $OPTARG"
+			echo Print only nodes in partition $OPTARG
+			;;
+		u )	username=$OPTARG
 			if test "`/usr/bin/sacctmgr -p -n show assoc where users=$username`"
 			then
 				echo Select only user $username
@@ -27,24 +42,27 @@ while getopts "p:u:q:hV" options; do
 				echo Error selecting Slurm username $username 
 				exit -1
 			fi
-                        ;;
-                q )     qoslist=$OPTARG
+			;;
+		q )	qoslist=$OPTARG
 			if test "`/usr/bin/sacctmgr -n -p show qos $qoslist`"
 			then
 				echo Select only QOS=$qoslist
 			else
 				echo Error selecting QOS $qoslist
-				echo List all available QOSes by: sacctmgr show qos
+				echo Print all available QOSes by: sacctmgr show qos
 				exit -1
 			fi
-                        ;;
+			;;
+		f )	printallnodes=1
+			echo Print only nodes that are flagged by \*
+			;;
 		V ) echo $VERSION
-                        exit 1;;
-                h|? ) usage
-                        exit 1;;
-                * ) usage
-                        exit 1;;
-        esac
+			exit 1;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
 done
 
 # Test for extraneous command line arguments
@@ -55,9 +73,32 @@ then
 	exit 1
 fi
 
-# List all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
-/usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | awk -v username=$username -v qoslist=$qoslist '
+# Check user environment variable PESTAT_COLOR for color
+if test "$PESTAT_COLOR" = "0"
+then
+	colors=0
+fi
+
+# Check if output is NOT a terminal: Turn colors off (can be overruled by "-c" flag).
+FD=1	# File Descriptor no. 1 = stdout
+if test ! -t $FD
+then
+	colors=0
+fi
+
+# Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
+/usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | \
+	awk -v username=$username -v qoslist=$qoslist -v printallnodes=$printallnodes  -v colors=$colors '
 BEGIN {
+	# Define terminal colors for the output if requested
+	if (colors != 0) {
+		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+		RED="\033[1;4;31m"
+		GREEN="\033[1;32m"
+		MAGENTA="\033[1;35m"
+		NORMAL="\033[0m"
+	}
+
 	if (username != "") selection = " -u " username
 	if (qoslist != "") selection = selection " -q " qoslist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
@@ -76,7 +117,7 @@ BEGIN {
 		if (index(NodeList,"[") == 0) {
 			jobnodes[1] = NodeList
 		} else {
-			# Get all hostnames on a single line with paste
+			# Expand NodeList hostnames, edit them into a single line using "paste"
 			cmd = HOSTLIST NodeList "| paste -s -d ,"
 			cmd | getline exp_list
 			close (cmd)
@@ -87,6 +128,7 @@ BEGIN {
 			n = jobnodes[i]
 			hostname[n] = n
 			jobs[n] = jobs[n] JobId " " User " "
+			numjobs[n]++
 		}
 		delete jobnodes
 	}
@@ -105,6 +147,58 @@ BEGIN {
 	cpuload=$4
 	memory=$5
 	state=$6
-	printf("%8s %15s %8s %3d %3d %7.2f %8d %s\n", node, partition, state, cpulist[1], cpulist[4], cpuload, memory, jobs[node])
+
+	if (printallnodes == 0) {
+		listnode=1	# Print all nodes
+	} else {
+		listnode=0	# Only selected nodes are printed
+		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error") {
+			# Flag nodes with status down, drain etc.
+			stateflag="*"
+			statecolor=RED
+			listnode++
+		} else {
+			stateflag=" "
+			statecolor=NORMAL
+		}
+		# Flag unexpected CPU load average
+		loaddiff = cpuload - cpulist[1]
+		if (loaddiff > 2 || loaddiff < -2) {
+			loadflag="*"
+			loadcolor=RED
+			cpucolor=GREEN
+			listnode++
+		} else if (loaddiff > 0.5 || loaddiff < -0.5) {
+			loadflag="*"
+			loadcolor=MAGENTA
+			cpucolor=GREEN
+			listnode++
+		} else {
+			loadflag=" "
+			loadcolor=NORMAL
+			cpucolor=NORMAL
+		}
+ 		# Flag unexpected number of jobs
+		if (numjobs[node] > cpulist[1]) {	# Should be at least 1 task per job
+			jobflag="*"
+			jobcolor=RED
+			listnode++
+		} else {
+			jobflag=" "
+			jobcolor=NORMAL
+		}
+	}
+
+	# Was:
+	# printf("%8s %15s %8s %3d %3d %7.2f %8d %s\n", node, partition, state, cpulist[1], cpulist[4], cpuload, memory, jobs[node])
+	if (listnode > 0) {
+		printf("%8s %15s ", node, partition)
+		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
+		printf("%3d %3d ", cpulist[1], cpulist[4])
+		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
+		printf("%8d ", memory)
+		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
+		printf("\n")
+	}
 	delete cpulist
 }'
