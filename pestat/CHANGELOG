@@ -1,0 +1,5 @@
+Initial version 0.1, date: 30 April 2017
+----------------------------------------
+
+Prints a Slurm cluster status with 1 line per node/partition and job info.
+Download python-hostlist from https://www.nsc.liu.se/~kent/python-hostlist/ 

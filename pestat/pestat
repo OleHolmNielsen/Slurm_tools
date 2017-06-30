@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Prints a Slurm cluster status with 1 line per node/partition and job info
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+
+# URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat
+VERSION="pestat version 0.1.  Date: 30 April 2017"
+
+
+# Prerequisite tools:
+if test ! -x /usr/bin/hostlist
+then
+	echo Error: The tool hostlist is not found.
+	echo Download python-hostlist from https://www.nsc.liu.se/~kent/python-hostlist/ 
+	exit -1
+fi
+
+# Command usage:
+function usage()
+{
+	echo "Usage: pestat [-p partition(s)]"
+}
+
+export PARTITION=""
+
+while getopts "p:hV" options; do
+        case $options in
+                p )     export PARTITION="-p $OPTARG"
+                        echo Listing only nodes in partition $PARTITION
+                        ;;
+		V ) echo $VERSION
+                        exit 1;;
+                h|? ) usage
+                        exit 1;;
+                * ) usage
+                        exit 1;;
+        esac
+done
+
+
+# List all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
+/usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | awk '
+BEGIN {
+	# The hostlist command is used to expand NodeList expressions
+	HOSTLIST="/usr/bin/hostlist --expand --sep , "
+	# Gather the list of running jobs
+	# Running jobs: JobState JobId User NodeList
+	JOBLIST = "/usr/bin/squeue -h -o \"%T %A %u %N\""
+	while ((JOBLIST | getline) > 0) {
+		JobState=$1
+		# Skip jobs if not in RUNNING state
+		if (JobState != "RUNNING") continue
+		JobId=$2
+		User=$3
+		NodeList=$4
+		# Create the list of nodes for this job, expand the list if necessary
+		if (index(NodeList,"[") == 0) {
+			jobnodes[1] = NodeList
+			exp_list = NodeList
+		} else {
+			HOSTLIST NodeList | getline exp_list
+			split(exp_list, jobnodes, ",")
+		}
+		# print JobId, User, NodeList, exp_list
+		# Populate the node arrays with "JobId User" (multiple jobs may exist)
+		for (i in jobnodes) {
+			n = jobnodes[i]
+			hostname[n] = n
+			jobs[n] = jobs[n] JobId " " User " "
+		}
+		delete jobnodes
+	}
+	close (JOBLIST)
+	# Print a header line
+	printf("%8s %15s %8s %7s %7s %8s %s\n", "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Joblist")
+	printf("%8s %15s %8s %7s %7s %8s %s\n", "", "", "State", "Use/Tot", "", "(MB)", "JobId User ...")
+}
+{
+	node=$1
+	partition=$2
+	# sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
+	split($3,cpulist,"/")
+	cpuload=$4
+	memory=$5
+	state=$6
+	printf("%8s %15s %8s %3d %3d %7.2f %8d %s\n", node, partition, state, cpulist[1], cpulist[4], cpuload, memory, jobs[node])
+	delete cpulist
+}'
