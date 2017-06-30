@@ -1,6 +1,8 @@
 version 0.60. Date: 30 June 2017
 --------------------------------
 
+New features:
+
 Add option -1 to show unique hostnames:
 Only 1 line is printed even if a node is in several partitions.
 
