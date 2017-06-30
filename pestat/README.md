@@ -3,6 +3,8 @@ The Slurm tool "pestat" (Processor Element status)
 
 Prints a Slurm cluster nodes status with 1 line per node and job info.
 
+Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
+
 Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist]
 	[-f | -F | -m free_mem | -M free_mem ] [-1] [-C/-c] [-V] [-h]
 where:
@@ -24,6 +26,15 @@ where:
 
 Global configuration file for pestat: /etc/pestat.conf
 Per-user configuration file for pestat: $HOME/.pestat.conf
+
+Configuration
+-------------
+
+It is strongly recommended that you do not change the pestat script itself,
+but make changes only in the above mentioned configuration files for pestat
+to suit your needs.
+
+Please write to the author if additional configurations should be made possible.
 
 History
 -------
