@@ -4,16 +4,7 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat
-VERSION="pestat version 0.1.  Date: 30 April 2017"
-
-
-# Prerequisite tools:
-if test ! -x /usr/bin/hostlist
-then
-	echo Error: The tool hostlist is not found.
-	echo Download python-hostlist from https://www.nsc.liu.se/~kent/python-hostlist/ 
-	exit -1
-fi
+VERSION="pestat version 0.11.  Date: 30 April 2017"
 
 # Command usage:
 function usage()
@@ -26,7 +17,7 @@ export PARTITION=""
 while getopts "p:hV" options; do
         case $options in
                 p )     export PARTITION="-p $OPTARG"
-                        echo Listing only nodes in partition $PARTITION
+                        echo Listing only nodes in partition $OPTARG
                         ;;
 		V ) echo $VERSION
                         exit 1;;
@@ -41,8 +32,8 @@ done
 # List all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
 /usr/bin/sinfo -h -N $PARTITION -o "%N %P %C %O %m %t" | awk '
 BEGIN {
-	# The hostlist command is used to expand NodeList expressions
-	HOSTLIST="/usr/bin/hostlist --expand --sep , "
+	# The "scontrol show hostnames" command is used to expand NodeList expressions
+	HOSTLIST="scontrol show hostnames "
 	# Gather the list of running jobs
 	# Running jobs: JobState JobId User NodeList
 	JOBLIST = "/usr/bin/squeue -h -o \"%T %A %u %N\""
@@ -56,12 +47,13 @@ BEGIN {
 		# Create the list of nodes for this job, expand the list if necessary
 		if (index(NodeList,"[") == 0) {
 			jobnodes[1] = NodeList
-			exp_list = NodeList
 		} else {
-			HOSTLIST NodeList | getline exp_list
+			# Get all hostnames on a single line with paste
+			cmd = HOSTLIST NodeList "| paste -s -d ,"
+			cmd | getline exp_list
+			close (cmd)
 			split(exp_list, jobnodes, ",")
 		}
-		# print JobId, User, NodeList, exp_list
 		# Populate the node arrays with "JobId User" (multiple jobs may exist)
 		for (i in jobnodes) {
 			n = jobnodes[i]
