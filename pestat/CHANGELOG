@@ -1,3 +1,16 @@
+version 0.50. Date: 22 June 2017
+--------------------------------
+
+I discovered how to obtain the node Free Memory with sinfo, so now we can do nice things with memory usage!
+
+New features:
+
+1. The "pestat -f" will flag nodes with less than 20% free memory.
+
+2. Now "pestat -m 1000" will print nodes with less than 1000 MB free memory.
+
+3. Use "pestat -M 200000" to print nodes with greater than 200000 MB free memory.  Jobs on such under-utilized nodes might better be submitted to lower-memory nodes. 
+
 version 0.41. Date: 15 June 2017
 --------------------------------
 

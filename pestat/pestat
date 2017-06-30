@@ -4,7 +4,7 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat or http://ftp.fysik.dtu.dk/pub/Slurm/pestat
-my_version="pestat version 0.41. Date: 15 June 2017"
+my_version="pestat version 0.50. Date: 22 June 2017"
 
 # CONFIGURE the paths of commands:
 # Directory where Slurm commands live:
@@ -16,17 +16,26 @@ my_awk=$prefix/awk
 function usage()
 {
 	cat <<EOF
-Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist] [-f] [-V] [-h]
+Usage: pestat [-p partition(s)] [-u username] [-q qoslist] [-s statelist]
+	[-f | -m free_mem | -M free_mem ] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
 	-q qoslist: Print only QOS in the qoslist <qoslist>
 	-s statelist: Print only nodes with state in <statelist> 
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
+	-m free_mem: Print only nodes with free memory LESS than free_mem MB
+	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
 	-h: Print this help information
 	-V: Version information
 EOF
 }
+
+# Flagging nodes
+flagging=-1
+# Free memory threshold value (off by default)
+export free_mem_less=-1
+export free_mem_more=-1
 
 # Colors may be used in the output (also controlled by the PESTAT_COLOR environment variable).
 # Colored output by default:
@@ -36,7 +45,7 @@ export printallnodes=1
 
 export partition=""
 
-while getopts "p:u:q:s:hVf" options; do
+while getopts "p:u:q:s:m:M:hVf" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -63,8 +72,32 @@ while getopts "p:u:q:s:hVf" options; do
 		s )	statelist="--states $OPTARG"
 			echo Select only nodes with state=$OPTARG
 			;;
-		f )	export printallnodes=0
+		f )	flagging=1
+			if test $free_mem_less -ge 0 -o $free_mem_more -ge 0
+			then
+				echo ERROR: The -f -m -M flags are mutually exclusive
+				exit -1
+			fi
+			export printallnodes=0
 			echo Print only nodes that are flagged by \*
+			;;
+		m )	export free_mem_less=$OPTARG
+			if test $flagging -gt 0 -o $free_mem_more -ge 0
+			then
+				echo ERROR: The -f -m -M flags are mutually exclusive
+				exit -1
+			fi
+			export printallnodes=0
+			echo Select only nodes with free memory LESS than $free_mem_less MB
+			;;
+		M )	export free_mem_more=$OPTARG
+			if test $flagging -gt 0 -o $free_mem_less -ge 0
+			then
+				echo ERROR: The -f -m -M flags are mutually exclusive
+				exit -1
+			fi
+			export printallnodes=0
+			echo Select only nodes with free memory GREATER than $free_mem_more MB
 			;;
 		V ) echo $my_version
 			exit 1;;
@@ -96,13 +129,16 @@ then
 	export colors=0
 fi
 
-# Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
-$prefix/sinfo -h -N $partition $statelist -o "%N %P %C %O %m %t" | $my_awk '
+# Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY FREE_MEM STATE
+$prefix/sinfo -h -N $partition $statelist -o "%N %P %C %O %m %e %t" | $my_awk '
 BEGIN {
+	# Prologue section
 	# Read the required environment variables:
 	prefix=ENVIRON["prefix"]
 	username=ENVIRON["username"]
 	qoslist=ENVIRON["qoslist"]
+	free_mem_less=ENVIRON["free_mem_less"]
+	free_mem_more=ENVIRON["free_mem_more"]
 	printallnodes=ENVIRON["printallnodes"]
 	colors=ENVIRON["colors"]
 	# Define terminal colors for the output if requested
@@ -150,10 +186,11 @@ BEGIN {
 	}
 	close (JOBLIST)
 	# Print a header line
-	printf("%8s %15s %8s %7s %7s %8s %s\n", "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Joblist")
-	printf("%8s %15s %8s %7s %7s %8s %s\n", "", "", "State", "Use/Tot", "", "(MB)", "JobId User ...")
+	printf("%8s %15s %8s %7s %8s %8s %8s  %s\n", "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
+	printf("%8s %15s %8s %7s %8s %8s %8s  %s\n", "", "", "State", "Use/Tot", "", "(MB)", "(MB)", "JobId User ...")
 }
 {
+	# Main section
 	node=$1
 	# Selection of subset of nodes
 	if (selection != "" && jobs[node] == "") next
@@ -164,12 +201,19 @@ BEGIN {
 	split($3,cpulist,"/")
 	cpuload=$4
 	memory=$5
-	state=$6
+	freemem=$6
+	state=$7
 
-	if (printallnodes != 0) {
-		listnode=1	# Print all nodes
+	# Select only subset of nodes with certain values/states
+	listnode = printallnodes
+
+	if (free_mem_less > 0) {
+		# Free memory on the node LESS than free_mem_less
+		if (freemem < free_mem_less) listnode++
+	} else if (free_mem_more > 0) {
+		# Free memory on the node GREATER than free_mem_more
+		if (freemem > free_mem_more) listnode++
 	} else {
-		listnode=0	# Only selected nodes are printed
 		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error") {
 			# Flag nodes with status down, drain etc.
 			stateflag="*"
@@ -205,14 +249,31 @@ BEGIN {
 			jobflag=" "
 			jobcolor=NORMAL
 		}
-	}
 
+		# Free memory on the node
+		if (freemem < memory/10) {	# Very high memory usage (<10% free)
+			memflag="*"
+			freememcolor=RED
+			memcolor=GREEN
+			listnode++
+		} else if (freemem < memory/5) {	# High memory usage (<20% free)
+			memflag="*"
+			freememcolor=MAGENTA
+			memcolor=GREEN
+			listnode++
+		} else {
+			memflag=" "
+			freememcolor=NORMAL
+			memcolor=NORMAL
+		}
+	}
+		
 	if (listnode > 0) {
 		printf("%8s %15s ", node, partition)
 		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
 		printf("%s%3d%s %3d ", cpucolor, cpulist[1], NORMAL, cpulist[4])
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
-		printf("%8d ", memory)
+		printf("%s%8d %s%8d%1s%s ", memcolor, memory, freememcolor, freemem, memflag, NORMAL)
 		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
 		printf("\n")
 	}
