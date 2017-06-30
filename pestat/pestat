@@ -4,12 +4,13 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 
 # URL: ftp://ftp.fysik.dtu.dk/pub/Slurm/pestat or http://ftp.fysik.dtu.dk/pub/Slurm/pestat
-VERSION="pestat version 0.35. Date: 04 May 2017"
+my_version="pestat version 0.40. Date: 09 May 2017"
 
+# CONFIGURE the paths of commands:
 # Directory where Slurm commands live:
-PREFIX=/usr/bin
+export prefix=/usr/bin
 # The awk command
-AWK=$PREFIX/awk
+my_awk=$prefix/awk
 
 # Command usage:
 function usage()
@@ -29,19 +30,19 @@ EOF
 
 # Colors may be used in the output (also controlled by the PESTAT_COLOR environment variable).
 # Colored output by default:
-colors=1
+export colors=1
 # Print all nodes by default
-printallnodes=0
+export printallnodes=1
 
-export PARTITION=""
+export partition=""
 
 while getopts "p:u:q:s:hVf" options; do
 	case $options in
-		p )	export PARTITION="-p $OPTARG"
+		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
 			;;
-		u )	username=$OPTARG
-			if test "`$PREFIX/sacctmgr -p -n show assoc where users=$username`"
+		u )	export username=$OPTARG
+			if test "`$prefix/sacctmgr -p -n show assoc where users=$username`"
 			then
 				echo Select only user $username
 			else
@@ -49,8 +50,8 @@ while getopts "p:u:q:s:hVf" options; do
 				exit -1
 			fi
 			;;
-		q )	qoslist=$OPTARG
-			if test "`$PREFIX/sacctmgr -n -p show qos $qoslist`"
+		q )	export qoslist=$OPTARG
+			if test "`$prefix/sacctmgr -n -p show qos $qoslist`"
 			then
 				echo Select only QOS=$qoslist
 			else
@@ -59,13 +60,13 @@ while getopts "p:u:q:s:hVf" options; do
 				exit -1
 			fi
 			;;
-		s )	STATELIST="--states $OPTARG"
+		s )	statelist="--states $OPTARG"
 			echo Select only nodes with state=$OPTARG
 			;;
-		f )	printallnodes=1
+		f )	export printallnodes=0
 			echo Print only nodes that are flagged by \*
 			;;
-		V ) echo $VERSION
+		V ) echo $my_version
 			exit 1;;
 		h|? ) usage
 			exit 1;;
@@ -85,21 +86,25 @@ fi
 # Check user environment variable PESTAT_COLOR for color
 if test "$PESTAT_COLOR" = "0"
 then
-	colors=0
+	export colors=0
 fi
 
 # Check if output is NOT a terminal: Turn colors off (can be overruled by "-c" flag).
 FD=1	# File Descriptor no. 1 = stdout
 if test ! -t $FD
 then
-	colors=0
+	export colors=0
 fi
 
 # Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY STATE
-$PREFIX/sinfo -h -N $PARTITION $STATELIST -o "%N %P %C %O %m %t" | \
-	$AWK -v PREFIX=$PREFIX -v username=$username -v qoslist=$qoslist \
-		 -v printallnodes=$printallnodes  -v colors=$colors '
+$prefix/sinfo -h -N $partition $statelist -o "%N %P %C %O %m %t" | $my_awk '
 BEGIN {
+	# Read the required environment variables:
+	prefix=ENVIRON["prefix"]
+	username=ENVIRON["username"]
+	qoslist=ENVIRON["qoslist"]
+	printallnodes=ENVIRON["printallnodes"]
+	colors=ENVIRON["colors"]
 	# Define terminal colors for the output if requested
 	if (colors != 0) {
 		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
@@ -109,15 +114,12 @@ BEGIN {
 		NORMAL="\033[0m"
 	}
 
-	# Removed: We want all user jobs on nodes where username is running:
-	# if (username != "") selection = selection " -u " username
-
 	if (qoslist != "") selection = selection " -q " qoslist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
-	HOSTLIST=PREFIX "/scontrol show hostnames "
+	HOSTLIST=prefix "/scontrol show hostnames "
 	# Gather the list of running jobs
-	# Running jobs: JobState JobId User NodeList
-	JOBLIST = PREFIX "/squeue -h -o \"%T %A %u %N\" " selection
+	# Running jobs info: JobState JobId User NodeList
+	JOBLIST = prefix "/squeue -h -o \"%T %A %u %N\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Skip jobs if not in RUNNING state
@@ -164,7 +166,7 @@ BEGIN {
 	memory=$5
 	state=$6
 
-	if (printallnodes == 0) {
+	if (printallnodes != 0) {
 		listnode=1	# Print all nodes
 	} else {
 		listnode=0	# Only selected nodes are printed
@@ -205,8 +207,6 @@ BEGIN {
 		}
 	}
 
-	# Was:
-	# printf("%8s %15s %8s %3d %3d %7.2f %8d %s\n", node, partition, state, cpulist[1], cpulist[4], cpuload, memory, jobs[node])
 	if (listnode > 0) {
 		printf("%8s %15s ", node, partition)
 		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
