@@ -51,8 +51,7 @@ Please write to the author if additional configurations should be made possible.
 History
 -------
 
-The pestat tool was inspired by a similar tool for Torque/PBS by
-David Singleton <David.Singleton@anu.edu.au> (Sep 23, 2004),
+The pestat tool was inspired by a similar tool for Torque/PBS by David Singleton (Sep 23, 2004),
 see https://github.com/abarbu/torque/blob/master/contrib/README.pestat
 
 The present author later wrote a pestat bash script for Torque, see
