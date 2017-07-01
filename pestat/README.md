@@ -29,12 +29,18 @@ where:
 	-V: Version information
 ```
 
-Global configuration file for pestat: ```/etc/pestat.conf```
+For continuous monitoring in a terminal window you may for example use this command:
 
-Per-user configuration file for pestat: ```$HOME/.pestat.conf```
+```
+	watch -n 60 --color 'pestat -f -C'
+```
 
 Configuration
 -------------
+
+Global configuration file for pestat: ```/etc/pestat.conf```
+
+Per-user configuration file for pestat: ```$HOME/.pestat.conf```
 
 It is strongly recommended that you do not change the pestat script itself,
 but make changes only in the above mentioned configuration files for pestat
@@ -46,7 +52,7 @@ History
 -------
 
 The pestat tool was inspired by a similar tool for Torque/PBS by
-David Singleton (Sep 23, 2004),
+David Singleton <David.Singleton@anu.edu.au> (Sep 23, 2004),
 see https://github.com/abarbu/torque/blob/master/contrib/README.pestat
 
 The present author later wrote a pestat bash script for Torque, see
