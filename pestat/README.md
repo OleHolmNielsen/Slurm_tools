@@ -29,6 +29,9 @@ where:
 	-V: Version information
 ```
 
+Example output
+--------------
+
 ![pestat example](pestat-example.png)
 
 For continuous monitoring in a terminal window you may for example use this command:
