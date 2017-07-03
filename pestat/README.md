@@ -3,7 +3,7 @@ The Slurm tool "pestat" (Processor Element status)
 
 Prints a Slurm cluster nodes status with 1 line per node and job info.
 
-Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
+Author: Ole Holm Nielsen <Ole.H.Nielsen \at/ fysik.dtu.dk>
 
 Usage
 -----
@@ -34,6 +34,27 @@ For continuous monitoring in a terminal window you may for example use this comm
 ```
 	watch -n 60 --color 'pestat -f -C'
 ```
+
+Installation
+------------
+
+Copy pestat:
+
+```
+wget https://raw.githubusercontent.com/OleHolmNielsen/Slurm_tools/master/pestat/pestat
+chmod 755 pestat
+cp pestat /usr/local/bin
+```
+
+If desired copy pestat.conf:
+
+```
+wget https://raw.githubusercontent.com/OleHolmNielsen/Slurm_tools/master/pestat/pestat.conf
+cp pestat.conf /etc/
+```
+
+Edit pestat.conf according to your needs.
+Users may copy and edit this file as ```$HOME/.pestat.conf```.
 
 Configuration
 -------------
