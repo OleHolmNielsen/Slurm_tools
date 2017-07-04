@@ -1,0 +1,194 @@
+#!/bin/sh
+
+# Slurm batch queue:
+# Print the current node and batch jobs status broken down into userids.
+# Can also display per-user or per-group status.
+
+# Author: Ole H. Nielsen, Technical University of Denmark
+# E-mail: Ole.H.Nielsen@fysik.dtu.dk
+# Homepage:
+
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 [-u username | -g groupname] [-p partition] [-h]
+where:
+        -u username: Print only user <username> (do not use with the -g flag)
+        -g groupname: Print only users in group <groupname>
+        -p partition: Print only jobs in partition <partition-list>
+        -h: Print this help information
+EOF
+}
+
+#
+# Process command arguments
+#
+while getopts "u:g:p:h" options; do
+	case $options in
+		u ) 	export username=$OPTARG
+			echo Select only user $username
+			;;
+		g ) 	export groupname=$OPTARG
+			echo Select only users in group $groupname
+			;;
+		p ) 	export partition="-p $OPTARG"
+			echo Print only jobs in partition $OPTARG
+			;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
+done
+
+# Test for extraneous command line arguments
+if test $# -gt $(($OPTIND-1))
+then
+	echo ERROR: Too many command line arguments: $*
+	usage
+	exit 1
+fi
+
+if test -n "$username" -a -n "$groupname"
+then
+	echo ERROR: Do not select both username and groupname
+	usage
+	exit 1
+fi
+
+echo Slurm node and job status at `date`
+
+# Count the nodes and CPUs
+
+# Output: Nodename cpus partition state
+sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
+{
+	node = $1
+	if (hostname[node] != "") next		# Nodes in multiple partitions are counted once only
+	hostname[node] = node
+	total_node++
+	cpus[node] = $2
+	total_cpus += cpus[node]
+	partition[node] = $3
+	s = $4
+	gsub("*", "", s)    # Strip "*" from nodename in default partition
+	state[node] = s
+	nodestates[s] = s
+	nodecount[s]++
+	cpucount[s] += cpus[node]
+} END {
+	print " "
+	print "Node states summary:"
+	format = "%-7s %5d nodes (%d CPUs)\n"
+	for (i in nodestates) {
+		s =  nodestates[i]
+		printf(format, s, nodecount[s],  cpucount[s])
+	}
+	printf(format, "Total", total_node, total_cpus)
+}'
+
+cat <<EOF
+
+             Running      Pending 
+Username    Jobs  CPUs   Jobs  CPUs  Group     Further info
+========    ==== =====   ==== =====  ========  =============================
+EOF
+
+# The squeue -o format selects fields we are interested in:
+squeue $partition --noheader -o "%.8u %.8a %.10T  %.6D %.6C" | awk '
+BEGIN {
+	uname=ENVIRON["username"]
+	gname=ENVIRON["groupname"]
+	# First get the list of group names 
+	while ("getent group" | getline ) {
+		split($0,b,":")		# Split group line into fields
+		groupgid[b[3]] = b[1]	# Group name b[1] of this groupid (b[3])
+		groupname[b[1]] = b[1]	# Group name b[1]
+	}
+	close("getent group")
+	# Then get the list of user full names from passwd lines
+	while ("getent passwd" | getline ) {
+		split($0,b,":")		# Split password line into fields
+		username[b[1]] = b[1]	# Username b[1]
+		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
+		usergroup[b[1]] = groupgid[b[4]]	# Group name of this GID (numeric group id)
+	}
+	close("getent passwd")
+	if (length(uname)>0) {		# Select username
+		for (u in username) {
+			if (u == uname) userselect=1	# User found
+		}
+		if (userselect != 1) {
+			printf("ERROR: Username %s is not in password file\n", uname)
+			errorexit = -1
+		}
+	}
+	if (length(gname)>0) {		# Select groupname
+		for (g in groupname) {
+			if (g == gname) groupselect=1	# Group found
+		}
+		if (groupselect != 1) {
+			printf("ERROR: Groupname %s is not in group file\n", gname)
+			errorexit = -2
+		}
+	}
+	if (errorexit != 0) exit errorexit	# Will jump to END section
+}
+
+{
+	# Process the job list
+	userid=$1
+	account=$2
+	status=$3
+	nnodes=$4
+	nprocs=$5
+	if (userselect > 0 && uname !~ username[userid]) next	# Select specified username only
+	userlist[userid] = userid
+
+	if (status == "RUNNING" ) {
+		running[userid]++
+		totalrun++
+		runprocs[userid] += nprocs
+		totalrunprocs += nprocs
+	} else {
+		# PENDING jobs
+		pending[userid]++
+		totalpending++
+		pendingprocs[userid] += nprocs
+		totalpendingprocs += nprocs
+	}
+} END {
+	if (errorexit != 0) exit errorexit	# Error encountered
+	for (u in userlist) {
+		if (groupselect > 0 && gname !~ usergroup[u]) continue # Select specified groupname only
+		totalusers++
+		printf ("%-11s %4d %5d   %4d %5d  %-8s  %s\n",
+			userlist[u], running[u], runprocs[u], pending[u], pendingprocs[u],
+			usergroup[u], fullname[u])
+		# Accumulate group statistics
+		grp = usergroup[u]
+		grouplist[grp] = grp
+		groupusers[grp]++
+		group_running[grp] += running[u]
+		group_runprocs[grp] += runprocs[u]
+		group_pending[grp] += pending[u]
+		group_pendingprocs[grp] += pendingprocs[u]
+	}
+	if (userselect > 0) exit	# Finished (username specified)
+
+	for (grp in grouplist) {
+		printf ("%-11s %4d %5d   %4d %5d  %-8s  running+pending=%d CPUs %d users\n",
+			"GROUP_TOTAL", group_running[grp], group_runprocs[grp],
+			group_pending[grp], group_pendingprocs[grp], grp,
+			group_runprocs[grp]+group_pendingprocs[grp], groupusers[grp])
+	}
+	if (groupselect > 0) exit	# Finished (groupname specified)
+
+	printf ("%-11s %4d %5d   %4d %5d  %-8s  running+pending=%d CPUs %d users\n",
+		"GRAND_TOTAL", totalrun, totalrunprocs, totalpending, totalpendingprocs, 
+		"ALL", totalrunprocs+totalpendingprocs, totalusers)
+}' | sort -r -n -k 3 -k 5 
+
+# The sort command sorts number of running procs in descending order
