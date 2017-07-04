@@ -19,7 +19,7 @@ where:
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
-	-F: Line -f, but only nodes flagged in RED are printed.
+	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
 	-1 Only 1 line per node (unique nodes in multiple partitions are printed once only)
@@ -29,16 +29,16 @@ where:
 	-V: Version information
 ```
 
-Example output
---------------
-
-![pestat example](pestat-example.png)
-
 For continuous monitoring in a terminal window you may for example use this command:
 
 ```
 	watch -n 60 --color 'pestat -f -C'
 ```
+
+Example output
+--------------
+
+![pestat example](pestat-example.png)
 
 Installation
 ------------
