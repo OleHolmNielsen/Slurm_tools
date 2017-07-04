@@ -3,6 +3,7 @@
 #
 # Generate monthly accounting statistics from Slurm.
 # Specific accounts and start/end dates may be specified.
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmreportmonth
 #
 
 # CONFIGURE THIS for your local environment:
