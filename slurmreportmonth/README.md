@@ -1,7 +1,7 @@
 Slurm monthly accounting report tool
 ------------------------------------
 
-Generate monthly accounting statistics from Slurm.
+Generate monthly accounting statistics from Slurm using the ```sreport``` command.
 The script calculates last month's dates by default.
 
 Specific accounts and start/end dates may be specified.
