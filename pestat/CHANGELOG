@@ -1,3 +1,10 @@
+version 0.61. Date: 07 July 2017
+--------------------------------
+
+New features:
+
+Add option -g groupname: Print only users in group <groupname>
+
 version 0.60. Date: 30 June 2017
 --------------------------------
 
