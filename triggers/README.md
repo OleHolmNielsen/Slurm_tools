@@ -8,6 +8,8 @@ Slurm "triggers" include events such as:
 * a job reaching its time limit
 * a job terminating.
 
+See the [strigger](https://slurm.schedmd.com/strigger.html) manual page.
+
 Usage
 -----
 
