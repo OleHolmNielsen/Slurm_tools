@@ -36,7 +36,7 @@ Usage: pestat [-p partition(s)] [-u username] [-g groupname]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
-	-g groupname: Print only users in group <groupname>
+	-g groupname: Print only users in UNIX group <groupname>
 	-q qoslist: Print only QOS in the qoslist <qoslist>
 	-s statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
