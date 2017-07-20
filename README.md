@@ -8,6 +8,14 @@ These Slurm tools have been developed for management and monitoring of our clust
 
 3. ```showuserjobs``` Print the current node status and batch jobs status broken down into userids.
 
+4. ```slurmibtopology.sh``` Infiniband topology tool for Slurm.
+
+5. Slurm ```triggers``` scripts.
+
+6. Scripts for managing ```nodes```.
+
+7. Scripts for managing ```jobs```.
+
 Download
 --------
 
