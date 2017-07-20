@@ -16,6 +16,12 @@ These Slurm tools have been developed for management and monitoring of our clust
 
 7. Scripts for managing [jobs](jobs/).
 
+Slurm deployment HOWTO
+----------------------
+
+Our [Slurm HOWTO guide](https://wiki.fysik.dtu.dk/niflheim/SLURM) for setting up a Slurm installation.
+It's based on CentOS/RHEL 7 Linux, but much of the information should be relevant on other Linuxes as well.
+
 Download
 --------
 
