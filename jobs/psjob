@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Do "ps aux" on a set of nodes belonging to a single job, but exclude system processes.
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+# URL: https://github.com/OleHolmNielsen/Slurm_tools
+# Usage: psjob job-id
+
+# Requires ClusterShell for parallel commands,
+# see https://wiki.fysik.dtu.dk/niflheim/SLURM
+# and https://clustershell.readthedocs.io/en/latest/intro.html
+
+# Possibly configure these variables:
+SINFO=/usr/bin/sinfo
+SCONTROL=/usr/bin/scontrol
+CLUSH="/usr/bin/clush"
+PS="/bin/ps"
+PSFLAGS="-o pid,state,user,start,nlwp,cputime,%cpu,rssize,command --columns 100"
+
+# System users excluded from the list
+USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
+
+# Temporary file
+JOBSTATUS=/tmp/jobstatus.$$
+
+# Catch signals
+trap "rm -f $JOBSTATUS; exit 2" 1 2 3 14 15 19
+
+# Check command arguments
+if test $# -ne 1
+then
+	echo Usage: $0 job-id
+	exit 1
+fi
+JOBID=$1
+
+# Check if this job-ID can be inquired successfully.
+$SCONTROL show job $JOBID > $JOBSTATUS
+if test "$?" != "0"
+then
+	echo Error inquiring about job $JOBID 
+	exit 1
+fi
+
+# Check the job state
+JOBSTATE="`cat $JOBSTATUS | grep JobState | awk '{print $1}'`"
+if test "$JOBSTATE" != "JobState=RUNNING"
+then
+	echo The job $JOBID is not running, it has state=$JOBSTATE
+	exit 1
+fi
+
+NODELIST="`cat $JOBSTATUS | grep '^   NodeList=' | awk -F= '{print $2}'`"
+if test -z "$NODELIST"
+then
+	echo Error: The node list is empty
+	exit 1
+fi
+
+# Get the number of nodes and node properties used
+echo Nodelist for job-id $JOBID: $NODELIST
+echo Node usage: `cat $JOBSTATUS | grep NumNodes= ` 
+egrep 'RunTime|SubmitTime|StartTime' $JOBSTATUS
+
+# Execute parallel shell on the job nodes
+$CLUSH -b -w $NODELIST $PS $PSFLAGS --deselect -u \""$USERLIST"\"
+
+rm -f $JOBSTATUS
