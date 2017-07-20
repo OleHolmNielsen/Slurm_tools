@@ -3,7 +3,7 @@ Slurm trigger scripts
 
 Slurm "triggers" include events such as:
 
-* a node failing
+* a node is down, is drained, or fails.
 * daemon stops or restarts
 * a job reaching its time limit
 * a job terminating.
@@ -32,7 +32,7 @@ strigger --get
 Example output
 --------------
 
-example contents of a trigger mail message:
+Example contents of a trigger mail message:
 
 ```
 Sun Jul 16 21:28:05 2017
