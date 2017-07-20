@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# Print the Slurm version on a nodelist.
+# Usage: sversion node-list
+# Requires ClusterShell, see https://clustershell.readthedocs.io/en/latest/intro.html
+
+clush -b -w $@ slurmd -V
