@@ -1,7 +1,7 @@
 Slurm job scripts
 -----------------
 
-Some convenient scripts for working with jobs:
+Some convenient scripts for managing jobs:
 
 * Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob <jobid>```.
   Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).

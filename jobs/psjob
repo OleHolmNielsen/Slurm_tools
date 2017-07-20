@@ -2,7 +2,7 @@
 
 # Do "ps aux" on a set of nodes belonging to a single job, but exclude system processes.
 # Author: Ole.H.Nielsen@fysik.dtu.dk
-# URL: https://github.com/OleHolmNielsen/Slurm_tools
+# URL: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/jobs
 # Usage: psjob job-id
 
 # Requires ClusterShell for parallel commands,
