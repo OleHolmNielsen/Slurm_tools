@@ -14,7 +14,7 @@ These Slurm tools have been developed for management and monitoring of our clust
 
 6. Scripts for managing ```nodes```.
 
-7. Scripts for managing ```jobs```.
+7. Scripts for managing ```jobs```. [jobs](tree/master/jobs).
 
 Download
 --------
