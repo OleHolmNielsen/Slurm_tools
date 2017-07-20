@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Do a "ps" process status on a node-list, but exclude system processes
+# Usage: psnode nodename(s)
+
+SINFO=/usr/bin/sinfo
+SCONTROL=/usr/bin/scontrol
+PS="/bin/ps"
+PSFLAGS="-o pid,state,user,start,cputime,%cpu,rssize,command --columns 100"
+SSH="ssh -n -x"
+PING="/bin/ping -c 1 -w 3"
+
+# System users excluded from the list
+USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
+
+# The "scontrol show hostnames" command is used to expand NodeList expressions
+for node in `$SCONTROL show hostnames $*`
+do
+	echo Node ${node}:
+	$SINFO -N --long -n $node 
+	if $PING $node 2>&1 > /dev/null
+	then
+		$SSH $node $PS $PSFLAGS --deselect -u \""$USERLIST"\"
+	else
+		echo '*** WARNING ***' Cannot ping host ${node} !
+	fi
+done

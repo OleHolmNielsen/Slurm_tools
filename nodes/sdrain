@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Slurm: use scontrol to manage nodes
+ACTION=drain
+
+if test $# -eq 2
+then
+	NODES="$1"
+	REASON="$2"
+else
+	echo Usage: $0 nodename-list \"Reason\"
+	exit 1
+fi
+
+/usr/bin/scontrol update nodename=$NODES state=$ACTION reason="$REASON"
+/usr/bin/sinfo -N -n $NODES --list-reasons

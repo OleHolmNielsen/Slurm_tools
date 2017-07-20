@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Slurm: use scontrol to manage nodes
+ACTION=resume
+
+if test $# -eq 1
+then
+	NODES="$1"
+	echo Action=$ACTION on nodes $NODES
+else
+	echo Usage: $0 nodename-list
+	exit 1
+fi
+
+/usr/bin/scontrol update nodename=$NODES state=$ACTION
+/usr/bin/sinfo -N -n $NODES
