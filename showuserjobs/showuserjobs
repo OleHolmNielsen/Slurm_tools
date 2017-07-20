@@ -1,22 +1,22 @@
 #!/bin/sh
 
 # Slurm batch queue:
-# Print the current node and batch jobs status broken down into userids.
-# Can also display per-user or per-group status.
+# Show the current batch jobs status broken down into userids.
+# Can also show per-user or per-group status.
 
 # Author: Ole H. Nielsen, Technical University of Denmark
 # E-mail: Ole.H.Nielsen@fysik.dtu.dk
-# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/showuserjobs
 
 
 # Command usage:
 function usage()
 {
 cat <<EOF
-Usage: $0 [-u username | -g groupname] [-p partition] [-h]
+Usage: $0 [-u username | -g groupname] [-p partition] [-G] [-h]
 where:
         -u username: Print only user <username> (do not use with the -g flag)
         -g groupname: Print only users in group <groupname>
+	-G: Print only GROUP_TOTAL lines
         -p partition: Print only jobs in partition <partition-list>
         -h: Print this help information
 EOF
@@ -25,13 +25,18 @@ EOF
 #
 # Process command arguments
 #
-while getopts "u:g:p:h" options; do
+export group_totals_only=0
+
+while getopts "u:g:p:Gh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username
 			;;
 		g ) 	export groupname=$OPTARG
 			echo Select only users in group $groupname
+			;;
+		G ) 	export group_totals_only=1
+			echo Select only GROUP_TOTAL lines
 			;;
 		p ) 	export partition="-p $OPTARG"
 			echo Print only jobs in partition $OPTARG
@@ -58,7 +63,7 @@ then
 	exit 1
 fi
 
-echo Slurm node and job status at `date`
+echo Batch job status at `date`
 
 # Count the nodes and CPUs
 
@@ -91,16 +96,18 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 
 cat <<EOF
 
-             Running      Pending 
+             Running       Idle    
 Username    Jobs  CPUs   Jobs  CPUs  Group     Further info
 ========    ==== =====   ==== =====  ========  =============================
 EOF
 
 # The squeue -o format selects fields we are interested in:
-squeue $partition --noheader -o "%.8u %.8a %.10T  %.6D %.6C" | awk '
+# Userid Account Jobstatus Nodecount CPUcount Partition
+squeue $partition --noheader -o "%.8u %.8a %.10T %.6D %.6C %P" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["groupname"]
+	group_totals_only=ENVIRON["group_totals_only"]
 	# First get the list of group names 
 	while ("getent group" | getline ) {
 		split($0,b,":")		# Split group line into fields
@@ -144,6 +151,7 @@ BEGIN {
 	status=$3
 	nnodes=$4
 	nprocs=$5
+	partition=$6
 	if (userselect > 0 && uname !~ username[userid]) next	# Select specified username only
 	userlist[userid] = userid
 
@@ -154,18 +162,18 @@ BEGIN {
 		totalrunprocs += nprocs
 	} else {
 		# PENDING jobs
-		pending[userid]++
-		totalpending++
-		pendingprocs[userid] += nprocs
-		totalpendingprocs += nprocs
+		idle[userid]++
+		totalidle++
+		idleprocs[userid] += nprocs
+		totalidleprocs += nprocs
 	}
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	for (u in userlist) {
 		if (groupselect > 0 && gname !~ usergroup[u]) continue # Select specified groupname only
 		totalusers++
-		printf ("%-11s %4d %5d   %4d %5d  %-8s  %s\n",
-			userlist[u], running[u], runprocs[u], pending[u], pendingprocs[u],
+		if (group_totals_only==0) printf ("%-11s %4d %5d   %4d %5d  %-8s  %s\n",
+			userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
 			usergroup[u], fullname[u])
 		# Accumulate group statistics
 		grp = usergroup[u]
@@ -173,22 +181,22 @@ BEGIN {
 		groupusers[grp]++
 		group_running[grp] += running[u]
 		group_runprocs[grp] += runprocs[u]
-		group_pending[grp] += pending[u]
-		group_pendingprocs[grp] += pendingprocs[u]
+		group_idle[grp] += idle[u]
+		group_idleprocs[grp] += idleprocs[u]
 	}
 	if (userselect > 0) exit	# Finished (username specified)
 
 	for (grp in grouplist) {
-		printf ("%-11s %4d %5d   %4d %5d  %-8s  running+pending=%d CPUs %d users\n",
+		printf ("%-11s %4d %5d   %4d %5d  %-8s  running+idle=%d CPUs %d users\n",
 			"GROUP_TOTAL", group_running[grp], group_runprocs[grp],
-			group_pending[grp], group_pendingprocs[grp], grp,
-			group_runprocs[grp]+group_pendingprocs[grp], groupusers[grp])
+			group_idle[grp], group_idleprocs[grp], grp,
+			group_runprocs[grp]+group_idleprocs[grp], groupusers[grp])
 	}
 	if (groupselect > 0) exit	# Finished (groupname specified)
 
-	printf ("%-11s %4d %5d   %4d %5d  %-8s  running+pending=%d CPUs %d users\n",
-		"GRAND_TOTAL", totalrun, totalrunprocs, totalpending, totalpendingprocs, 
-		"ALL", totalrunprocs+totalpendingprocs, totalusers)
+	printf ("%-11s %4d %5d   %4d %5d  %-8s  running+idle=%d CPUs %d users\n",
+		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		"ALL", totalrunprocs+totalidleprocs, totalusers)
 }' | sort -r -n -k 3 -k 5 
 
 # The sort command sorts number of running procs in descending order
