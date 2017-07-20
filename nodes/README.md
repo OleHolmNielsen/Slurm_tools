@@ -6,7 +6,7 @@ Some convenient scripts for working with nodes:
 * Drain a node: ```sdrain node-list "Reason"```.
 * Resume a node: ```sresume node-list```.
 * Do a ```ps``` process status on a node-list, but exclude system processes: ```psnode node-list```.
-* Print Slurm version: ```sversion node-list```.
+* Print Slurm version: ```sversion node-list```. Requires [ClusterShell](Requires ClusterShell, see https://clustershell.readthedocs.io/en/latest/intro.html).
 
 Usage
 -----
