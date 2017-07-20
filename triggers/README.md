@@ -12,6 +12,7 @@ Usage
 -----
 
 Copy the scripts ```notify_nodes_down``` and ```notify_nodes_drained``` to /usr/local/bin/.
+If necessary modify the variables slurm_user, slurm_notify, my_mail in the scripts.
 
 Become the *slurm* user.
 
