@@ -9,10 +9,11 @@ Usage
 -----
 
 ```
-/usr/local/bin/showuserjobs [-u username | -g groupname] [-p partition] [-h]
+Usage: ./showuserjobs [-u username | -g groupname] [-p partition] [-G] [-h]
 where:
         -u username: Print only user <username> (do not use with the -g flag)
         -g groupname: Print only users in group <groupname>
+	-G: Print only GROUP_TOTAL lines
         -p partition: Print only jobs in partition <partition-list>
         -h: Print this help information
 ```
