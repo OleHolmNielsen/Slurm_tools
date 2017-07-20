@@ -1,10 +1,10 @@
 Slurm node scripts
 ------------------
 
-Some convenient scripts for working with nodes:
+Some convenient scripts for working with nodes (or lists of nodes):
 
-* Drain a node: ```sdrain node-list "Reason"```.
-* Resume a node: ```sresume node-list```.
+* Drain a node-list: ```sdrain node-list "Reason"```.
+* Resume a node-list: ```sresume node-list```.
 * Do a ```ps``` process status on a node-list, but exclude system processes: ```psnode node-list```.
 * Print Slurm version on a node-list: ```sversion node-list```. Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
 
