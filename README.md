@@ -2,17 +2,17 @@
 
 These Slurm tools have been developed for management and monitoring of our cluster:
 
-1. ```pestat``` Prints a Slurm cluster nodes status with 1 line per node and job info.
+1. [pestat](pestat/) Prints a Slurm cluster nodes status with 1 line per node and job info.
 
-2. ```slurmreportmonth``` Generate monthly accounting statistics from Slurm using the sreport command.
+2. [slurmreportmonth](slurmreportmonth/) Generate monthly accounting statistics from Slurm using the sreport command.
 
-3. ```showuserjobs``` Print the current node status and batch jobs status broken down into userids.
+3. [showuserjobs](showuserjobs/) Print the current node status and batch jobs status broken down into userids.
 
-4. ```slurmibtopology.sh``` Infiniband topology tool for Slurm.
+4. [slurmibtopology](slurmibtopology/) Infiniband topology tool for Slurm.
 
-5. Slurm ```triggers``` scripts.
+5. Slurm [triggers](triggers/) scripts.
 
-6. Scripts for managing ```nodes```.
+6. Scripts for managing [nodes](nodes/).
 
 7. Scripts for managing [jobs](jobs/).
 
