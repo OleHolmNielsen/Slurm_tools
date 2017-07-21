@@ -12,7 +12,7 @@ PING="/bin/ping -c 1 -w 3"
 
 # System users EXCLUDED from the process list
 USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
-# Check sanity of USERLIST: Does user exist on this host?
+# Check sanity of USERLIST: Does user exist on this host? Required on CentOS 6.
 for u in $USERLIST
 do
 	if test "`getent passwd $u`" == ""
