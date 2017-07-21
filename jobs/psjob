@@ -18,6 +18,16 @@ PSFLAGS="-o pid,state,user,start,nlwp,cputime,%cpu,rssize,command --columns 100"
 
 # System users excluded from the list
 USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
+# Check sanity of USERLIST: Does user exist on this host? Required on CentOS 6.
+for u in $USERLIST
+do
+	if test "`getent passwd $u`" == ""
+	then
+		echo ERROR in setup. Non-existent user $u
+		echo Please remove user $u from USERLIST
+		exit -1
+	fi
+done
 
 # Temporary file
 JOBSTATUS=/tmp/jobstatus.$$
