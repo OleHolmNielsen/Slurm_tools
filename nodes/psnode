@@ -1,7 +1,13 @@
 #!/bin/sh
 
 # Do a "ps" process status on a node-list, but exclude system processes
-# Usage: psnode nodename(s)
+# Usage: psnode node-list
+
+if test $# -ne 1
+then
+	echo ERROR. Usage: $0 node-list
+	exit -1
+fi
 
 SINFO=/usr/bin/sinfo
 SCONTROL=/usr/bin/scontrol
@@ -12,14 +18,17 @@ PING="/bin/ping -c 1 -w 3"
 
 # System users EXCLUDED from the process list
 USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
-# Check sanity of USERLIST: Does user exist on this host? Required on CentOS 6.
+
+# Make a deselect-list consisting only of existent users
+deselect_list=""
+sep=""
 for u in $USERLIST
 do
-	if test "`getent passwd $u`" == ""
+	if test -n "`getent passwd $u`"
 	then
-		echo ERROR in setup. Non-existent user $u
-		echo Please remove user $u from USERLIST
-		exit -1
+		# This user exists in the passwd database
+		deselect_list="${deselect_list}${sep}${u}"
+		sep=" "
 	fi
 done
 
@@ -30,7 +39,7 @@ do
 	$SINFO -N --long -n $node 
 	if $PING $node 2>&1 > /dev/null
 	then
-		$SSH $node $PS $PSFLAGS --deselect -u \""$USERLIST"\"
+		$SSH $node $PS $PSFLAGS --deselect -u \""${deselect_list}"\"
 	else
 		echo '*** WARNING ***' Cannot ping host ${node} !
 	fi
