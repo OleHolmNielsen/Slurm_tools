@@ -22,6 +22,9 @@ where:
 EOF
 }
 
+# Set the maximum length of usernames (must be 11 or more to fit *_TOTAL strings)
+export maxlength=11
+
 #
 # Process command arguments
 #
@@ -94,12 +97,18 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 	printf(format, "Total", total_node, total_cpus)
 }'
 
-cat <<EOF
-
-             Running       Idle    
-Username    Jobs  CPUs   Jobs  CPUs  Group     Further info
-========    ==== =====   ==== =====  ========  =============================
-EOF
+# Print a header
+echo | awk '
+BEGIN {
+	maxlength=ENVIRON["maxlength"]
+	fmt="%-*.*s %4.4s %5.5s   %4.4s %5.5s  %-8.8s  %s\n"
+	line="============================="
+	print " "
+	printf (fmt, maxlength, maxlength,
+		"Username", "Jobs", "CPUs", "Jobs", "CPUs", "Group", "Further info")
+	printf (fmt, maxlength, maxlength,
+		line, line, line, line, line, line, line)
+}'
 
 # The squeue -o format selects fields we are interested in:
 # Userid Account Jobstatus Nodecount CPUcount Partition
@@ -107,6 +116,7 @@ squeue $partition --noheader -o "%.8u %.8a %.10T %.6D %.6C %P" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["groupname"]
+	maxlength=ENVIRON["maxlength"]
 	group_totals_only=ENVIRON["group_totals_only"]
 	# First get the list of group names 
 	while ("getent group" | getline ) {
@@ -167,12 +177,18 @@ BEGIN {
 		idleprocs[userid] += nprocs
 		totalidleprocs += nprocs
 	}
+	
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
+	# Output line format string
+	fmt = "%-*.*s %4d %5d   %4d %5d  %-8s  %s\n"
+	# Future: Piping output to a sorting command 
+	# sorting = "LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
+
 	for (u in userlist) {
 		if (groupselect > 0 && gname !~ usergroup[u]) continue # Select specified groupname only
 		totalusers++
-		if (group_totals_only==0) printf ("%-11s %4d %5d   %4d %5d  %-8s  %s\n",
+		if (group_totals_only==0) printf(fmt, maxlength, maxlength,
 			userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
 			usergroup[u], fullname[u])
 		# Accumulate group statistics
@@ -186,17 +202,21 @@ BEGIN {
 	}
 	if (userselect > 0) exit	# Finished (username specified)
 
+	# Group info format string
+	groupfmt = "Running+Idle=%d CPUs %d users"
 	for (grp in grouplist) {
-		printf ("%-11s %4d %5d   %4d %5d  %-8s  running+idle=%d CPUs %d users\n",
+		groupinfo = sprintf(groupfmt, group_runprocs[grp]+group_idleprocs[grp], groupusers[grp])
+		printf(fmt, maxlength, maxlength,
 			"GROUP_TOTAL", group_running[grp], group_runprocs[grp],
-			group_idle[grp], group_idleprocs[grp], grp,
-			group_runprocs[grp]+group_idleprocs[grp], groupusers[grp])
+			group_idle[grp], group_idleprocs[grp], grp, groupinfo)
 	}
 	if (groupselect > 0) exit	# Finished (groupname specified)
 
-	printf ("%-11s %4d %5d   %4d %5d  %-8s  running+idle=%d CPUs %d users\n",
+	groupinfo = sprintf(groupfmt, totalrunprocs+totalidleprocs, totalusers)
+	printf(fmt, maxlength, maxlength,
 		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
-		"ALL", totalrunprocs+totalidleprocs, totalusers)
-}' | sort -r -n -k 3 -k 5 
+		"ALL", groupinfo)
+}' | env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d
 
-# The sort command sorts number of running procs in descending order
+# The sort command sorts number of running procs in descending order on keys 3,5 and alphabetical sort on key 1
+# The LC_ALL=C ensures that Upper case is sorted before lower case.
