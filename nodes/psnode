@@ -10,8 +10,18 @@ PSFLAGS="-o pid,state,user,start,cputime,%cpu,rssize,command --columns 100"
 SSH="ssh -n -x"
 PING="/bin/ping -c 1 -w 3"
 
-# System users excluded from the list
+# System users EXCLUDED from the process list
 USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
+# Check sanity of USERLIST: Does user exist on this host?
+for u in $USERLIST
+do
+	if test "`getent passwd $u`" == ""
+	then
+		echo ERROR in setup. Non-existent user $u
+		echo Please remove user $u from USERLIST
+		exit -1
+	fi
+done
 
 # The "scontrol show hostnames" command is used to expand NodeList expressions
 for node in `$SCONTROL show hostnames $*`
