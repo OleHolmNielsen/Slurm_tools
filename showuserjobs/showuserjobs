@@ -183,7 +183,7 @@ BEGIN {
 	# Output line format string
 	fmt = "%-*.*s %4d %5d   %4d %5d  %-8s  %s\n"
 	# Future: Piping output to a sorting command 
-	# sorting = "LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
+	# sorting = "env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
 
 	for (u in userlist) {
 		if (groupselect > 0 && gname !~ usergroup[u]) continue # Select specified groupname only
