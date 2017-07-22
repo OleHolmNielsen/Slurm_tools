@@ -104,6 +104,7 @@ BEGIN {
 	fmt="%-*.*s %4.4s %5.5s   %4.4s %5.5s  %-8.8s  %s\n"
 	line="============================="
 	print " "
+	printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
 	printf (fmt, maxlength, maxlength,
 		"Username", "Jobs", "CPUs", "Jobs", "CPUs", "Group", "Further info")
 	printf (fmt, maxlength, maxlength,
