@@ -1,0 +1,344 @@
+#!/bin/sh
+
+# Notify about or Kill a badly behaving job and send information mail to the user.
+# Author: Ole Holm Nielsen, Ole.H.Nielsen@fysik.dtu.dk
+
+# Command usage:
+USAGE="Usage: $0 '[-k]' job-id"
+
+# Location of locally developed commands needed
+PSJOB=/usr/local/bin/psjob
+# Mail program
+MAIL=/usr/bin/mailx
+# Syslog logfile
+LOGFILE=/var/log/notifybadjob.log
+
+# Name of this cluster
+CLUSTERNAME=niflheim
+# Mail to the system managers
+ADMINMAIL=support@mail.fysik.dtu.dk
+# Mail to the superuser
+SUPERUSERMAIL=root@localhost
+# Informative web page:
+INFOURL=https://wiki.fysik.dtu.dk/niflheim/Niflheim7_Getting_started
+# Whether to kill job or not
+action='Notify about'
+killjob=0
+# Temporary files
+MESSAGE=/tmp/jobstatus.$$ 
+QSTATMSGS=/tmp/qstatmsgs.$$ 
+QSTATERRS=/tmp/qstaterrs.$$ 
+# Catch signals
+trap "rm -f $MESSAGE $QSTATMSGS $QSTATERRS; exit 2" 1 2 3 14 15 19
+
+# Process command arguments
+while getopts "k" options; do
+	case $options in
+		k ) killjob=1
+			shift;;
+		* ) echo $USAGE
+			exit 1;;
+	esac
+done
+
+# Get the jobid as the arguments
+JOBLIST=$*
+if test -z "$JOBLIST"
+then
+	echo $USAGE
+	exit 1
+fi
+
+#
+# Inquire about the reason for notifying/killing this job
+#
+reason01="Your job is doing no useful work and is essentially dead."
+reason02="Your job has grossly exceeded the available physical RAM memory and is very inefficient."
+reason03="Your job has grossly exceeded the physical RAM memory available per CPU core."
+reason04="Your job is running too many processes/threads and is overloading the CPU(s)."
+reason05="Your job is using more CPU cores than your job has requested."
+reason06="Your job is not using all of the CPU cores that you have requested."
+reason07="Your job is not laid out correctly for xeon8 multi-CPU nodes - you MUST use the xeon8 partition correctly."
+reason08="Your job is not laid out correctly for xeon16 multi-CPU nodes - you MUST use the xeon16 partition correctly."
+reason09="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly."
+reason10="Your job is unfortunately running on a node that has a hardware or electrical error."
+reason11="Error in the input file caused job to fail."
+reason12="Job failed - please examine the output file."
+reason13="SCF convergence problems - please examine the output file."
+reason14="Your job seems to be very inefficient with a low CPU utilization."
+reason15="Your job is doing too heavy I/O on fileserver or local disk."
+reason16="Most likely you did not use gpaw-qsub tool. Your job is not using all of the CPU cores that you have requested."
+reason17="Your GPAW job has grossly exceeded the available physical RAM memory and is very inefficient. Please test the memory requirement as described at https://wiki.fysik.dtu.dk/gpaw/documentation/parallel_runs/parallel_runs.html"
+reason18="Job failed due to exceeded disk quota - please provide $ADMINMAIL with an estimation of your necessary disk space."
+reason19="Your job requests resources that cannot be satisfied or do not exist."
+reason20="Please ask $ADMINMAIL for the reason."
+ANS=-1
+while test $ANS -le 0
+do
+	echo
+	echo Please select one of the following reasons why you want to $action this job:
+	echo "  1. $reason01"
+	echo "  2. $reason02"
+	echo "  3. $reason03"
+	echo "  4. $reason04"
+	echo "  5. $reason05"
+	echo "  6. $reason06"
+	echo "  7. $reason07"
+	echo "  8. $reason08"
+	echo "  9. $reason09"
+	echo " 10. $reason10"
+	echo " 11. $reason11"
+	echo " 12. $reason12"
+	echo " 13. $reason13"
+	echo " 14. $reason14"
+	echo " 15. $reason15"
+	echo " 16. $reason16"
+	echo " 17. $reason17"
+	echo " 18. $reason18"
+	echo " 19. $reason19"
+	echo " 20. $reason20"
+	read -p "Please enter reason (no default): " ANS
+	case $ANS in
+		1) action_reason=$reason01;;
+		2) action_reason=$reason02;;
+		3) action_reason=$reason03;;
+		4) action_reason=$reason04;;
+		5) action_reason=$reason05;;
+		6) action_reason=$reason06;;
+		7) action_reason=$reason07;;
+		8) action_reason=$reason08;;
+		9) action_reason=$reason09;;
+	       10) action_reason=$reason10;;
+	       11) action_reason=$reason11;;
+	       12) action_reason=$reason12;;
+	       13) action_reason=$reason13;;
+	       14) action_reason=$reason14;;
+	       15) action_reason=$reason15;;
+	       16) action_reason=$reason16;;
+	       17) action_reason=$reason17;;
+	       18) action_reason=$reason18;;
+	       19) action_reason=$reason19;;
+	       20) action_reason=$reason20;;
+		*) ANS=-1;;
+	esac
+done
+echo Reason: $action_reason
+echo
+
+#
+# Big loop over jobs
+#
+for JOB in $JOBLIST
+do
+
+#
+# Define strings to be used in the report
+#
+if test $killjob -eq 1
+then
+	action='Kill'
+	action_done='killed'
+	action_print="Your $CLUSTERNAME job id $JOB has been ${action_done} by the superuser."
+else
+	action='Notify about'
+	action_done='investigated'
+	action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME job id $JOB may have to be killed."
+fi
+
+echo -n Get job information...
+scontrol show job $JOB >$QSTATMSGS 2>$QSTATERRS
+# Check for errors from qstat
+if test -s $QSTATERRS
+then
+	echo
+	cat $QSTATERRS
+	exit 1
+fi
+
+# Get user E-mail address and name
+USERID=`scontrol -o show job $JOB | awk '{split($3, a, "[=(]"); print a[2]}'`
+# USERMAIL=`grep Job_Owner $QSTATMSGS | awk '{print $3}'`
+USERMAIL=$USERID
+FULLNAME=`getent passwd | grep "^$USERID:" | awk -F: '{print $5}'`
+# Maybe the user wants to notify this address also
+# NOTIFYMAIL=`grep Mail_Users $QSTATMSGS | awk '{print $3}'`
+NOTIFYMAIL=""
+
+cat <<EOF
+
+Job $JOB belongs to user $USERID, full name is $FULLNAME
+User groups: `groups $USERID`
+Action: ${action} a badly behaving job id $JOB
+EOF
+
+#
+# Initialize message to the user
+#
+cat <<EOF > $MESSAGE
+
+*** WARNING ***
+
+${action_print}
+
+Reason: ${action_reason}
+
+If you have any questions about this action, please contact ${ADMINMAIL}. 
+
+You may want to consult the Niflheim Wiki page about batch job information:
+$INFOURL
+
+In the following we display various pieces of information about your badly behaving batch job.
+
+Slurm batch system information about job id $JOB:
+---------------------------------------------------
+
+EOF
+
+# Copy the qstat info from Torque
+cat $QSTATMSGS >> $MESSAGE
+
+# Is the job still in a queued state ?
+JOBSTATE=`grep JobState= $QSTATMSGS | awk '{print $1}'`
+echo NOTE: This job has a state of $JOBSTATE
+if test "$JOBSTATE" = "JobState=PENDING"
+then
+	JOBQUEUED=1
+else
+	JOBQUEUED=0
+fi
+
+# Only print job information for running jobs
+if test "$JOBQUEUED" = 0
+then
+	# Memory and CPU usage
+	# cat <<EOF >> $MESSAGE
+	cat <<EOF >> /dev/null
+
+RAM-memory usage and CPU-load usage of your job on the job nodes.
+-----------------------------------------------------------------
+
+Please look at these usage numbers to determine why the job was behaving badly
+(note especially items marked by *): 
+
+  node state  load    pmem ncpu   mem   resi usrs tasks  jobids/users 
+EOF
+
+	# Print job memory and CPU usage by pestat (local command)
+	# echo -n RAM and CPU usage...
+	# $PESTAT | grep $JOB >> $MESSAGE
+	# cat <<EOF >> $MESSAGE
+	cat <<EOF >> /dev/null
+
+Explanation of some columns in the usage list:
+node: The compute node running your job.
+load: The CPU load average (should not exceed the number of physical CPUs).
+pmem: Physical memory (MB) in the node.
+ncpu: Number of physical CPUs in the node.
+resi: Resident memory (MB) in use (should not exceed the physical memory pmem by too much).
+EOF
+
+	# Information about the job processes on the nodes
+	cat <<EOF >> $MESSAGE
+
+Process information on the nodes of your job.
+---------------------------------------------
+
+Please look at these processes to determine why the job was behaving badly: 
+
+EOF
+
+	# Print job processes by sshjob (local command)
+	echo -n Process status...
+	$PSJOB $JOB 2>&1 >> $MESSAGE
+fi
+
+# Amount of job wallclock time 
+#WALLTIME=`grep resources_used.walltime $QSTATMSGS | awk '{print $3}'`
+#if test -z "$WALLTIME"
+#then
+#	WALLTIME="Walltime:unknown"
+#fi
+# List of nodes used
+NODELIST=`grep NodeList= $QSTATMSGS | awk -F= '{print $2}'`
+if test -z "$NODELIST"
+then
+	NODELIST="Nodes:unknown"
+fi
+
+# Working directory
+echo -n Listing files...
+WORKDIR=`grep WorkDir= $QSTATMSGS | awk -F= '{print $2}'`
+if test -z "$WORKDIR"
+then
+	WORKDIR="WORKDIR:unknown"
+else
+	# Check how many files in workdir
+	NUMFILESINDIR=`ls -f $WORKDIR | wc -l`
+	if test $NUMFILESINDIR -lt 1000
+	then
+		# If < 1000 files then list them
+		MAXFILES=20
+		cat <<EOF >> $MESSAGE
+
+Information about files in job working directory
+------------------------------------------------
+
+Job $JOB working directory $WORKDIR
+This directory contains $NUMFILESINDIR files in total.
+Newest files in this directory are (max. $MAXFILES files):
+
+EOF
+		ls -lt $WORKDIR | head -$MAXFILES >> $MESSAGE
+	else
+		# If > 1000 files then issue a warning
+		cat <<EOF >> $MESSAGE
+
+Information about files in job working directory
+------------------------------------------------
+
+Job $JOB working directory $WORKDIR
+This directory contains $NUMFILESINDIR files in total.
+NOTICE: This is a very large number of files in a single directory,
+and this may possibly cause slow job behavior.
+
+EOF
+	fi
+fi
+
+echo Done.
+
+#
+# Delete the job
+#
+
+if [ "${killjob}" = "1" ]; then
+  echo Now deleting job $JOB
+  echo Reason: "$action_reason"
+  scancel $JOB 
+
+  #
+  # Write statistics to the Syslog logfile
+  #
+  if test ! -f $LOGFILE
+  then
+	echo Creating logfile $LOGFILE
+	touch $LOGFILE
+  fi
+  # Time of killing the job
+  TIMESTAMP=`date +"%Y %b %e %T"`
+  # Append a logfile entry
+  echo Adding entry to logfile $LOGFILE
+  echo $TIMESTAMP $JOB $USERID $WORKDIR $WALLTIME $NODELIST ${action_reason} >> $LOGFILE
+
+fi
+
+# Send mail to the user
+echo Sending mail to user=$USERMAIL full name: $FULLNAME
+# (echo Dear $FULLNAME ; cat $MESSAGE) | $MAIL -s "WARNING: ${action_print}" -b $SUPERUSERMAIL $USERMAIL $NOTIFYMAIL
+(echo Dear $FULLNAME ; cat $MESSAGE) | $MAIL -s "WARNING: ${action_print}" -b $SUPERUSERMAIL $USERMAIL $NOTIFYMAIL
+
+# End of loop over jobids
+done
+
+# Clean up
+rm -f $MESSAGE $QSTATMSGS $QSTATERRS
