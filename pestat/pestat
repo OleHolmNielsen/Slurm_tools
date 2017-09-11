@@ -131,7 +131,13 @@ while getopts "p:u:g:q:s:n:j:w:m:M:CchVFf1E" options; do
 			fi
 			;;
 		g )	export groupname="$OPTARG"
-			echo Print only users in UNIX group $OPTARG
+			if test "`getent group $OPTARG`"
+			then
+				echo Print only users in UNIX group $OPTARG
+			else
+				echo Error selecting UNIX group $OPTARG
+				exit -1
+			fi
 			;;
 		q )	export qoslist=$OPTARG
 			if test "`$prefix/sacctmgr -n -p show qos $qoslist`"
