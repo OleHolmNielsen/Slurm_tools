@@ -189,7 +189,7 @@ while getopts "p:u:g:q:s:n:j:w:m:M:CchVFf1E" options; do
 			echo "Only 1 line per node (Unique nodes in multiple partitions are printed once only)"
 			;;
 		E )	export printjobendtime=1
-			echo "Job EndTime is printer after each jobid/user"
+			echo "Job EndTime is printed after each jobid/user"
 			;;
 		C )	export colors=1
 			echo Force colors ON in output
