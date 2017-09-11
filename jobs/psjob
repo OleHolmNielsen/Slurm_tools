@@ -23,6 +23,7 @@ then
 fi
 
 # System users excluded from the list
+# The "68" is haldaemon on CentOS6 as printed by ps.
 USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
 
 # Make a deselect-list consisting only of existent users
