@@ -11,7 +11,7 @@ Usage
 ```
 Usage: pestat [-p partition(s)] [-u username] [-g groupname]
 	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist]
-	[-f | -F | -m free_mem | -M free_mem ] [-1] [-C/-c] [-V] [-h]
+	[-f | -F | -m free_mem | -M free_mem ] [-1] [-E] [-C/-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
@@ -24,7 +24,8 @@ where:
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
-	-1 Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-1: Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-E: Job EndTime is printed after each jobid/user
 	-C: Color output is forced ON
 	-c: Color output is forced OFF
 	-h: Print this help information
