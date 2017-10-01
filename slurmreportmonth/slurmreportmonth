@@ -20,6 +20,8 @@ REPORT_PREFIX=/tmp/Slurm_report
 FLAGS="-t hourper --tres=cpu,gpu"
 TYPE="AccountUtilizationByUser"
 OPTIONS="tree"
+# Change the date/time format in report header for readibility (formats in "man strftime")
+export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 
 # Command usage:
 function usage()
