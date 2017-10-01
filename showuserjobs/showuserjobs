@@ -68,8 +68,11 @@ fi
 
 echo Batch job status at `date`
 
-# Count the nodes and CPUs
+#
+# Print a nodes state summary
+#
 
+# Count the nodes and CPUs:
 # Output: Nodename cpus partition state
 sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 {
@@ -90,6 +93,7 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 	print " "
 	print "Node states summary:"
 	format = "%-7s %5d nodes (%d CPUs)\n"
+	asort(nodestates)	# Sort nodestates so that "alloc" comes first
 	for (i in nodestates) {
 		s =  nodestates[i]
 		printf(format, s, nodecount[s],  cpucount[s])
