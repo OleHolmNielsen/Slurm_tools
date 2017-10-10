@@ -23,13 +23,13 @@ Slurm factors including:
 fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefQOS
 ```
 
-# Syntax of this file is 3 items separated by ":" like:
+Syntax of this file is 3 items separated by ```:``` like:
 
 ```
 [DEFAULT|UNIX_group|username]:[Type]:value
 ```
 
-Type: fairshare, GrpTRES, GrpTRESRunMins etc.
+Type examples: ```fairshare, GrpTRES, GrpTRESRunMins``` etc.
 
 Examples:
 
