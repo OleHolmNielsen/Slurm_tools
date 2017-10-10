@@ -37,7 +37,7 @@ then
 	echo "### WARNING : No account settings configuration file $ACCOUNT_SETTINGS_CONF"
 fi
 
-# Output a header
+# Print a header
 cat <<EOF
 ###
 ### Create, update or delete Slurm users in the database from passwd file $PASSWD
@@ -70,7 +70,6 @@ BEGIN {
 	# Define index values of the settings[] array
 	new = 1
 	current = 2
-	# group = 3
 
 	# Get the list of UNIX group names from the system by getent(1)
 	# Set a new Field Separator:
@@ -167,7 +166,7 @@ $3 >= MINUID {
 	}
 	# Check for existence of the user home directory, skip user if absent:
 	if (system("test -d \""HOMEDIR"\"") != 0) {
-		# Debug: printf("### Skipping user %s, homedir %s does not exist\n", u, HOMEDIR)
+		printf("### Skipping user %s, homedir %s does not exist\n", u, HOMEDIR)
 		next
 	}
 	userexists[u] = u	# Record existing users
@@ -218,6 +217,5 @@ END {
 		if (userexists[u] != "") continue
 		printf("### Slurm account %s has no user in the passwd file\n", u)
 		print SACCTMGR " -i delete user " u
-		# printf("%s -i delete user %s\n", SACCTMGR, u)
 	}
 }'
