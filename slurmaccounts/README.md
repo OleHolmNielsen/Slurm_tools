@@ -22,8 +22,7 @@ export MINUID=1002
 Configuration file
 ------------------
 
-The file ```account_settings.conf``` defines a hierarchical tree of Slurm accounts and their
-Slurm factors including:
+The file ```/etc/slurm/account_settings.conf``` defines a hierarchical tree of Slurm accounts and their Slurm factors including:
 
 ```
 fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefQOS
@@ -35,12 +34,13 @@ The syntax of this file is 3 items separated by ```:``` like:
 [DEFAULT|UNIX_group|username]:[Type]:value
 ```
 
-Type examples: ```fairshare, GrpTRES, GrpTRESRunMins``` etc.
+The example file in this directory should be edited and copied to ```/etc/slurm/account_settings.conf```.
 
 Examples:
 
 ```
-# The default limits
+# The default fairshare and limits
+DEFAULT:fairshare:1
 DEFAULT:GrpTRES:cpu=1200
 DEFAULT:GrpTRESRunMins:cpu=3000000
 
