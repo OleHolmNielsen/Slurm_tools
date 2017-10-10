@@ -6,7 +6,13 @@ Manage Slurm accounts:
 * Create, update or delete Slurm user accounts from the passwd file.
 * Update the Slurm fairshare and limits configurations.
 
-Configure this value in the script:
+Usage:
+
+```
+slurmaccounts
+```
+
+Configure this value in the script in order to skip system accounts:
 
 ```
 # Skip users with UID < MINUID
@@ -23,7 +29,7 @@ Slurm factors including:
 fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefQOS
 ```
 
-Syntax of this file is 3 items separated by ```:``` like:
+The syntax of this file is 3 items separated by ```:``` like:
 
 ```
 [DEFAULT|UNIX_group|username]:[Type]:value
