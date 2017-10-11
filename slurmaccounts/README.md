@@ -4,7 +4,7 @@ Slurm account factors updating tool
 Manage Slurm accounts:
 
 * Create, update or delete Slurm user accounts from the passwd file.
-* Update the Slurm fairshare and limits configurations.
+* Update the user fairshare, QOS and limits configurations.
 
 Usage:
 
@@ -39,10 +39,11 @@ The example file in this directory should be edited and copied to ```/etc/slurm/
 Examples:
 
 ```
-# The default fairshare and limits
+# The default fairshare, QOS and limits
 DEFAULT:fairshare:1
 DEFAULT:GrpTRES:cpu=1200
 DEFAULT:GrpTRESRunMins:cpu=3000000
+DEFAULT:QOS:normal
 
 camdfac:fairshare:5
 camdvip:fairshare:3
