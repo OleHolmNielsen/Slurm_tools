@@ -55,6 +55,7 @@ BEGIN {
 	MINUID = ENVIRON["MINUID"]
 	ACCOUNT_SETTINGS_CONF = ENVIRON["ACCOUNT_SETTINGS_CONF"]
 	SACCTMGR = ENVIRON["SACCTMGR"]
+	debug = 0	# Debugging flag
 
 	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
 
@@ -64,7 +65,7 @@ BEGIN {
 	defaults["GrpTRESRunMins"]	= ENVIRON["GrpTRESRunMins"]
 
 	# Create an array of Slurm factors
-	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefQOS"
+	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS"
 	split(string, slurm_factors, " ")
 
 	# Define index values of the settings[] array
@@ -91,13 +92,13 @@ BEGIN {
 	FS="|"
 
 	while ((command | getline) > 0) {
-		# Debug: print "Got account " $0
+		if (debug > 0) print "Got account " $0
 		a = $2	# account
 		u = $3	# user
 		if (a == "root") continue	# Skip the root account
 		if (u == "") {
 			if (groupname[a] == "") {	# Non-existent group
-				# Debug: print "### NOTICE: UNIX group " a " does not exist"
+				if (debug > 0) print "### NOTICE: UNIX group " a " does not exist"
 				continue	# Skip it
 			}
 			item = a	# Not a user account: UNIX group 
@@ -116,7 +117,7 @@ BEGIN {
 		setting[item][current]["MaxTRESMins"]	= $16
 		setting[item][current]["GrpTRESRunMins"]= tolower($19)	# cpu= must be in lowercase
 		setting[item][current]["QOS"]		= toupper($17)
-		setting[item][current]["DefQOS"]	= toupper($18)
+		setting[item][current]["DefaultQOS"]	= toupper($18)
 	}
 	close (command)
 
@@ -158,7 +159,7 @@ $3 >= MINUID {
 	SHELL		= $7
 	if (SHELL == "/sbin/nologin") next	# Skip non-login users
 	g = unixgroup[GID]	# UNIX group
-	# Debug: print "User " u " group " g 
+	if (debug > 0) print "User " u " group " g 
 	# Check the user UNIX account
 	if (g == "") {
 		printf("### ERROR: User %s GID %d has no GROUPNAME\n", u, GID)
@@ -166,7 +167,7 @@ $3 >= MINUID {
 	}
 	# Check for existence of the user home directory, skip user if absent:
 	if (system("test -d \""HOMEDIR"\"") != 0) {
-		printf("### Skipping user %s, homedir %s does not exist\n", u, HOMEDIR)
+		if (debug > 0) printf("### Skipping user %s, homedir %s does not exist\n", u, HOMEDIR)
 		next
 	}
 	userexists[u] = u	# Record existing users
@@ -174,7 +175,7 @@ $3 >= MINUID {
 	# Gather arguments for the sacctmgr command
 
 	COMMAND = ""		# We are going to set a number of variables below
-	# Debug: printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
+	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (useraccount[u] != g) {
 		printf("### NOTICE: User %s in group %s has default account=%s\n", u, g, useraccount[u])
 		COMMAND = COMMAND " defaultaccount=" g
@@ -196,7 +197,7 @@ $3 >= MINUID {
 	}
 	# Compare new and current settings, print out any changes
 	for (i in setting[u][new]) {
-		# Debug: print "# User " u " current " i "=" setting[u][current][i] " new " setting[u][new][i]
+		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " new " setting[u][new][i]
 		if (setting[u][current][i] != setting[u][new][i]) {
 			COMMAND = COMMAND " " i "=" setting[u][new][i]
 		}
