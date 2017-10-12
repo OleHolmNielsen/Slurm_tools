@@ -74,8 +74,6 @@ You may configure this value in the script in order to skip system accounts:
 export MINUID=1002
 ```
 
-Also the variable ```user_settings_conf=/etc/slurm/user_settings.conf``` may be changed in the script.
-
 The file ```/etc/slurm/user_settings.conf``` defines users' Slurm factors including:
 
 ```
@@ -88,7 +86,7 @@ The syntax of this file is 3 items separated by ```:``` like:
 [DEFAULT|UNIX_group|username]:[Type]:value
 ```
 
-The example file in this directory should be edited and copied to ```/etc/slurm/account_settings.conf```.
+The example file in this directory should be edited and copied to ```/etc/slurm/user_settings.conf```.
 
 Examples:
 
