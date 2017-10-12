@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# Create accounts in the Slurm database 
+# Note: Organization is set equal to Parent
+
+ACCOUNTS_CONF=/etc/slurm/accounts.conf
+# Syntax of the file ACCOUNTS_CONF is:
+# account:parent:FairShare:Description
+
+if test ! -f $ACCOUNTS_CONF
+then
+	echo Error: No such file $ACCOUNTS_CONF
+	exit 1
+fi
+
+# Print a header
+cat <<EOF
+###
+### Update Slurm accounts from the accounts configuration file $ACCOUNTS_CONF
+###
+EOF
+
+cat $ACCOUNTS_CONF | awk '
+BEGIN {
+	# Read list of existing accounts (parseable output)
+	command="/usr/bin/sacctmgr -snorp show accounts"
+	# sacctmgr -snorp output is:
+	# Account|Descr|Org|Cluster|Par Name|User|Share|GrpJobs|GrpNodes|GrpCPUs|GrpMem|GrpSubmit|GrpWall|GrpCPUMins|MaxJobs|MaxNodes|MaxCPUs|MaxSubmit|MaxWall|MaxCPUMins|QOS|Def QOS|
+	FS="|"	# Set the Field Separatator to | for the account list
+	while ((command | getline) > 0) {
+		if ($6 != "") continue		# Only modify non-user accounts
+		if ($1 == "root") continue	# Do not modify the root account
+
+		account[$1]	= $1
+		desc[$1]	= $2
+		parent[$1]	= $5
+		user[$1]	= $6
+		fairshare[$1]	= $7
+		# Debug: print "Got account ", $0
+	}
+	close(command)
+	FS=":"	# Now set the Field Separatator to : for the input file
+}
+{
+	if (index($1,"#") >= 1) next	# Skip lines with # comments
+	if (NF != 4) next		# Skip lines which do not have 4 fields (incl. empty lines)
+	ACC=tolower($1)
+	PARENT=tolower($2)
+	FAIRSHARE=$3
+	DESC=tolower($4)
+	account_exists[ACC] = ACC	# Record that this account is defined in ACCOUNTS_CONF
+	if (account[ACC] == "") {
+		# Create a new account
+		account[ACC] = ACC
+		COMMAND=sprintf("sacctmgr -i add account %s Description=\"%s\"", ACC, DESC)
+		if (PARENT != "")	# Set Organization=Parent
+			COMMAND = COMMAND sprintf(" Organization=%s parent=%s", PARENT, PARENT)
+		if (FAIRSHARE != "") # Account FairShare
+			COMMAND = COMMAND sprintf(" fairshare=%s", FAIRSHARE)
+		print COMMAND
+	} else {
+		# Existing account - potentially update it
+		COMMAND=""
+		if (PARENT != "" && (PARENT != parent[ACC] || DESC != desc[ACC]))	# Skip in case parent=""
+			COMMAND = COMMAND sprintf(" set Organization=%s parent=%s Description=\"%s\"", PARENT, PARENT, DESC)
+		if (FAIRSHARE != "" && FAIRSHARE != fairshare[ACC])	# Skip in case fairshare=""
+			COMMAND = COMMAND sprintf(" set fairshare=%s", FAIRSHARE)
+		if (COMMAND != "")
+			print "sacctmgr -i modify account where name=" ACC COMMAND
+	}
+} END {
+	# Check for accounts not present in the ACCOUNTS_CONF file
+	for (a in account) {
+		if (account_exists[a] != "") continue
+		print "### Slurm account " a " does not exist in the accounts configuration file"
+		print "sacctmgr -i delete account " a
+	}
+}'
