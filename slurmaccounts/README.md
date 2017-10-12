@@ -51,8 +51,8 @@ slurmusersettings tool
 
 Manage Slurm *user* fairshare, QOS and limits:
 
-* Create, update or delete Slurm user accounts from the passwd file.
-* Update the fairshare, QOS and limits configurations.
+* Create, update or delete Slurm users as defines in the system passwd database.
+* Update users' fairshare, QOS and limits configurations.
 
 Usage:
 
