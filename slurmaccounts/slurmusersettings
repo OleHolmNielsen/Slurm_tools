@@ -1,0 +1,217 @@
+#!/bin/sh
+
+# Manage Slurm user fairshare, QOS and limits:
+# Create, update or delete Slurm user accounts from the passwd file.
+# Update the fairshare, QOS and limits configurations.
+
+# Skip users with UID < MINUID
+export MINUID=1002
+
+# FairShare configuration:
+# See https://slurm.schedmd.com/fair_tree.html
+# and https://slurm.schedmd.com/priority_multifactor.html
+# User fairshares may be defined from several sources prioritized as follows:
+# 1. UNIX-group fairshares defined in the user_settings_conf file
+# 2. Inherited from Slurm (non-user) accounts.
+# 3. A default value set by fairshare.
+# Set a default user Fairshare:
+# export fairshare="parent"
+export fairshare="2"
+
+# Resource limits configuration 
+# See https://slurm.schedmd.com/resource_limits.html
+# Our global default user TRES parameters:
+export GrpTRES="cpu=1500"
+export GrpTRESRunMins="cpu=3000000"
+# If you want to clear these values use -1:
+# export GrpTRES="cpu=-1"
+# export GrpTRESRunMins="cpu=-1"
+
+# Slurm commands
+export sacctmgr=/usr/bin/sacctmgr
+
+# User settings configuration file:
+export user_settings_conf=/etc/slurm/user_settings.conf
+if test ! -f $user_settings_conf
+then
+	echo "### WARNING : No account settings configuration file $user_settings_conf"
+fi
+
+# Print a header
+cat <<EOF
+###
+### Create, update or delete Slurm users in the database from passwd file $PASSWD
+### Users are created under the same account name as their Groupname (GID).
+### Minimum UID considered is $MINUID.
+### Account settings configuration file for UNIX groups is 
+### `ls -l $user_settings_conf`
+###
+EOF
+
+# Process all users in the system passwd database
+
+getent passwd | awk -F: '
+BEGIN {
+	MINUID = ENVIRON["MINUID"]
+	user_settings_conf = ENVIRON["user_settings_conf"]
+	sacctmgr = ENVIRON["sacctmgr"]
+	debug = 0	# Debugging flag
+
+	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
+
+	# Default settings defined in this script above (fallback values)
+	defaults["fairshare"]		= ENVIRON["fairshare"]
+	defaults["GrpTRES"]		= ENVIRON["GrpTRES"]
+	defaults["GrpTRESRunMins"]	= ENVIRON["GrpTRESRunMins"]
+
+	# Create an array of Slurm factors
+	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS"
+	split(string, slurm_factors, " ")
+
+	# Define index values of the setting[] array
+	config = 1; current = 2
+
+	# Get the list of UNIX group names from the system by getent(1)
+	FS=":"	# Set the Field Separator
+	command = "getent group"
+	while ((command | getline) > 0) {
+		split($0,b,":")	 # Split group line into fields
+		b[1] = tolower(b[1])	# Make it lowercase
+		unixgroup[b[3]] = b[1]	# Group name b[1] of this GID (b[3])
+		groupname[b[1]] = b[1]	# Group name b[1]
+	}
+	close (command)
+
+	# Read list of existing accounts (parseable output)
+	command = sacctmgr " -snorp show associations"
+	# Header of sacctmgr -snorp show associations:
+	# Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
+	FS="|"	# Set the Field Separator to | for the parseable account list
+
+	while ((command | getline) > 0) {
+		if (debug > 0) print "Got account " $0
+		a = $2	# account
+		u = $3	# user
+		if (a == "root") continue	# Skip the root account
+		if (u == "") {
+			if (groupname[a] == "") {	# Non-existent group
+				if (debug > 0) print "### NOTICE: UNIX group " a " does not exist"
+				continue	# Skip it
+			}
+			item = a	# Not a user account: UNIX group 
+			# accountfairshare[a] = $5
+		} else {
+			item = u	# User account
+			useraccount[u]	= a
+			user[u]		= u
+		}
+		# Record the user/group settings
+		setting[item][current]["fairshare"]	= $5
+		setting[item][current]["GrpTRES"]	= tolower($7)	# cpu= must be in lowercase
+		setting[item][current]["GrpTRESMins"]	= $10
+		setting[item][current]["MaxTRES"]	= $12
+		setting[item][current]["MaxTRESPerNode"]= $13
+		setting[item][current]["MaxTRESMins"]	= $16
+		setting[item][current]["GrpTRESRunMins"]= tolower($19)	# cpu= must be in lowercase
+		setting[item][current]["QOS"]		= toupper($17)
+		setting[item][current]["DefaultQOS"]	= toupper($18)
+	}
+	close (command)
+
+	#
+	# Read the account settings configuration file
+	#
+	FS=":"	# Set the Field Separator
+	# Syntax of this file is 3 items separated by ":" like:
+	# [DEFAULT|UNIX_group|username]:[Type]:value
+	# Type: fairshare, GrpTRES, GrpTRESRunMins etc.
+
+	while ((getline < user_settings_conf) > 0) {
+		if (index($1,"#") >= 1) continue	# Skip lines with # comments
+		if (NF != 3) continue			# Skip lines which do not have 3 fields (incl. empty lines)
+		for (f in slurm_factors) if (tolower($2) == tolower(f)) $2 = f	# Force correct spelling of $2
+		if ($1 == "DEFAULT") {			# Default value
+			defaults[$2] = $3
+		} else if (groupname[$1] == "") {	# Unknown UNIX group: Assume that $1 is a username
+			if (useraccount[$1] == "") print "### NOTICE: Slurm account for group/user " $1 " is unknown"
+			setting[$1][config][$2] = $3
+		} else {				# UNIX group value
+			setting[$1][config][$2] = $3
+		}
+	}
+	close (user_settings_conf)
+}
+
+#
+# Process password file entries
+#
+$3 < MINUID { if (debug > 0) print "Skip user " $1 " with UID=" $3 }	# Skip users with UID < MINUID
+$3 >= MINUID {
+	u		= $1
+	GID		= $4
+	FULLNAME	= $5
+	HOMEDIR		= $6
+	SHELL		= $7
+	if (SHELL == "/sbin/nologin") next	# Skip non-login users
+	g = unixgroup[GID]	# UNIX group
+	if (debug > 0) print "User " u " group " g 
+	# Check the user UNIX account
+	if (g == "") {
+		printf("### ERROR: User %s GID %d has no GROUPNAME\n", u, GID)
+		next
+	}
+	# Check for existence of the user home directory, skip user if absent:
+	if (system("test -d \""HOMEDIR"\"") != 0) {
+		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
+		next
+	}
+	userexists[u] = u	# Record existing users
+
+	# Gather arguments for the sacctmgr command
+	COMMAND = ""		# We are going to set a number of variables below
+
+	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
+	if (useraccount[u] != g) {
+		printf("### NOTICE: User %s in group %s has default account=%s\n", u, g, useraccount[u])
+		COMMAND = COMMAND " defaultaccount=" g
+	}
+
+	# Loop over the setting[] array and configure any changes
+
+	# If user setting not explicitly given, then use the group setting
+	if (isarray(setting[g][config])) {
+		for (i in setting[g][config]) {
+			if (setting[u][config][i] == "") setting[u][config][i] = setting[g][config][i]
+		}
+	} else {
+		print "### NOTICE: Group " g " has no settings, using default values for user " u
+	}
+	# If user setting not explicitly given, then use the default setting
+	for (i in defaults) {
+		if (setting[u][config][i] == "") setting[u][config][i] = defaults[i]
+	}
+	# Compare config and current settings, print out any changes
+	for (i in setting[u][config]) {
+		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
+		if (setting[u][current][i] != setting[u][config][i]) {
+			COMMAND = COMMAND " " i "=" setting[u][config][i]
+		}
+	}
+
+	if (user[u] != "") {
+		# Modify existing user
+		if (COMMAND != "")
+			print sacctmgr " -i modify user where name=" u " set" COMMAND
+	} else {
+		# New user: command for creating this account
+		print sacctmgr " -i create user name=" u COMMAND
+	}
+}
+END {
+	# Check for accounts belonging to non-existent users
+	for (u in user) {
+		if (userexists[u] != "") continue
+		printf("### Slurm account %s has no user in the passwd file\n", u)
+		print sacctmgr " -i delete user " u
+	}
+}'
