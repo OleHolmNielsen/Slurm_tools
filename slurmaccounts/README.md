@@ -14,12 +14,12 @@ slurmusersettings
 
 You may configure this value in the script in order to skip system accounts:
 
-Also the variable ```user_settings_conf=/etc/slurm/user_settings.conf``` may be changed.
-
 ```
 # Skip users with UID < MINUID
 export MINUID=1002
 ```
+
+Also the variable ```user_settings_conf=/etc/slurm/user_settings.conf``` may be changed.
 
 Configuration file
 ------------------
