@@ -51,7 +51,7 @@ slurmusersettings tool
 
 Manage Slurm *user* fairshare, QOS and limits:
 
-* Create, update or delete Slurm users as defines in the system passwd database.
+* Create, update or delete Slurm users as defined in the system passwd database.
 * Update users' fairshare, QOS and limits configurations.
 
 Usage:
@@ -99,11 +99,13 @@ DEFAULT:GrpTRES:cpu=1200
 DEFAULT:GrpTRESRunMins:cpu=3000000
 DEFAULT:QOS:normal
 
+# UNIX group defaults
 camdfac:fairshare:5
 camdvip:fairshare:3
 camdstud:fairshare:2
 
+# User values that differ from the defaults
 user01:fairshare:10
 user02:fairshare:1
-user03:QOS:high
+user03:QOS:normal,high
 ```
