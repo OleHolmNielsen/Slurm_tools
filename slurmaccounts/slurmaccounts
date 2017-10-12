@@ -28,7 +28,7 @@ export GrpTRESRunMins="cpu=3000000"
 # export GrpTRESRunMins="cpu=-1"
 
 # Slurm commands
-export SACCTMGR=/usr/bin/sacctmgr
+export sacctmgr=/usr/bin/sacctmgr
 
 # Account settings configuration file:
 export ACCOUNT_SETTINGS_CONF=/etc/slurm/account_settings.conf
@@ -54,7 +54,7 @@ getent passwd | awk -F: '
 BEGIN {
 	MINUID = ENVIRON["MINUID"]
 	ACCOUNT_SETTINGS_CONF = ENVIRON["ACCOUNT_SETTINGS_CONF"]
-	SACCTMGR = ENVIRON["SACCTMGR"]
+	sacctmgr = ENVIRON["sacctmgr"]
 	debug = 0	# Debugging flag
 
 	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
@@ -68,13 +68,11 @@ BEGIN {
 	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS"
 	split(string, slurm_factors, " ")
 
-	# Define index values of the settings[] array
-	new = 1
-	current = 2
+	# Define index values of the setting[] array
+	config = 1; current = 2
 
 	# Get the list of UNIX group names from the system by getent(1)
-	# Set a new Field Separator:
-	FS=":"
+	FS=":"	# Set the Field Separator
 	command = "getent group"
 	while ((command | getline) > 0) {
 		split($0,b,":")	 # Split group line into fields
@@ -85,11 +83,10 @@ BEGIN {
 	close (command)
 
 	# Read list of existing accounts (parseable output)
-	command = SACCTMGR " -snorp show associations"
+	command = sacctmgr " -snorp show associations"
 	# Header of sacctmgr -snorp show associations:
 	# Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
-	# Set the Field Separator to | for the parseable account list
-	FS="|"
+	FS="|"	# Set the Field Separator to | for the parseable account list
 
 	while ((command | getline) > 0) {
 		if (debug > 0) print "Got account " $0
@@ -124,24 +121,22 @@ BEGIN {
 	#
 	# Read the account settings configuration file
 	#
-	# Set a new Field Separator:
-	FS=":"
+	FS=":"	# Set the Field Separator
 	# Syntax of this file is 3 items separated by ":" like:
 	# [DEFAULT|UNIX_group|username]:[Type]:value
 	# Type: fairshare, GrpTRES, GrpTRESRunMins etc.
 
 	while ((getline < ACCOUNT_SETTINGS_CONF) > 0) {
 		if (index($1,"#") >= 1) continue	# Skip lines with # comments
-		if (NF != 3) continue			# Skip lines which do not have 2 fields (incl. empty lines)
+		if (NF != 3) continue			# Skip lines which do not have 3 fields (incl. empty lines)
 		for (f in slurm_factors) if (tolower($2) == tolower(f)) $2 = f	# Force correct spelling of $2
 		if ($1 == "DEFAULT") {			# Default value
 			defaults[$2] = $3
 		} else if (groupname[$1] == "") {	# Unknown UNIX group: Assume that $1 is a username
 			if (useraccount[$1] == "") print "### NOTICE: Slurm account for group/user " $1 " is unknown"
-			setting[$1][new][$2] = $3
+			setting[$1][config][$2] = $3
 		} else {				# UNIX group value
-			setting[$1][new][$2] = $3
-			# setting[$1][group][$2] = $3
+			setting[$1][config][$2] = $3
 		}
 	}
 	close (ACCOUNT_SETTINGS_CONF)
@@ -150,7 +145,7 @@ BEGIN {
 #
 # Process password file entries
 #
-# Debug: $3 < MINUID { print "Skip user " $1 " UID " $3 }	# Skip users with UID < MINUID
+$3 < MINUID { if (debug > 0) print "Skip user " $1 " with UID=" $3 }	# Skip users with UID < MINUID
 $3 >= MINUID {
 	u		= $1
 	GID		= $4
@@ -167,14 +162,14 @@ $3 >= MINUID {
 	}
 	# Check for existence of the user home directory, skip user if absent:
 	if (system("test -d \""HOMEDIR"\"") != 0) {
-		if (debug > 0) printf("### Skipping user %s, homedir %s does not exist\n", u, HOMEDIR)
+		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
 		next
 	}
 	userexists[u] = u	# Record existing users
 
 	# Gather arguments for the sacctmgr command
-
 	COMMAND = ""		# We are going to set a number of variables below
+
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (useraccount[u] != g) {
 		printf("### NOTICE: User %s in group %s has default account=%s\n", u, g, useraccount[u])
@@ -184,32 +179,32 @@ $3 >= MINUID {
 	# Loop over the setting[] array and configure any changes
 
 	# If user setting not explicitly given, then use the group setting
-	if (isarray(setting[g][new])) {
-		for (i in setting[g][new]) {
-			if (setting[u][new][i] == "") setting[u][new][i] = setting[g][new][i]
+	if (isarray(setting[g][config])) {
+		for (i in setting[g][config]) {
+			if (setting[u][config][i] == "") setting[u][config][i] = setting[g][config][i]
 		}
 	} else {
 		print "### NOTICE: Group " g " has no settings, using default values for user " u
 	}
 	# If user setting not explicitly given, then use the default setting
 	for (i in defaults) {
-		if (setting[u][new][i] == "") setting[u][new][i] = defaults[i]
+		if (setting[u][config][i] == "") setting[u][config][i] = defaults[i]
 	}
-	# Compare new and current settings, print out any changes
-	for (i in setting[u][new]) {
-		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " new " setting[u][new][i]
-		if (setting[u][current][i] != setting[u][new][i]) {
-			COMMAND = COMMAND " " i "=" setting[u][new][i]
+	# Compare config and current settings, print out any changes
+	for (i in setting[u][config]) {
+		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
+		if (setting[u][current][i] != setting[u][config][i]) {
+			COMMAND = COMMAND " " i "=" setting[u][config][i]
 		}
 	}
 
 	if (user[u] != "") {
 		# Modify existing user
 		if (COMMAND != "")
-			print SACCTMGR " -i modify user where name=" u " set" COMMAND
+			print sacctmgr " -i modify user where name=" u " set" COMMAND
 	} else {
 		# New user: command for creating this account
-		print SACCTMGR " -i create user name=" u COMMAND
+		print sacctmgr " -i create user name=" u COMMAND
 	}
 }
 END {
@@ -217,6 +212,6 @@ END {
 	for (u in user) {
 		if (userexists[u] != "") continue
 		printf("### Slurm account %s has no user in the passwd file\n", u)
-		print SACCTMGR " -i delete user " u
+		print sacctmgr " -i delete user " u
 	}
 }'
