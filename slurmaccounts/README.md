@@ -1,11 +1,28 @@
 Slurm account and user updating tools
 =====================================
 
+Maintenance of Slurm accounts and user settings is a tedious and error-prone task if done manually.
+The tools in this project offer a way of defining and configuring Slurm accounts and user settings by means of two tools with corresponding configuration files,
+which you use to define your site's preferences.
+
+* Firstly, you need to define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
+This is the purpose of the ```slurmaccounts``` tool.
+We have selected the users' UNIX groups as the bottom level of the account tree.
+
+* Secondly, when the account tree has been defined, users can be defined in the Slurm database.
+This is the purpose of the ```slurmusersettings``` tool.
+The user's ```default account``` is selected as the UNIX group name at the bottom of the account tree.
+Furthermore, a number of user settings can be defined in the configuration file:
+```fairshare, QOS and limits```.
+
+When users or accounts are added, removed or modified in the configuration files,
+rerun the tools to pick up the changes to the Slurm database.
+
 slurmaccounts tool
 ------------------
 
 The ```slurmaccounts``` should be run to initially setup (or later reconfigure) the
-hierarchical tree of Slurm accounts.
+hierarchical tree of Slurm *accounts*.
 
 Usage:
 
