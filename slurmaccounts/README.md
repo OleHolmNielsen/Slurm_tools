@@ -1,18 +1,20 @@
 Slurm account factors updating tool
 ------------------------------------
 
-Manage Slurm accounts:
+Manage Slurm user fairshare, QOS and limits:
 
 * Create, update or delete Slurm user accounts from the passwd file.
-* Update the user fairshare, QOS and limits configurations.
+* Update the fairshare, QOS and limits configurations.
 
 Usage:
 
 ```
-slurmaccounts
+slurmusersettings
 ```
 
-Configure this value in the script in order to skip system accounts:
+You may configure this value in the script in order to skip system accounts:
+
+Also the variable ```user_settings_conf=/etc/slurm/user_settings.conf``` may be changed.
 
 ```
 # Skip users with UID < MINUID
@@ -22,10 +24,10 @@ export MINUID=1002
 Configuration file
 ------------------
 
-The file ```/etc/slurm/account_settings.conf``` defines a hierarchical tree of Slurm accounts and their Slurm factors including:
+The file ```/etc/slurm/user_settings.conf``` defines users' Slurm factors including:
 
 ```
-fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefQOS
+fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS
 ```
 
 The syntax of this file is 3 items separated by ```:``` like:
@@ -51,4 +53,5 @@ camdstud:fairshare:2
 
 user01:fairshare:10
 user02:fairshare:1
+user03:QOS:high
 ```
