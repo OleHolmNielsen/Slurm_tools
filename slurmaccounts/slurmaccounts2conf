@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# Read Slurm non-user accounts with sacctmgr and create an accounts config file
+
+# Syntax of the accounts config file is:
+# account:parent:FairShare:Description
+
+# sacctmgr -snorp output is:
+# Account|Descr|Org|Cluster|Par Name|User|Share|GrpJobs|GrpNodes|GrpCPUs|GrpMem|GrpSubmit|GrpWall|GrpCPUMins|MaxJobs|MaxNodes|MaxCPUs|MaxSubmit|MaxWall|MaxCPUMins|QOS|Def QOS|
+/usr/bin/sacctmgr -snorp show accounts | awk -F"|" '
+function print_children(a, path)
+{
+	if (isarray(children[a])) {
+		if (a != "root") {	# Do not print the root account
+			print "###"
+			print "### Parent account " path
+			print account[a] ":" parent[a] ":" fairshare[a] ":" desc[a]
+		}
+		for (c in children[a]) {
+			print_children(c, path "->" c)
+		}
+	} else
+		print account[a] ":" parent[a] ":" fairshare[a] ":" desc[a]
+}
+$6 == "" {	# Process all non-user accounts
+	# Read list of existing accounts (parseable output)
+	# Debug: print "Got account ", $0
+	# FS="|"	# Set the Field Separatator to | for the account list
+	account[$1]	= $1
+	desc[$1]	= $2
+	ClusterName	= $4
+	parent[$1]	= $5
+	user[$1]	= $6
+	fairshare[$1]	= $7
+	children[$5][$1] = $1
+} END {
+	print "###"
+	print "### Slurm accounts for cluster " ClusterName
+	# Make a hierarchical printout starting at the root account
+	print_children("root", "root")
+}'
