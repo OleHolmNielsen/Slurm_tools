@@ -2,12 +2,14 @@ Slurm account and user updating tools
 =====================================
 
 Maintenance of Slurm accounts and user settings is a tedious and error-prone task if done manually.
-The tools in this project offer a way of defining and configuring Slurm accounts and user settings by means of two tools with corresponding configuration files,
+The tools in this project offer a way of defining and configuring Slurm accounts and user settings by means of 
+some tools with corresponding configuration files,
 which you use to define your site's preferences.
 
 * Firstly, you need to define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
 This is the purpose of the ```slurmaccounts``` tool.
 We have selected the users' UNIX groups as the bottom level of the account tree.
+You may use the ```slurmaccounts2conf``` tool to create a configuration file from your existing Slurm database.
 
 * Secondly, when the account tree has been defined, users can be defined in the Slurm database.
 This is the purpose of the ```slurmusersettings``` tool.
