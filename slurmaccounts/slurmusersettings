@@ -37,6 +37,15 @@ then
 	echo "### WARNING : No account settings configuration file $user_settings_conf"
 fi
 
+# WARNING: GNU gawk version 4.0 or later is required for multi-dimensional arrays
+awk_version=`awk --version | head -1 | awk '{version=$3; split(version,v,"."); print v[1]}'`
+if test "$awk_version" = "3"
+then
+	echo -n "Sorry, gawk version 4.0 or later is required.  Your version is: "
+	awk --version | head -1
+	exit 1
+fi
+
 # Print a header
 cat <<EOF
 ###
