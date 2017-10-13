@@ -16,6 +16,8 @@ These Slurm tools have been developed for management and monitoring of our clust
 
 7. Scripts for managing [jobs](jobs/).
 
+8. Scripts for managing [Slurm accounts and users](slurmaccounts/).
+
 Slurm deployment HOWTO
 ----------------------
 
