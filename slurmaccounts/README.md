@@ -46,6 +46,17 @@ account_name:parent_account:fairshare_value:Description_of_account
 
 The example file in this directory should be edited and copied to ```/etc/slurm/accounts.conf```.
 
+slurmaccounts2conf tool
+-----------------------
+
+This tool reads the Slurm accounts and prints out the slurm accounts file:
+
+```
+slurmaccounts2conf
+```
+
+The output should be copied to the file ```/etc/slurm/accounts.conf```.
+
 slurmusersettings tool
 ----------------------
 
