@@ -16,10 +16,15 @@ function print_children(a, path)
 			print "### Parent account " path
 			print account[a] ":" parent[a] ":" fairshare[a] ":" desc[a]
 		}
+		# Making a more readable list:
+		# First print the accounts with no children, then those with children
 		for (c in children[a]) {
-			print_children(c, path "->" c)
+			if (!isarray(children[c])) print_children(c, path "->" c)
 		}
-	} else
+		for (c in children[a]) {
+			if (isarray(children[c])) print_children(c, path "->" c)
+		}
+	} else	# Bottom-level accounts
 		print account[a] ":" parent[a] ":" fairshare[a] ":" desc[a]
 }
 $6 == "" {	# Process all non-user accounts
@@ -36,6 +41,9 @@ $6 == "" {	# Process all non-user accounts
 } END {
 	print "###"
 	print "### Slurm accounts for cluster " ClusterName
+	print "###"
+	print "### Syntax of the file is:"
+	print "### account:parent:FairShare:Description"
 	# Make a hierarchical printout starting at the root account
 	print_children("root", "root")
 }'
