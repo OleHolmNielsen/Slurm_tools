@@ -51,7 +51,7 @@ The example file in this directory should be edited and copied to ```/etc/slurm/
 slurmaccounts2conf tool
 -----------------------
 
-This tool reads the Slurm accounts and prints out the slurm accounts file:
+This tool reads the Slurm database accounts and prints out the slurm accounts file:
 
 ```
 slurmaccounts2conf
@@ -66,6 +66,10 @@ Manage Slurm *user* fairshare, QOS and limits:
 
 * Create, update or delete Slurm users as defined in the system passwd database.
 * Update users' fairshare, QOS and limits configurations.
+
+```NOTICE:``` This script requires GNU awk version 4 with support of *arrays of arrays*.
+The gawk 4.0 is available on RHEL/CentOS 7, whereas RHEL/CentOS 6 supplies the older gawk 3.1.
+For gawk 3.x users there is a rewritten script ```slurmusersettings.awk3``` so that you can try it out.
 
 Usage:
 
