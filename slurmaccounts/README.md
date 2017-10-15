@@ -13,7 +13,7 @@ You may use the ```slurmaccounts2conf``` tool to create a configuration file fro
 
 * Secondly, when the account tree has been defined, users can be defined in the Slurm database.
 This is the purpose of the ```slurmusersettings``` tool.
-The user's ```default account``` is selected as the UNIX group name at the bottom of the account tree.
+The user's Slurm ```default account``` is selected to be the UNIX group name at the bottom of the account tree.
 Furthermore, a number of user settings can be defined in the configuration file:
 ```fairshare, QOS and limits```.
 
