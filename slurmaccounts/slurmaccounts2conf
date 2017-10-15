@@ -10,8 +10,8 @@
 /usr/bin/sacctmgr -snorp show accounts | awk -F"|" '
 function print_children(a, path)
 {
-	if (isarray(children[a])) {
-		if (a != "root") {	# Do not print the root account
+	if (isarray(children[a])) {	# This account has children accounts
+		if (a != "root") {	# Do not print the Slurm built-in root account
 			print "###"
 			print "### Parent account " path
 			print account[a] ":" parent[a] ":" fairshare[a] ":" desc[a]
