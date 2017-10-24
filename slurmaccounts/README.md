@@ -51,7 +51,7 @@ The example file in this directory should be edited and copied to ```/etc/slurm/
 slurmaccounts2conf tool
 -----------------------
 
-This tool reads the Slurm database accounts and prints out the slurm accounts file:
+This tool reads the Slurm database accounts and prints out the slurm accounts file.
 
 Usage:
 
@@ -130,7 +130,9 @@ user03:QOS:normal,high
 slurmusersettings2conf tool
 ---------------------------
 
-This tool reads the Slurm database accounts and prints out the slurm user setting file:
+This tool reads the Slurm database accounts and prints out the slurm user setting file.
+
+```NOTICE:``` This script requires GNU awk version 4 with support of *arrays of arrays*.
 
 Usage:
 
