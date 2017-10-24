@@ -1,0 +1,152 @@
+#!/bin/sh
+
+# Read Slurm user accounts with sacctmgr and create a user_settings.conf config file
+# to be copied to the /etc/slurm/ directory.
+
+# Syntax of the user_settings.conf config file is:
+# [DEFAULT|UNIX_group|username]:[Type]:value
+# Type: fairshare, GrpTRES, GrpTRESRunMins etc.
+
+# Slurm commands
+export sacctmgr=/usr/bin/sacctmgr
+
+# WARNING: GNU gawk version 4.0 or later is required for arrays of arrays
+awk_version=`awk --version | head -1 | awk '{version=$3; split(version,v,"."); print v[1]}'`
+if test "$awk_version" = "3"
+then
+	echo -n "Sorry, gawk version 4.0 or later is required.  Your version is: "
+	awk --version | head -1
+	exit 1
+fi
+
+# Header of sacctmgr -snorp show associations:
+# Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
+
+$sacctmgr -snorp show associations | awk '
+BEGIN {
+	debug = 0	# Debugging flag
+	# IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
+
+	# Create an array of Slurm factors
+	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS"
+	split(string, slurm_factors, " ")
+
+	# Print a header
+	print "###"
+	print "### Syntax of the user_settings.conf config file is:"
+	print "### [DEFAULT|UNIX_group|username]:[Type]:value"
+	print "### Type: " string
+	print "###"
+
+	# Get the list of UNIX group names from the system by getent(1)
+	FS=":"	# Set the Field Separator
+	command = "getent group"
+	while ((command | getline) > 0) {
+		split($0,b,":")	 # Split group line into fields
+		b[1] = tolower(b[1])	# Make it lowercase
+		unixgroup[b[3]] = b[1]	# Group name b[1] of this GID (b[3])
+		groupname[b[1]] = b[1]	# Group name b[1]
+	}
+	close (command)
+	FS="|"	# Set the Field Separator
+}
+
+{
+	# Read list of existing accounts (parseable output)
+	if (debug > 1) print "Got association " $0
+	a = $2	# account
+	u = $3	# user
+	if (a == "root") next	# Skip the root account
+	if (u == "") next	# Skip non-user accounts
+	accounts[a]	= a
+	useraccount[u]	= a
+	user[u]		= u
+	# Record the user settings
+	setting[u]["fairshare"]		= $5
+	setting[u]["GrpTRES"]		= tolower($7)	# cpu= must be in lowercase
+	setting[u]["GrpTRESMins"]	= $10
+	setting[u]["MaxTRES"]		= $12
+	setting[u]["MaxTRESPerNode"]	= $13
+	setting[u]["MaxTRESMins"]	= $16
+	setting[u]["GrpTRESRunMins"]	= tolower($19)	# cpu= must be in lowercase
+	setting[u]["QOS"]		= $17
+	setting[u]["DefaultQOS"]	= $18
+	for (i in slurm_factors) {
+		sf = slurm_factors[i]
+		if (setting[u][sf] != "") {
+			# Count the setting values
+			v = setting[u][sf]
+			if (debug > 0) printf("%s:%s:%s\n", u, sf, v)
+			# Accumulate account settings
+			counts[a][sf][v]++
+			value[a][sf][v] = v
+			# Accumulate global settings
+			globalcounts[sf][v]++
+			globalvalue[sf][v] = v
+		}
+	}
+} END {
+	print "### The global DEFAULT values of settings"
+	for (j in slurm_factors) {
+		sf = slurm_factors[j]
+		# Special case: The QOS default is always the "normal" QOS
+		if (sf == "QOS" || sf == "DefaultQOS") {
+			globaldefaultvalue[sf] = "normal"
+		}
+		if (isarray(globalcounts[sf])) {
+			# Locate the highest count, assumed to be the default for this account
+			cmax = 0
+			for (k in globalcounts[sf]) {
+				c = globalcounts[sf][k]
+				v = globalvalue[sf][k]
+				print "### " sf " value=\"" v "\" has count=" c
+				if (c > cmax) {
+					cmax = c
+					globaldefaultvalue[sf] = v
+				}
+			}
+		}
+		if (globaldefaultvalue[sf] != "")
+			printf("%s:%s:%s\n", "DEFAULT", sf, globaldefaultvalue[sf])
+	}
+	print "### The account default values of settings"
+	for (i in accounts) {
+		a = accounts[i]
+		for (j in slurm_factors) {
+			sf = slurm_factors[j]
+			defaultvalue[a][sf] = globaldefaultvalue[sf]
+			# Special case: The QOS default is always the "normal" QOS
+			if (sf == "QOS" || sf == "DefaultQOS") {
+				defaultvalue[a][sf] = "normal"
+				continue
+			}
+			if (!isarray(counts[a][sf])) continue
+			cmax = 1
+			for (k in counts[a][sf]) {
+				c = counts[a][sf][k]
+				v = value[a][sf][k]
+				if (debug > 0) print "# Account " a " setting " sf " value " v " count=" c
+				# Locate the highest count, assumed to be the default for this account
+				if (c > cmax) {
+					cmax = c
+					defaultvalue[a][sf] = v
+				}
+			}
+			# Print the value if it differs from the global default
+			if (defaultvalue[a][sf] != globaldefaultvalue[sf])
+				printf("%s:%s:%s\n", a, sf, defaultvalue[a][sf])
+		}
+	}
+	print "### The user settings, omitting group DEFAULT values"
+	for (i in user) {
+		u = user[i]
+		a = useraccount[u]
+		if (debug > 0) print "# User " u " in group " a
+		for (j in slurm_factors) {
+			sf = slurm_factors[j]
+			# Print the value if it differs from the account default
+			if (setting[u][sf] != defaultvalue[a][sf])
+				printf("%s:%s:%s\n", u, sf, setting[u][sf])
+		}
+	}
+}'
