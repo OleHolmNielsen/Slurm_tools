@@ -53,6 +53,8 @@ slurmaccounts2conf tool
 
 This tool reads the Slurm database accounts and prints out the slurm accounts file:
 
+Usage:
+
 ```
 slurmaccounts2conf
 ```
@@ -124,3 +126,16 @@ user01:fairshare:10
 user02:fairshare:1
 user03:QOS:normal,high
 ```
+
+slurmusersettings2conf tool
+---------------------------
+
+This tool reads the Slurm database accounts and prints out the slurm user setting file:
+
+Usage:
+
+```
+slurmusersettings2conf
+```
+
+The output should be copied to the file ```/etc/slurm/user_settings.conf```.
