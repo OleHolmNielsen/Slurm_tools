@@ -138,7 +138,7 @@ BEGIN {
 	while ((getline < user_settings_conf) > 0) {
 		if (index($1,"#") >= 1) continue	# Skip lines with # comments
 		if (NF != 3) continue			# Skip lines which do not have 3 fields (incl. empty lines)
-		for (f in slurm_factors) if (tolower($2) == tolower(f)) $2 = f	# Force correct spelling of $2
+		for (f in slurm_factors) if (tolower($2) == tolower(slurm_factors[f])) $2 = slurm_factors[f]	# Force correct spelling of $2
 		if ($1 == "DEFAULT") {			# Default value
 			defaults[$2] = $3
 		} else if (groupname[$1] == "") {	# Unknown UNIX group: Assume that $1 is a username
