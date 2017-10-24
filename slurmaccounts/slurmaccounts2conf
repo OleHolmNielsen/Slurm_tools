@@ -27,7 +27,7 @@ function print_children(a, path)
 	} else	# Bottom-level accounts
 		print account[a] ":" parent[a] ":" fairshare[a] ":" desc[a]
 }
-$6 == "" {	# Process all non-user accounts
+$6 == "" {	# Process all non-user accounts ($6 is empty)
 	# Read list of existing accounts (parseable output)
 	# Debug: print "Got account ", $0
 	# FS="|"	# Set the Field Separatator to | for the account list
@@ -35,7 +35,6 @@ $6 == "" {	# Process all non-user accounts
 	desc[$1]	= $2
 	ClusterName	= $4
 	parent[$1]	= $5
-	user[$1]	= $6
 	fairshare[$1]	= $7
 	children[$5][$1] = $1
 } END {
