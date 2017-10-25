@@ -73,6 +73,9 @@ Manage Slurm *user* fairshare, QOS and limits:
 The gawk 4.0 is available on RHEL/CentOS 7, whereas RHEL/CentOS 6 supplies the older gawk 3.1.
 For gawk 3.x users there is a rewritten script ```slurmusersettings.awk3``` so that you can try it out.
 
+You can alternatively run this tool on a machine with gawk 4 and execute remote commands by SSH on the Slurm server.
+To use this feature uncomment and customize the script line ```# export remote="ssh <slurm-host>"```.
+
 Usage:
 
 ```
@@ -133,6 +136,9 @@ slurmusersettings2conf tool
 This tool reads the Slurm database accounts and prints out the slurm user setting file.
 
 ```NOTICE:``` This script requires GNU awk version 4 with support of *arrays of arrays*.
+
+You can alternatively run this tool on a machine with gawk 4 and execute remote commands by SSH on the Slurm server.
+To use this feature uncomment and customize the script line ```# export remote="ssh <slurm-host>"```.
 
 Usage:
 
