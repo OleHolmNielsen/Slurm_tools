@@ -7,7 +7,11 @@
 # [DEFAULT|UNIX_group|username]:[Type]:value
 # Type: fairshare, GrpTRES, GrpTRESRunMins etc.
 
-# Slurm commands
+# Run commands remotely if your Slurm host does not have gawk version 4:
+# Execute commands on a remote host by password-less SSH:
+# export remote="ssh <slurm-host>"
+
+# Slurm commands:
 export sacctmgr=/usr/bin/sacctmgr
 
 # WARNING: GNU gawk version 4.0 or later is required for arrays of arrays
@@ -22,7 +26,7 @@ fi
 # Header of sacctmgr -snorp show associations:
 # Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 
-$sacctmgr -snorp show associations | awk '
+$remote $sacctmgr -snorp show associations | awk '
 BEGIN {
 	debug = 0	# Debugging flag
 	# IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
@@ -38,19 +42,8 @@ BEGIN {
 	print "### Type: " string
 	print "###"
 
-	# Get the list of UNIX group names from the system by getent(1)
-	FS=":"	# Set the Field Separator
-	command = "getent group"
-	while ((command | getline) > 0) {
-		split($0,b,":")	 # Split group line into fields
-		b[1] = tolower(b[1])	# Make it lowercase
-		unixgroup[b[3]] = b[1]	# Group name b[1] of this GID (b[3])
-		groupname[b[1]] = b[1]	# Group name b[1]
-	}
-	close (command)
 	FS="|"	# Set the Field Separator
 }
-
 {
 	# Read list of existing accounts (parseable output)
 	if (debug > 1) print "Got association " $0
