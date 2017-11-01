@@ -20,6 +20,20 @@ Furthermore, a number of user settings can be defined in the configuration file:
 When users or accounts are added, removed or modified in the configuration files,
 rerun the tools to pick up the changes to the Slurm database.
 
+Getting started
+---------------
+
+1. Create the ```/etc/slurm/accounts.conf``` file by running the ```slurmaccounts2conf``` tool (see below).
+
+2. Create the ```/etc/slurm/user_settings.conf``` file by running the ```slurmusersettings2conf``` tool (see below).
+
+Review the new files in ```/etc/slurm/``` to make sure they correctly reflect your account hierarchy and user settings.
+Now you may update these configuration files and subsequently use these tools to print commands for updating the Slurm database:
+
+3. Run ```slurmaccounts``` to update your account hierarchy.
+
+4. Run ```slurmusersettings``` to update your Slurm user settings.
+
 slurmaccounts tool
 ------------------
 
