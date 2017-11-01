@@ -9,13 +9,13 @@ which you use to define your site's preferences.
 * Firstly, you need to define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
 This is the purpose of the ```slurmaccounts``` tool.
 We have selected the users' UNIX groups as the bottom level of the account tree.
-You may use the ```slurmaccounts2conf``` tool to create a configuration file from your existing Slurm database.
+You may use the ```slurmaccounts2conf``` tool to create a configuration file using the contents of your current Slurm database.
 
 * Secondly, when the account tree has been defined, users can be defined in the Slurm database.
 This is the purpose of the ```slurmusersettings``` tool.
 The user's Slurm ```default account``` is selected to be the UNIX group name at the bottom of the account tree.
 Furthermore, a number of user settings can be defined in the configuration file:
-```fairshare, QOS and limits```.
+```fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS```.
 
 When users or accounts are added, removed or modified in the configuration files,
 rerun the tools to pick up the changes to the Slurm database.
@@ -133,7 +133,7 @@ user03:QOS:normal,high
 slurmusersettings2conf tool
 ---------------------------
 
-This tool reads the Slurm database accounts and prints out the slurm user setting file.
+This tool reads your current Slurm database accounts and prints out the slurm user setting file.
 
 ```NOTICE:``` This script requires GNU awk version 4 with support of *arrays of arrays*.
 
