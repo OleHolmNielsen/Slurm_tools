@@ -23,7 +23,7 @@ rerun the tools to pick up the changes to the Slurm database.
 Getting started
 ---------------
 
-Steps 1 and 2 are used only during the initial setup:
+Configuration files: Steps 1 and 2 are used only during the initial setup:
 
 1. Create the ```/etc/slurm/accounts.conf``` file by running the ```slurmaccounts2conf``` tool (see below).
 
