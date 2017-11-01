@@ -10,6 +10,8 @@
 /usr/bin/sacctmgr -snorp show accounts | awk -F"|" '
 function print_children(a, path)
 {
+	# a: account name
+	# path: String describing the parent path leading to this account
 	if (isarray(children[a])) {	# This account has children accounts
 		if (a != "root") {	# Do not print the Slurm built-in root account
 			print "###"
@@ -30,7 +32,6 @@ function print_children(a, path)
 $6 == "" {	# Process all non-user accounts ($6 is empty)
 	# Read list of existing accounts (parseable output)
 	# Debug: print "Got account ", $0
-	# FS="|"	# Set the Field Separatator to | for the account list
 	account[$1]	= $1
 	desc[$1]	= $2
 	ClusterName	= $4
@@ -43,6 +44,6 @@ $6 == "" {	# Process all non-user accounts ($6 is empty)
 	print "###"
 	print "### Syntax of the file is:"
 	print "### account:parent:FairShare:Description"
-	# Make a hierarchical printout starting at the root account
+	# Make a hierarchical printout starting at the "root" account
 	print_children("root", "root")
 }'
