@@ -23,16 +23,21 @@ rerun the tools to pick up the changes to the Slurm database.
 Getting started
 ---------------
 
+Steps 1 and 2 are used only during the initial setup:
+
 1. Create the ```/etc/slurm/accounts.conf``` file by running the ```slurmaccounts2conf``` tool (see below).
 
 2. Create the ```/etc/slurm/user_settings.conf``` file by running the ```slurmusersettings2conf``` tool (see below).
 
 Review the new files in ```/etc/slurm/``` to make sure they correctly reflect your account hierarchy and user settings.
-Now you may update these configuration files and subsequently use these tools to print commands for updating the Slurm database:
+
+From now on you may update these configuration files and subsequently use the following tools to print commands for updating the Slurm database:
 
 3. Run ```slurmaccounts``` to update your account hierarchy.
 
 4. Run ```slurmusersettings``` to update your Slurm user settings.
+
+These commands don't modify the Slurm database, they only print commands which you should review before actually executing them.
 
 slurmaccounts tool
 ------------------
