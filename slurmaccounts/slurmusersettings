@@ -187,6 +187,7 @@ $3 >= MINUID {
 	# Check for existence of the user home directory, skip user if absent:
 	if (system("test -d \""HOMEDIR"\"") != 0) {
 		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
+		nohomedir[u] = HOMEDIR	# Record users with no available homedir
 		next
 	}
 	userexists[u] = u	# Record existing users
@@ -237,7 +238,10 @@ END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
 		if (userexists[u] != "") continue
-		printf("### Slurm account %s has no user entry in the passwd file\n", u)
+		if (nohomedir[u] != "") 
+			printf("### Slurm account %s has no available home directory %s\n", u, nohomedir[u])
+		else
+			printf("### Slurm account %s has no user entry in the passwd file\n", u)
 		print sacctmgr " -i delete user " u
 	}
 }'
