@@ -137,6 +137,8 @@ DEFAULT:fairshare:1
 DEFAULT:GrpTRES:cpu=1200
 DEFAULT:GrpTRESRunMins:cpu=3000000
 DEFAULT:QOS:normal
+DEFAULT:MaxJobs:500
+DEFAULT:MaxSubmitJobs:5000
 
 # UNIX group defaults
 camdfac:fairshare:5
