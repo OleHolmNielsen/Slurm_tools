@@ -130,14 +130,20 @@ BEGIN {
 		}
 		# Record the user/group settings
 		setting[item][current]["fairshare"]	= $5
+		setting[item][current]["GrpJobs"]	= $6
 		setting[item][current]["GrpTRES"]	= tolower($7)	# cpu= must be in lowercase
+		setting[item][current]["GrpSubmit"]	= $8
+		setting[item][current]["GrpWall"]	= $9
 		setting[item][current]["GrpTRESMins"]	= $10
+		setting[item][current]["MaxJobs"]	= $11
 		setting[item][current]["MaxTRES"]	= $12
 		setting[item][current]["MaxTRESPerNode"]= $13
+		setting[item][current]["MaxSubmitJobs"]	= $14
+		setting[item][current]["MaxWall"]	= $15
 		setting[item][current]["MaxTRESMins"]	= $16
-		setting[item][current]["GrpTRESRunMins"]= tolower($19)	# cpu= must be in lowercase
 		setting[item][current]["QOS"]		= toupper($17)
 		setting[item][current]["DefaultQOS"]	= toupper($18)
+		setting[item][current]["GrpTRESRunMins"]= tolower($19)	# cpu= must be in lowercase
 	}
 	close (assoc)
 
