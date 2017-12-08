@@ -26,20 +26,24 @@ Example output
 
 ```
 $ showuserjobs 
-Slurm node and job status at Tue Jul 4 15:10:14 CEST 2017
+Batch job status at Fri Dec 8 12:02:36 CET 2017
  
 Node states summary:
-drng        1 nodes (8 CPUs)
-alloc     629 nodes (9328 CPUs)
-Total     630 nodes (9336 CPUs)
+alloc     799 nodes (10744 CPUs)
+drain       2 nodes (16 CPUs)
+idle        2 nodes (40 CPUs)
+Total     803 nodes (10800 CPUs)
 
-             Running       Pending    
-Username    Jobs  CPUs   Jobs  CPUs  Group     Further info
-========    ==== =====   ==== =====  ========  =============================
-GRAND_TOTAL  404  9336    371 13632  ALL       running+pending=22968 CPUs 34 users
-GROUP_TOTAL  285  4848    217  3056  ecsvip    running+pending=7904 CPUs 9 users
-GROUP_TOTAL   31  1872    103  8176  camdvip   running+pending=10048 CPUs 7 users
-user01       141  1872     11   480  ecsvip    FullName01
-user02       111  1488    205  2544  ecsvip    FullName02
+Job summary: 10616 jobs total in all partitions. Slurm MaxJobCount=20000.
+ 
+            Runnin            Idle                   
+Username      Jobs   CPUs     Jobs   CPUs  Group     Further info
+=========== ====== ======   ====== ======  ========  =============================
+GRAND_TOTAL    917  10744     9699 271324  ALL       Running+Idle=282068 CPUs 42 users
+GROUP_TOTAL    110   3136      182   4352  ecsvip    Running+Idle=7488 CPUs 10 users
+GROUP_TOTAL    624   3064     7517 214468  camdvip   Running+Idle=217532 CPUs 13 users
+GROUP_TOTAL     88   1408      115   1840  ecsstud   Running+Idle=3248 CPUs 3 users
+user01          15   1392     1442 176592  camdvip   FullName01
+user02          68   1200       71   1216  ecsvip    FullName02
 ...
 ```

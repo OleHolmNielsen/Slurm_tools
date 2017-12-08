@@ -24,6 +24,8 @@ EOF
 
 # Set the maximum length of usernames (must be 11 or more to fit *_TOTAL strings)
 export maxlength=11
+# Set the percentage of MaxJobCount above which we print a warning.
+export maxjobpercent=80
 
 #
 # Process command arguments
@@ -101,11 +103,24 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 	printf(format, "Total", total_node, total_cpus)
 }'
 
+#
+# Print a job summary
+#
+export NUMJOBS=`squeue  -h -o "%i" | wc -l`
+export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
+echo
+echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions."
+# Check if NUMJOBS exceeds 80% of the maximum:
+if (( NUMJOBS > maxjobpercent*MAXJOBCOUNT/100 ))
+then
+	echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf."
+fi
+
 # Print a header
 echo | awk '
 BEGIN {
 	maxlength=ENVIRON["maxlength"]
-	fmt="%-*.*s %4.4s %5.5s   %4.4s %5.5s  %-8.8s  %s\n"
+	fmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
 	line="============================="
 	print " "
 	printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
@@ -186,7 +201,7 @@ BEGIN {
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	# Output line format string
-	fmt = "%-*.*s %4d %5d   %4d %5d  %-8s  %s\n"
+	fmt = "%-*.*s %6d %6d   %6d %6d  %-8s  %s\n"
 	# Future: Piping output to a sorting command 
 	# sorting = "env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
 

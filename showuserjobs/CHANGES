@@ -1,0 +1,5 @@
+Set the maximum length of usernames.
+Header now printed using awk.
+Output printf() now done with format string.
+Sorting with LC_ALL=C and dictionary order on column 1
+Print job count summary, and warning if getting close to MaxJobCount
