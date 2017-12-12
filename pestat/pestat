@@ -95,6 +95,10 @@ export groupname=""
 export partition=""
 export hostlist=""
 
+# Remove any custom format for squeue and Slurm time format (may mess up output formatting)
+export SQUEUE_FORMAT=""
+export SLURM_TIME_FORMAT=""
+
 # Check if output is NOT a terminal: Turn colors off (can be overruled by "-C" flag).
 FD=1	# File Descriptor no. 1 = stdout
 if test ! -t $FD
