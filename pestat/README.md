@@ -20,6 +20,7 @@ where:
 	-s statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
+        -N: Print JobName in addition to JobId
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
