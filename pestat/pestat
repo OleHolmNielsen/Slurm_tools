@@ -355,7 +355,7 @@ BEGIN {
 		# Free memory on the node GREATER than free_mem_more
 		if (freemem > free_mem_more) listnode++
 	} else {
-		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error") {
+		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error" || state == "comp") {
 			# Flag nodes with status down, drain etc.
 			stateflag="*"
 			statecolor=RED
