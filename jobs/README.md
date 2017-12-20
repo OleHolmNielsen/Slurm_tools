@@ -1,16 +1,23 @@
 Slurm job scripts
 -----------------
 
-Some convenient scripts for managing jobs:
+Some convenient scripts for managing Slurm jobs:
 
-* Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob <jobid>```.
+* ```psjob```: Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob <jobid>```.
   Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
+
+* ```notifybadjob```: Notify about or Kill a badly behaving job and send information mail to the user.
+
+* ```warn_maxjobs```: Issue warnings about the number of Slurm jobs approaching MaxJobCount
 
 Usage
 -----
 
 Copy these scripts to /usr/local/bin/.
 If necessary configure the variables in the script.
+
+Examples
+--------
 
 Example output from ```psjob```:
 
