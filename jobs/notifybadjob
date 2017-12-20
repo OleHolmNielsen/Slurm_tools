@@ -3,6 +3,17 @@
 # Notify about or Kill a badly behaving job and send information mail to the user.
 # Author: Ole Holm Nielsen, Ole.H.Nielsen@fysik.dtu.dk
 
+### CONFIGURE these lines:
+# Name of this cluster
+CLUSTERNAME=<cluster name>
+# Mail to the system managers
+ADMINMAIL=support@your.domain
+# Mail to the superuser
+SUPERUSERMAIL=root@localhost
+# Informative web page:
+INFOURL=https://your.domain
+### End CONFIGURE these lines:
+
 # Command usage:
 USAGE="Usage: $0 '[-k]' job-id"
 
@@ -12,15 +23,6 @@ PSJOB=/usr/local/bin/psjob
 MAIL=/usr/bin/mailx
 # Syslog logfile
 LOGFILE=/var/log/notifybadjob.log
-
-# Name of this cluster
-CLUSTERNAME=niflheim
-# Mail to the system managers
-ADMINMAIL=support@mail.fysik.dtu.dk
-# Mail to the superuser
-SUPERUSERMAIL=root@localhost
-# Informative web page:
-INFOURL=https://wiki.fysik.dtu.dk/niflheim/Niflheim7_Getting_started
 # Whether to kill job or not
 action='Notify about'
 killjob=0
