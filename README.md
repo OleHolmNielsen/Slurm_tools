@@ -6,17 +6,19 @@ These Slurm tools have been developed for management and monitoring of our clust
 
 2. [slurmreportmonth](slurmreportmonth/) Generate monthly accounting statistics from Slurm using the sreport command.
 
-3. [showuserjobs](showuserjobs/) Print the current node status and batch jobs status broken down into userids.
+3. [slurmacct](slurmacct/) Generate accounting statistics from Slurm as an alternative to the sreport command
 
-4. [slurmibtopology](slurmibtopology/) Infiniband topology tool for Slurm.
+4. [showuserjobs](showuserjobs/) Print the current node status and batch jobs status broken down into userids.
 
-5. Slurm [triggers](triggers/) scripts.
+5. [slurmibtopology](slurmibtopology/) Infiniband topology tool for Slurm.
 
-6. Scripts for managing [nodes](nodes/).
+6. Slurm [triggers](triggers/) scripts.
 
-7. Scripts for managing [jobs](jobs/).
+7. Scripts for managing [nodes](nodes/).
 
-8. Scripts for managing [Slurm accounts and users](slurmaccounts/).
+8. Scripts for managing [jobs](jobs/).
+
+9. Scripts for managing [Slurm accounts and users](slurmaccounts/).
 
 Slurm deployment HOWTO
 ----------------------
