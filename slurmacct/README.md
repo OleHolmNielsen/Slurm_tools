@@ -7,6 +7,14 @@ Specific start and end Time/Date must be specified.
 
 A specific user, group or node partition may be specified.
 
+There are some advantages of ```slurmacct```  over the ```sreport``` command:
+
+* Partition specific accounting is possible.
+
+* Average CPU count (job parallelism) is printed.
+
+* Average waiting time in the queue is printed (answer to "My jobs wait for too long").
+
 Usage
 -----
 
