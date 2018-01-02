@@ -71,6 +71,12 @@ shift $((OPTIND-1))
 # Get Start and End dates (see "man sacct")
 START=$1
 END=$2
+if test -z "$START" -o -z "$END"
+then
+	echo ERROR: No dates selected
+	usage
+	exit 1
+fi
 
 #####################################################################################
 #
