@@ -1,0 +1,269 @@
+#!/bin/sh
+
+# Summarize USER accounting information from Slurm sacct accounting records
+
+# Usage: slurmacct [flags] BeginDate EndDate
+# Author:	Ole.H.Nielsen@fysik.dtu.dk
+#---------------------------------------------------------------
+
+#####################################################################################
+#
+# Command usage:
+#
+function usage()
+{
+        cat <<EOF
+Usage: $0 [-p partition(s)] [-u username] [-g groupname] [-G] Start_time End_time
+where:
+        -p partition: Select only Slurm partion <partition>
+        -u username: Print only user <username> 
+        -g groupname: Print only users in UNIX group <groupname>
+        -G: Print only groupwise summed accounting data
+        -h: Print this help information
+The Start_time and End_time values specify the date/time interval of
+job completion/termination (see "man sacct").
+EOF
+}
+
+#####################################################################################
+
+export partition=""
+export username=""
+export groupname=""
+export ALLGROUPS=0
+export SORTCOLUMN=5
+
+# Process options
+while getopts "p:u:g:hG" options; do
+        case $options in
+                p )     export partition=$OPTARG
+                        # echo Print only accounting in Slurm partition $OPTARG
+                        ;;
+                u )     export username=$OPTARG
+			export ALLGROUPS=0
+                        if test -z "`sacctmgr -p -n show assoc where users=$username`"
+                        then
+                                echo Error selecting Slurm username $username 
+                                exit -1
+                        fi
+                        ;;
+                g )     export groupname="$OPTARG"
+			export ALLGROUPS=0
+	    		export SORTCOLUMN=5
+                        # echo Print only users in UNIX group $OPTARG
+                        ;;
+                G )     export ALLGROUPS=1
+			export username=""
+			export groupname=""
+	    		export SORTCOLUMN=4
+                        # echo Print only groupwise summed accounting data
+                        ;;
+                h|? ) usage
+                        exit 1;;
+                * ) usage
+                        exit 1;;
+        esac
+done
+
+# Shift options to process remaining arguments
+shift $((OPTIND-1))
+
+# Get Start and End dates (see "man sacct")
+START=$1
+END=$2
+
+#####################################################################################
+#
+# Print a heading
+
+if test $ALLGROUPS -eq 0
+then
+	# User statistics
+	echo
+	echo "Jobs completed/terminated between date/time $START and $END"
+	if test -n "$username"
+	then
+		echo "Group name selected: $username"
+	fi
+	if test -n "$groupname"
+	then
+		echo "Group name selected: $groupname"
+	fi
+	if test -n "$partition"
+	then
+		echo "Partition selected: $partition"
+	fi
+	echo "                             Wallclock          Average Average"
+	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name"
+	echo "--------    -----  ------- -----------  ------- ------- -------  ---------"
+else
+	# Group statistics
+	echo
+	echo "Jobs completed/terminated between date/time $START and $END"
+	if test -n "$partition"
+	then
+		echo "Partition selected: $partition"
+	fi
+	echo "                    Wallclock          Average Average"
+	echo "   Group    #jobs       hours  Percent  #nodes q-hours"
+	echo "   -----  ------- -----------  ------- ------- -------"
+fi
+
+#####################################################################################
+#
+# Get and process Slurm accounting records
+
+# Report time in seconds:
+export SLURM_TIME_FORMAT="%s"
+# Request job data
+export FORMAT="JobID,User,Group,Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
+# Request job states: Cancelled, Completed, Failed, Timeout, Preempted
+export STATE="ca,cd,f,to,pr"
+
+# Get Slurm individual job accounting records using the "sacct" command
+sacct -n -X -a -S $START -E $END -o $FORMAT -s $STATE | awk '
+BEGIN {
+	partitionselect=ENVIRON["partition"]
+	userselect=ENVIRON["username"]
+	groupselect=ENVIRON["groupname"]
+	ALLGROUPS=ENVIRON["ALLGROUPS"]
+	totaljobs=0
+	# First get the list of user full names from /etc/passwd lines
+	while ("getent passwd" | getline ) {
+		split($0,b,":")		# Split password line into fields
+		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
+		# print b[1], fullname[b[1]]
+	}
+	close("getent passwd")
+}
+{
+	# Parse input data
+	JobID	= $1		# JobID
+	user	= $2		# User name
+	group	= $3		# Group name
+	part	= $4		# Slurm partition name for this job
+	# Check if the partition of this job matches selection criteria
+	if (partitionselect != "" && part != partitionselect) next
+	nodect	= $5		# Number of nodes used
+	total_ncpus = $6	# Total number of CPUs used (>=nodect)
+	submit	= $7		# submit time
+	eligible= $8		# eligible time
+	if (eligible == "Unknown") eligible = submit
+	start	= $9		# Job start time in epoch seconds
+	end	= $10		# Job end time in epoch seconds
+	cput	= $11		# CPU time in seconds
+	state	= $12		# Job state
+	wall	= end - start
+	wait	= start - eligible
+
+	# For accounting by number of CPU cores in stead of number of nodes,
+	# uncomment the following line:
+	nodect = total_ncpus
+
+	# TOTAL accounting
+	totaljobs++
+	totalwait += wait
+	cpunodesecs += nodect*cput
+	wallnodesecs += nodect*wall
+	wallsecs += wall
+
+	# Check if this job matches selection criteria
+	if (userselect != "" && user != userselect) next
+	if (groupselect != "" && group != groupselect) next
+
+	# User accounting (a user may belong to several groups)
+	usernamegroup[user,group] = user
+	fullnamegroup[user,group] = fullname[user]
+	usergroup[user,group] = group
+	jobs[user,group]++
+	cpunodes[user,group] += nodect*cput
+	wallnodes[user,group] += nodect*wall
+	wallcpu[user,group] += wall
+	if (nodect < minnodes[user,group]) minnodes[user,group] = nodect
+	if (nodect > maxnodes[user,group]) maxnodes[user,group] = nodect
+	waittime[user,group] += wait
+
+	# Group accounting
+	groupname[group]=group
+	gr_jobs[group]++
+	gr_cpunodes[group] += nodect*cput
+	gr_wallnodes[group] += nodect*wall
+	gr_wallcpu[group] += wall
+	if (nodect < gr_minnodes[group]) gr_minnodes[group] = nodect
+	if (nodect > gr_maxnodes[group]) gr_maxnodes[group] = nodect
+	gr_waittime[group] += wait
+} END {
+	# Some average values
+	if (totaljobs > 0)
+		totalwaitaverage = totalwait/totaljobs
+	else
+		totalwaitaverage = 0
+	if (wallhours > 0)
+		nodesaverage = wallnodesecs/wallsecs
+	else
+		nodesaverage = 0
+	# Usage in hours
+	cpunodehours = cpunodesecs / 3600
+	wallnodehours = wallnodesecs / 3600
+	wallhours = wallsecs / 3600
+	if (totaljobs == 0 || cpunodehours == 0 || wallnodehours == 0 || wallhours == 0) {
+		# print "ERROR: Zero CPU hours recorded in specified date interval"
+		# print "totaljobs = ", totaljobs, "cpunodehours = ", cpunodehours, "wallnodehours = ", wallnodehours, "wallhours = ", wallhours
+		# exit 1
+	}
+
+	if (ALLGROUPS == 0) {
+
+		# Print format
+		format = "%8.8s %8.8s %8d  %10.1f  %7.2f %7.2f %7.2f  %s\n"
+		groupjobs = 0
+		grouphours = 0
+		for (ug in usernamegroup) {
+			if (length(groupselect) > 0 && usergroup[ug] != groupselect) continue
+			if (wallnodehours > 0 && jobs[ug] > 0 && wallcpu[ug] > 0)
+				printf(format, usernamegroup[ug], usergroup[ug],
+				jobs[ug], 
+				wallnodes[ug]/3600, 
+				100*wallnodes[ug]/(wallnodehours*3600),
+				wallnodes[ug]/wallcpu[ug],
+				waittime[ug]/jobs[ug]/3600,
+				fullnamegroup[ug])
+			groupjobs += jobs[ug]
+			groupnodehours += wallnodes[ug]/3600
+			grouphours += wallcpu[ug]/3600
+			groupwait += waittime[ug]
+		}
+		# Print out total usage
+		printf(format, "TOTAL", "(All)", totaljobs, wallnodehours, 100,
+			nodesaverage, totalwaitaverage/3600, "")
+		# Print out group usage
+		if (length(groupselect) > 0 && groupjobs > 0 && wallnodehours > 0 && grouphours > 0 && groupjobs > 0)
+			printf(format,
+				"GROUP", groupselect, groupjobs, groupnodehours,
+				100*groupnodehours/wallnodehours,
+				groupnodehours/grouphours, groupwait/groupjobs/3600, "")
+	} else {
+
+		# Per-group accounting
+
+		# Print format
+		format = "%8s %8d  %10.1f  %7.2f %7.2f %7.2f\n"
+		for (group in groupname) {
+			if (gr_jobs[group] > 0 && gr_wallcpu[group] > 0) printf(format,
+				groupname[group],
+				gr_jobs[group], 
+				gr_wallnodes[group]/3600,
+				100*gr_wallnodes[group]/(3600*wallnodehours),
+				gr_wallnodes[group]/gr_wallcpu[group],
+				gr_waittime[group]/gr_jobs[group]/3600)
+		}
+		printf(format, "TOTAL", totaljobs, wallnodehours, 100,
+			nodesaverage, totalwaitaverage/3600)
+	}
+		
+} ' | env LC_ALL=C sort -r -n -k $SORTCOLUMN -k 3 -k 1d
+# The sort command sorts number of running procs in descending order
+# on keys $SORTCOLUMN and 3, and alphabetical sort on key 1
+# The LC_ALL=C ensures that Upper case is sorted before lower case.
+
+exit 0
