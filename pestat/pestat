@@ -294,8 +294,8 @@ BEGIN {
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
 		# May select a UNIX group name
 		if (groupname != "" && Group != groupname) continue
-		# Create the list of nodes for this job, expand the list if necessary
-		if (index(NodeList,"[") == 0) {
+		# Create the list of nodes for this job, expand the list if necessary (, or [ in NodeList)
+		if (index(NodeList,"[") == 0 && index(NodeList,",") == 0) {
 			jobnodes[1] = NodeList
 		} else {
 			# Put hostname lines into an array jobnodes[]
