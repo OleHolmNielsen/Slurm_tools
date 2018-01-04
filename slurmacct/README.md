@@ -15,6 +15,8 @@ There are some advantages of ```slurmacct```  over the ```sreport``` command:
 
 * Average waiting time in the queue is printed (answer to "My jobs wait for too long").
 
+* User full name is printed (useful to managers).
+
 Usage
 -----
 
