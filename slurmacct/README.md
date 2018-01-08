@@ -7,6 +7,8 @@ Specific start and end Time/Date must be specified.
 
 A specific user, group or node partition may be specified.
 
+Output lines are sorted in order of decreasing usage, so it's easy to identify top users and groups.
+
 There are some advantages of ```slurmacct```  over the ```sreport``` command:
 
 * Partition specific accounting is possible.
