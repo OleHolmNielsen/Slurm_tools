@@ -13,15 +13,16 @@
 function usage()
 {
         cat <<EOF
-Usage: $0 [-p partition(s)] [-u username] [-g groupname] [-G] Start_time End_time
+Usage: slurmacct -s Start_time -e End_time [-p partition(s)] [-u username] [-g groupname] [-G]
 where:
+        -s Start_time: Starting time of job completion/termination (see "man sacct").
+        -e End_time: End time of job completion/termination (see "man sacct").
         -p partition: Select only Slurm partion <partition>
         -u username: Print only user <username> 
         -g groupname: Print only users in UNIX group <groupname>
         -G: Print only groupwise summed accounting data
         -h: Print this help information
-The Start_time and End_time values specify the date/time interval of
-job completion/termination (see "man sacct").
+Hint: Specify Start/End time as MMDD (Month and Date)
 EOF
 }
 
@@ -34,18 +35,13 @@ export ALLGROUPS=0
 export SORTCOLUMN=5
 
 # Process options
-while getopts "p:u:g:hG" options; do
+while getopts "p:u:g:s:e:hG" options; do
         case $options in
                 p )     export partition=$OPTARG
                         # echo Print only accounting in Slurm partition $OPTARG
                         ;;
                 u )     export username=$OPTARG
 			export ALLGROUPS=0
-                        if test -z "`sacctmgr -p -n show assoc where users=$username`"
-                        then
-                                echo Error selecting Slurm username $username 
-                                exit -1
-                        fi
                         ;;
                 g )     export groupname="$OPTARG"
 			export ALLGROUPS=0
@@ -58,6 +54,10 @@ while getopts "p:u:g:hG" options; do
 	    		export SORTCOLUMN=4
                         # echo Print only groupwise summed accounting data
                         ;;
+                s )     export start_time=$OPTARG
+                        ;;
+                e )     export end_time=$OPTARG
+                        ;;
                 h|? ) usage
                         exit 1;;
                 * ) usage
@@ -65,17 +65,48 @@ while getopts "p:u:g:hG" options; do
         esac
 done
 
-# Shift options to process remaining arguments
-shift $((OPTIND-1))
-
-# Get Start and End dates (see "man sacct")
-START=$1
-END=$2
-if test -z "$START" -o -z "$END"
+# Check time interval
+if test -z "$start_time" -o -z "$end_time"
 then
-	echo ERROR: No dates selected
+	echo ERROR: Invalid time interval - start_time=$start_time end_time=$end_time
 	usage
 	exit 1
+fi
+# Check partition name
+if test -n "$partition"
+then
+	part_ok=0
+	for p in `sinfo -o "%R"`
+	do
+		if test $p = "$partition"
+		then
+			part_ok=1
+			break
+		fi
+	done
+	if test "$part_ok" -ne 1
+	then
+		echo "ERROR: Invalid partition name $partition"
+		echo "Valid partition names are:"
+		sinfo -o "%R"
+		exit -1
+	fi
+fi
+# Test username
+if test -n "$username" -a -z "`sacctmgr -p -n show assoc where users=$username`"
+then
+	echo Error selecting Slurm username $username 
+	exit -1
+fi
+# Test groupname
+if test -n "$groupname"
+then
+	getent group $groupname > /dev/null
+	if test "$?" -ne 0
+	then
+		echo "Error selecting UNIX groupname $groupname (it does not exist)"
+		exit -1
+	fi
 fi
 
 #####################################################################################
@@ -86,7 +117,7 @@ if test $ALLGROUPS -eq 0
 then
 	# User statistics
 	echo
-	echo "Jobs completed/terminated between date/time $START and $END"
+	echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if test -n "$username"
 	then
 		echo "Group name selected: $username"
@@ -105,7 +136,7 @@ then
 else
 	# Group statistics
 	echo
-	echo "Jobs completed/terminated between date/time $START and $END"
+	echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if test -n "$partition"
 	then
 		echo "Partition selected: $partition"
@@ -119,15 +150,29 @@ fi
 #
 # Get and process Slurm accounting records
 
+# Get length of selection strings for sacct formatting
+if test -n "$partition"
+then
+	plen="%${#partition}"
+fi
+if test -n "$usernamelength"
+then
+	ulen="%${#username}"
+fi
+if test -n "$groupnamelength"
+then
+	glen="%${#groupname}"
+fi
+
 # Report time in seconds:
 export SLURM_TIME_FORMAT="%s"
 # Request job data
-export FORMAT="JobID,User,Group,Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
+export FORMAT="JobID,User${ulen},Group${glen},Partition${plen},AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
 # Request job states: Cancelled, Completed, Failed, Timeout, Preempted
 export STATE="ca,cd,f,to,pr"
 
 # Get Slurm individual job accounting records using the "sacct" command
-sacct -n -X -a -S $START -E $END -o $FORMAT -s $STATE | awk '
+sacct -n -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk '
 BEGIN {
 	partitionselect=ENVIRON["partition"]
 	userselect=ENVIRON["username"]
@@ -135,12 +180,13 @@ BEGIN {
 	ALLGROUPS=ENVIRON["ALLGROUPS"]
 	totaljobs=0
 	# First get the list of user full names from /etc/passwd lines
-	while ("getent passwd" | getline ) {
+	COMMAND="getent passwd"
+	while (COMMAND | getline ) {
 		split($0,b,":")		# Split password line into fields
 		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
 		# print b[1], fullname[b[1]]
 	}
-	close("getent passwd")
+	close(COMMAND)
 }
 {
 	# Parse input data
