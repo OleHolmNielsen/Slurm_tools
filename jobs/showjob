@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# Show status of Slurm job(s)
+# Show status of Slurm job(s).
+# Both queue information and accounting information is printed.
 
 if test $# -ne 1
 then
@@ -10,17 +11,29 @@ fi
 
 jobid=$1
 
+###########################################################################
+# Get queue information
+
 # Check if job is in the queue
 jobfound=`squeue  -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
 	# Job found in the queue
-	echo Queued job information:
+	echo "Queued job information:"
 	scontrol show job $jobid
+else
+	echo "The job $jobid is not in the current Slurm queue."
 fi
 
-# Job variables from Slurm accounting
-export jobvars=jobid,jobname,user,Timelimit,Elapsed,NNodes,Partition,ExitCode,nodelist
+###########################################################################
+# Get job accounting information
 
-echo Job accounting information:
+echo
+echo "Job parameters for jobid $jobid:"
+export jobvars="jobid,jobname,user,account,partition,Timelimit"
+sacct -j $jobid -o $jobvars
+
+echo
+echo "Job details information for jobid $jobid:"
+export jobvars="Start,elapsed,End,CPUTime,NNodes,ExitCode,nodelist"
 sacct -j $jobid -o $jobvars
