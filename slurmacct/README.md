@@ -23,15 +23,18 @@ Usage
 ```
 Usage: slurmacct -s Start_time -e End_time [-p partition(s)] [-u username] [-g groupname] [-G]
 where:
-        -s Start_time: Starting time of job completion/termination (see "man sacct").
-        -e End_time: End time of job completion/termination (see "man sacct").
+        -s Start_time: Starting time of accounting period.
+        -e End_time: End time of accounting period.
         -p partition: Select only Slurm partion <partition>
         -u username: Print only user <username> 
         -g groupname: Print only users in UNIX group <groupname>
         -G: Print only groupwise summed accounting data
         -h: Print this help information
+
 The Start_time and End_time values specify the date/time interval of
 job completion/termination (see "man sacct").
+
+Hint: Specify Start/End time as MMDD (Month and Date)
 ```
 
 Time/Date format: MMDD (Month-Day)
@@ -41,7 +44,7 @@ Example
 -------
 
 ```
-$ slurmacct -p xeon8 1201 1231
+$ slurmacct -s 1201 -e 1231 -p xeon8
 
 Jobs completed/terminated between date/time 1201 and 1231
 Partition selected: xeon8
