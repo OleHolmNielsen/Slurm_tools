@@ -21,8 +21,10 @@ Usage
 -----
 
 ```
-Usage: slurmacct [-p partition(s)] [-u username] [-g groupname] [-G] Start_time End_time
+Usage: slurmacct -s Start_time -e End_time [-p partition(s)] [-u username] [-g groupname] [-G]
 where:
+        -s Start_time: Starting time of job completion/termination (see "man sacct").
+        -e End_time: End time of job completion/termination (see "man sacct").
         -p partition: Select only Slurm partion <partition>
         -u username: Print only user <username> 
         -g groupname: Print only users in UNIX group <groupname>
