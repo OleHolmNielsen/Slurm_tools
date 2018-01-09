@@ -1,10 +1,7 @@
 #!/bin/sh
 
 # Summarize USER accounting information from Slurm sacct accounting records
-
-# Usage: slurmacct [flags] BeginDate EndDate
 # Author:	Ole.H.Nielsen@fysik.dtu.dk
-#---------------------------------------------------------------
 
 #####################################################################################
 #
@@ -97,10 +94,13 @@ then
 	fi
 fi
 # Test username
-if test -n "$username" -a -z "`sacctmgr -p -n show assoc where users=$username`"
+if test -n "$username" 
 then
-	echo Error selecting Slurm username $username 
-	exit -1
+	if test -z "`sacctmgr -p -n show assoc where users=$username`"
+	then
+		echo Error selecting Slurm username $username 
+		exit -1
+	fi
 fi
 # Test groupname
 if test -n "$groupname"
@@ -124,7 +124,7 @@ then
 	echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if test -n "$username"
 	then
-		echo "Group name selected: $username"
+		echo "User name selected: $username"
 	fi
 	if test -n "$groupname"
 	then
