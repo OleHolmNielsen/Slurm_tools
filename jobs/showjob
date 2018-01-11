@@ -15,7 +15,7 @@ jobid=$1
 # Get queue information
 
 # Check if job is in the queue
-jobfound=`squeue  -ho "%i" -j $jobid 2>/dev/null`
+jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
 	# Job found in the queue
@@ -26,14 +26,51 @@ else
 fi
 
 ###########################################################################
+# Define a formatted function for sacct output
+
+function format_sacct()
+{
+	# echo Called format_sacct with $@
+	# Add -P flag for parseable output
+	sacct -P $@ | awk -F "|" '
+{
+	for (i=1; i<= NF; i++) {
+		column[i][NR] = $i
+		len = length($i)
+		if (len > colwidth[i]) colwidth[i] = len
+	}
+	cols=NF
+	lines=NR
+} END {
+	# Print a header
+	for (i=1; i<= cols; i++) {
+		printf("%*s ", colwidth[i], column[i][1])
+	}
+	printf("\n")
+	for (i=1; i<= cols; i++) {
+		printf("%.*s ", colwidth[i], "-----------------------------------------------------")
+	}
+	printf("\n")
+	# Print lines
+	for (l=2; l<=lines; l++) {
+		for (i=1; i<= cols; i++) {
+			printf("%*s ", colwidth[i], column[i][l])
+		}
+		printf("\n")
+	}
+}'
+
+}
+
+###########################################################################
 # Get job accounting information
 
 echo
 echo "Job parameters for jobid $jobid:"
 export jobvars="jobid,jobname,user,account,partition,Timelimit"
-sacct -j $jobid -o $jobvars
+format_sacct -j $jobid -o $jobvars
 
 echo
 echo "Job details information for jobid $jobid:"
-export jobvars="Start,elapsed,End,CPUTime,NNodes,ExitCode,nodelist"
-sacct -j $jobid -o $jobvars
+export jobvars="Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist"
+format_sacct -j $jobid -o $jobvars
