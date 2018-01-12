@@ -26,18 +26,18 @@ else
 fi
 
 ###########################################################################
-# Define a formatted function for sacct output
+# Execute sacct and print nicely formatted output
 
 function format_sacct()
 {
 	# echo Called format_sacct with $@
-	# Add -P flag for parseable output
+	# Add -P flag for parseable output with fields separated by "|"
 	sacct -P $@ | awk -F "|" '
 {
 	for (i=1; i<= NF; i++) {
 		column[i][NR] = $i
 		len = length($i)
-		if (len > colwidth[i]) colwidth[i] = len
+		if (len > colwidth[i]) colwidth[i] = len	# Column width
 	}
 	cols=NF
 	lines=NR
@@ -66,11 +66,13 @@ function format_sacct()
 # Get job accounting information
 
 echo
+echo "Accounting information from the Slurm database:"
+echo
 echo "Job parameters for jobid $jobid:"
 export jobvars="jobid,jobname,user,account,partition,Timelimit"
 format_sacct -j $jobid -o $jobvars
 
 echo
 echo "Job details information for jobid $jobid:"
-export jobvars="Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist"
+export jobvars="jobid,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist"
 format_sacct -j $jobid -o $jobvars
