@@ -38,6 +38,7 @@ where:
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-q qoslist: Print only QOS in the qoslist <qoslist>
+	-R reservationlist: Print only node reservations <reservationlist>
 	-s statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
@@ -123,7 +124,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:q:s:n:j:w:m:M:CchVFf1EN" options; do
+while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf1EN" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -158,6 +159,9 @@ while getopts "p:u:g:q:s:n:j:w:m:M:CchVFf1EN" options; do
 			;;
 		s )	statelist="--states $OPTARG"
 			echo Select only nodes with state=$OPTARG
+			;;
+		R )	export reservationlist="$OPTARG"
+			echo Select only nodes with reservation=$OPTARG
 			;;
 		n|w )	hostlist="-n $OPTARG"
 			echo Select only nodes in hostlist=$OPTARG
@@ -246,6 +250,7 @@ BEGIN {
 	username=ENVIRON["username"]
 	groupname=ENVIRON["groupname"]
 	qoslist=ENVIRON["qoslist"]
+	reservationlist=ENVIRON["reservationlist"]
 	free_mem_less=ENVIRON["free_mem_less"]
 	free_mem_more=ENVIRON["free_mem_more"]
 	cpuload_delta1=ENVIRON["cpuload_delta1"]
@@ -269,6 +274,7 @@ BEGIN {
 	}
 
 	if (qoslist != "") selection = selection " -q " qoslist
+	if (reservationlist != "") selection = selection " -R " reservationlist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
 	HOSTLIST=prefix "/scontrol show hostnames "
 
@@ -294,10 +300,10 @@ BEGIN {
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
 		# May select a UNIX group name
 		if (groupname != "" && Group != groupname) continue
-		# Create the list of nodes for this job, expand the list if necessary (, or [ in NodeList)
-		if (index(NodeList,"[") == 0 && index(NodeList,",") == 0) {
+		# Create the list of nodes for this job, and expand the list for multiple nodes
+		if (index(NodeList,"[") == 0 && index(NodeList,",") == 0) {	# Just a single node name
 			jobnodes[1] = NodeList
-		} else {
+		} else {		# Multiple nodes when the characters , or [ appear in NodeList
 			# Put hostname lines into an array jobnodes[]
 			cmd = HOSTLIST NodeList
 			i=0

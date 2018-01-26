@@ -10,13 +10,14 @@ Usage
 
 ```
 Usage: pestat [-p partition(s)] [-u username] [-g groupname]
-	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist]
+	[-q qoslist] [-R reservationlist] [-s statelist] [-n/-w hostlist] [-j joblist]
 	[-f | -F | -m free_mem | -M free_mem ] [-1] [-E] [-C/-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
 	-g groupname: Print only users in group <groupname>
 	-q qoslist: Print only QOS in the qoslist <qoslist>
+        -R reservationlist: Print only node reservations <reservationlist>
 	-s statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
