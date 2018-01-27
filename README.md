@@ -1,6 +1,7 @@
 # Slurm tools
 
-These Slurm tools have been developed for management and monitoring of our cluster:
+These [Slurm](https://slurm.schedmd.com/overview.html)
+tools have been developed for management and monitoring of our cluster:
 
 1. [pestat](pestat/) Prints a Slurm cluster nodes status with 1 line per node and job info.
 
