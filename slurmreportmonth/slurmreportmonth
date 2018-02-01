@@ -104,7 +104,7 @@ REPORT=$REPORT_PREFIX.$REPORT_NAME
 # First report overall statistics 
 sreport cluster utilization Start=$START End=$END -t percent > $REPORT
 # Report account usage
-echo
+echo >> $REPORT
 sreport $FLAGS cluster $TYPE $accountlist Start=$START End=$END $OPTIONS >> $REPORT
 
 echo Report generated to file $REPORT
@@ -120,6 +120,7 @@ then
 	# Copy report to a report directory as well
 	if test -d $REPORTDIR
 	then
+		echo Copy ${REPORT} to $REPORTDIR
 		cp -p ${REPORT} $REPORTDIR
 	else
 		echo Report directory $REPORTDIR not accessible!
