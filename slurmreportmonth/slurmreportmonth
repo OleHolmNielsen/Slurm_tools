@@ -100,7 +100,13 @@ fi
 # Generate accounting report
 
 REPORT=$REPORT_PREFIX.$REPORT_NAME
-sreport $FLAGS cluster $TYPE $accountlist Start=$START End=$END $OPTIONS > $REPORT
+
+# First report overall statistics 
+sreport cluster utilization Start=$START End=$END -t percent > $REPORT
+# Report account usage
+echo
+sreport $FLAGS cluster $TYPE $accountlist Start=$START End=$END $OPTIONS >> $REPORT
+
 echo Report generated to file $REPORT
 
 # Mail monthly report to a list of users (acct_list in /etc/aliases)
