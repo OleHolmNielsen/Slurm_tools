@@ -8,12 +8,12 @@
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
 
-export NUMJOBS=`squeue  -h -o "%i" | wc -l`
+export NUMJOBS=`squeue -h -o "%i" | wc -l`
 export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
-# Check if NUMJOBS exceeds 80% of the maximum:
+# Check if NUMJOBS exceeds some percentage of the maximum:
 if (( NUMJOBS > maxjobpercent*MAXJOBCOUNT/100 ))
 then
-        echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf."
+	echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf."
 	echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions."
 fi
 
