@@ -31,8 +31,8 @@ function usage()
 {
 	cat <<EOF
 Usage: pestat [-p partition(s)] [-u username] [-g groupname]
-	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-N]
-	[-f | -F | -m free_mem | -M free_mem ] [-1] [-E] [-C/-c] [-V] [-h]
+	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
+	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-E] [-C|-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
@@ -42,6 +42,7 @@ where:
 	-s statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
+	-G: Print GRES (Generic Resources) in addition to JobId
 	-N: Print JobName in addition to JobId
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
 	-F: Like -f, but only nodes flagged in RED are printed.
@@ -88,6 +89,8 @@ export printallnodes=1
 # We have changed uniquenodes=1 to be the default now
 export uniquenodes=1
 
+# Controls whether GRES (Generic Resources) will be printed
+export printgres=0
 # Controls whether JobName will be printed
 export printjobname=0
 # Controls whether job EndTime will be printed
@@ -127,7 +130,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf12EN" options; do
+while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf12ENG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -171,6 +174,9 @@ while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf12EN" options; do
 			;;
 		j )	hostlist="-n `$prefix/squeue -j $OPTARG -h -o %N`"
 			echo Select only nodes with jobs in joblist=$OPTARG
+			;;
+		G )	export printgres=1
+			echo "GRES (Generic Resource) is printed after each jobid"
 			;;
 		N )	export printjobname=1
 			echo "JobName is printed after each jobid"
@@ -264,6 +270,7 @@ BEGIN {
 	memory_thres1=ENVIRON["memory_thres1"]
 	memory_thres2=ENVIRON["memory_thres2"]
 	printallnodes=ENVIRON["printallnodes"]
+	printgres=ENVIRON["printgres"]
 	printjobname=ENVIRON["printjobname"]
 	printjobendtime=ENVIRON["printjobendtime"]
 	uniquenodes=ENVIRON["uniquenodes"]
@@ -287,8 +294,8 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 
-	# Running jobs info: JobState JobId User group NodeList StartTime EndTime JobName
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j\" " selection
+	# Running jobs info: JobState JobId User group NodeList StartTime EndTime JobName GRES
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j %b\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
@@ -300,8 +307,10 @@ BEGIN {
 		StartTime=$6
 		EndTime=$7
 		JobName=$8
+		GRES=$9
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
+		if (printgres == 1) JobInfo = JobInfo GRES " "
 		if (printjobname == 1) JobInfo = JobInfo JobName " "
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
 		# May select a UNIX group name
@@ -331,6 +340,7 @@ BEGIN {
 	close (JOBLIST)
 	# The job information may include EndTime
 	JobInfo = "JobId User"
+	if (printgres == 1) JobInfo = JobInfo " GRES"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
 	JobInfo = JobInfo " ..."
@@ -422,7 +432,7 @@ BEGIN {
 	}
 		
 	if (listnode > 0 && nodewasprinted[node] == 0) {
-		if (uniquenodes > 0) nodewasprinted[node]++	# Count this node (may be in multiple partitions)
+		if (uniquenodes > 0) nodewasprinted[node]++	# Count this node (node may be in multiple partitions)
 		printf("%*s %15s ", hostnamelength, node, partition)
 		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
 		printf("%s%3d%s %3d ", cpucolor, cpulist[1], NORMAL, cpulist[4])

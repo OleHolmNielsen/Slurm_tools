@@ -10,23 +10,25 @@ Usage
 
 ```
 Usage: pestat [-p partition(s)] [-u username] [-g groupname]
-	[-q qoslist] [-R reservationlist] [-s statelist] [-n/-w hostlist] [-j joblist]
-	[-f | -F | -m free_mem | -M free_mem ] [-1] [-E] [-C/-c] [-V] [-h]
+	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
+	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-E] [-C|-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
-	-g groupname: Print only users in group <groupname>
+	-g groupname: Print only users in UNIX group <groupname>
 	-q qoslist: Print only QOS in the qoslist <qoslist>
-        -R reservationlist: Print only node reservations <reservationlist>
+	-R reservationlist: Print only node reservations <reservationlist>
 	-s statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
-        -N: Print JobName in addition to JobId
+	-G: Print GRES (Generic Resources) in addition to JobId
+	-N: Print JobName in addition to JobId
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
-	-1: Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-2: 2..N lines per node which participates in multiple partitions 
 	-E: Job EndTime is printed after each jobid/user
 	-C: Color output is forced ON
 	-c: Color output is forced OFF
