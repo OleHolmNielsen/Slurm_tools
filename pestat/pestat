@@ -47,7 +47,8 @@ where:
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
-	-1: Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-2: 2..N lines per node which participates in multiple partitions 
 	-E: Job EndTime is printed after each jobid/user
 	-C: Color output is forced ON
 	-c: Color output is forced OFF
@@ -83,7 +84,9 @@ export colors=1
 # Print all nodes by default
 export printallnodes=1
 # Unique nodes only (nodes in multiple partitions are printed once only)
-export uniquenodes=0
+# export uniquenodes=0
+# We have changed uniquenodes=1 to be the default now
+export uniquenodes=1
 
 # Controls whether JobName will be printed
 export printjobname=0
@@ -124,7 +127,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf1EN" options; do
+while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf12EN" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -207,6 +210,9 @@ while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf1EN" options; do
 			;;
 		1 )	export uniquenodes=1
 			echo "Only 1 line per node (Unique nodes in multiple partitions are printed once only)"
+			;;
+		2 )	export uniquenodes=0
+			echo "2..N lines per node which participates in multiple partitions"
 			;;
 		E )	export printjobendtime=1
 			echo "Job EndTime is printed after each jobid/user"
