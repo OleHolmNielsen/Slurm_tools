@@ -203,7 +203,8 @@ $3 >= MINUID {
 
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (useraccount[u] != g) {
-		printf("### NOTICE: User %s in group %s has default account=%s\n", u, g, useraccount[u])
+		printf("### NOTICE: User %s in group %s has default account=%s. You may delete it by:\n", u, g, useraccount[u])
+		printf("### sacctmgr delete user name=%s account=%s\n", u, useraccount[u])
 		COMMAND = COMMAND " defaultaccount=" g
 	}
 
