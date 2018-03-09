@@ -18,6 +18,12 @@ Usage
 Copy these scripts to /usr/local/bin/.
 If necessary configure the variables in the script.
 
+The ```warn_maxjobs``` may be run regularly from crontab, for example:
+
+```
+5 * * * * /usr/local/bin/warn_maxjobs
+```
+
 Examples
 --------
 
