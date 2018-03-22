@@ -366,6 +366,7 @@ BEGIN {
 	freemem=$6
 	state=$7
 	gsub("*", "", state)	# Strip "*" from nodename in default partition
+	gsub("$", "", state)	# Strip "$" for state=maintenance
 
 	# Select only subset of nodes with certain values/states
 	listnode = printallnodes
@@ -377,7 +378,7 @@ BEGIN {
 		# Free memory on the node GREATER than free_mem_more
 		if (freemem > free_mem_more) listnode++
 	} else {
-		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error" || state == "comp") {
+		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error" || state == "comp" || state == "maint") {
 			# Flag nodes with status down, drain etc.
 			stateflag="*"
 			statecolor=RED
