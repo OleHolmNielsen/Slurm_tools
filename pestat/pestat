@@ -32,7 +32,7 @@ function usage()
 	cat <<EOF
 Usage: pestat [-p partition(s)] [-u username] [-g groupname]
 	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
-	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-E] [-C|-c] [-V] [-h]
+	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-E] [-C|-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
@@ -48,6 +48,7 @@ where:
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
+	-d: Omit nodes with states: down drained
 	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
 	-2: 2..N lines per node which participates in multiple partitions 
 	-E: Job EndTime is printed after each jobid/user
@@ -88,6 +89,9 @@ export printallnodes=1
 # export uniquenodes=0
 # We have changed uniquenodes=1 to be the default now
 export uniquenodes=1
+
+# Omit nodes with states: down drained
+export omitdown=0
 
 # Controls whether GRES (Generic Resources) will be printed
 export printgres=0
@@ -130,7 +134,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf12ENG" options; do
+while getopts "p:u:g:q:s:n:j:w:m:M:R:CcdhVFf12ENG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -171,6 +175,9 @@ while getopts "p:u:g:q:s:n:j:w:m:M:R:CchVFf12ENG" options; do
 			;;
 		n|w )	hostlist="-n $OPTARG"
 			echo Select only nodes in hostlist=$OPTARG
+			;;
+		d )	export omitdown=1
+			echo Omit nodes with states: down drained
 			;;
 		j )	hostlist="-n `$prefix/squeue -j $OPTARG -h -o %N`"
 			echo Select only nodes with jobs in joblist=$OPTARG
@@ -270,6 +277,7 @@ BEGIN {
 	memory_thres1=ENVIRON["memory_thres1"]
 	memory_thres2=ENVIRON["memory_thres2"]
 	printallnodes=ENVIRON["printallnodes"]
+	omitdown=ENVIRON["omitdown"]
 	printgres=ENVIRON["printgres"]
 	printjobname=ENVIRON["printjobname"]
 	printjobendtime=ENVIRON["printjobendtime"]
@@ -370,6 +378,10 @@ BEGIN {
 
 	# Select only subset of nodes with certain values/states
 	listnode = printallnodes
+	# Omit nodes with states: down, drained
+	if (omitdown > 0) {
+		if (state == "drain" || state == "down") next
+	}
 
 	if (free_mem_less > 0) {
 		# Free memory on the node LESS than free_mem_less
