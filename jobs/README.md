@@ -8,6 +8,8 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```showjob```: Show status of Slurm job(s). Both queue information and accounting information is printed.
 
+* ```sbadjob```: Print a warning about bad jobs hanging indefinitely in the queue.
+
 * ```notifybadjob```: Notify about or Kill a badly behaving job and send information mail to the user.
 
 * ```warn_maxjobs```: Issue warnings about the number of Slurm jobs approaching MaxJobCount
@@ -18,10 +20,11 @@ Usage
 Copy these scripts to /usr/local/bin/.
 If necessary configure the variables in the script.
 
-The ```warn_maxjobs``` may be run regularly from crontab, for example:
+The ```warn_maxjobs``` and ```sbadjob``` may be run regularly from crontab, for example:
 
 ```
 5 * * * * /usr/local/bin/warn_maxjobs
+5 * * * * /usr/local/bin/sbadjob
 ```
 
 Examples

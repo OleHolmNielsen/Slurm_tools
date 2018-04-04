@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Print a warning about bad jobs hanging indefinitely in the queue.
+
+# This script may be run regularly from crontab
+
+# List of Job Reason Codes (see "man squeue") which we look for
+export REASONLIST="BadConstraints|InvalidAccount|InvalidQOS|JobLaunchFailure|NodeDown|PartitionDown|PartitionInactive|PartitionNodeLimit|PartitionTimeLimit|ReqNodeNotAvail|WaitingForScheduling"
+
+squeue | egrep "$REASONLIST"
