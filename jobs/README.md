@@ -23,8 +23,7 @@ If necessary configure the variables in the script.
 The ```warn_maxjobs``` and ```sbadjob``` may be run regularly from crontab, for example:
 
 ```
-5 * * * * /usr/local/bin/warn_maxjobs
-5 * * * * /usr/local/bin/sbadjob
+5 * * * * /usr/local/bin/warn_maxjobs; /usr/local/bin/sbadjobs
 ```
 
 Examples
