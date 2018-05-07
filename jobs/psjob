@@ -44,6 +44,14 @@ JOBSTATUS=/tmp/jobstatus.$$
 # Catch signals
 trap "rm -f $JOBSTATUS; exit 2" 1 2 3 14 15 19
 
+# Check command arguments
+if test $# -ne 1
+then
+        echo Usage: $0 job-id
+        exit 1
+fi
+JOBID=$1
+
 # Check if this job-ID can be inquired successfully.
 $SCONTROL show job $JOBID > $JOBSTATUS
 if test "$?" != "0"
