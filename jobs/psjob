@@ -21,6 +21,7 @@ then
 	echo ERROR. Usage: $0 jobid
 	exit -1
 fi
+JOBID=$1
 
 # System users excluded from the list
 # The "68" is haldaemon on CentOS6 as printed by ps.
@@ -43,14 +44,6 @@ done
 JOBSTATUS=/tmp/jobstatus.$$
 # Catch signals
 trap "rm -f $JOBSTATUS; exit 2" 1 2 3 14 15 19
-
-# Check command arguments
-if test $# -ne 1
-then
-        echo Usage: $0 job-id
-        exit 1
-fi
-JOBID=$1
 
 # Check if this job-ID can be inquired successfully.
 $SCONTROL show job $JOBID > $JOBSTATUS
