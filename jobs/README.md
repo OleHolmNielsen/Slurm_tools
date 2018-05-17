@@ -14,6 +14,8 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```warn_maxjobs```: Issue warnings about the number of Slurm jobs approaching MaxJobCount
 
+* ```schedjobs```: Stop or start job scheduling in ALL Slurm partitions
+
 Usage
 -----
 
