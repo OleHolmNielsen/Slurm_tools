@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Stop or start job scheduling in ALL Slurm partitions
+# See https://slurm.schedmd.com/faq.html#stop_sched
+# This is used when jobs must be prevented from starting durign a maintenance window.
+
+# Command usage:
+USAGE="Usage: $0 down|up"
+
+if test $# -ne 1
+then
+	echo $USAGE
+	exit 1
+fi
+
+state=$1
+if test "$state" != "down" -a "$state" != "up"
+then
+	echo $USAGE
+	exit 1
+fi
+
+# Find list of ALL Slurm partitions
+PARTITIONLIST=`sinfo -h -o "%R"`
+
+# Stop scheduling in each partition separately
+for p in $PARTITIONLIST
+do
+	echo Partition $p set to $state
+	scontrol update PartitionName=$p State=$state
+done
+
+echo
+echo Current partition status is:
+sinfo
