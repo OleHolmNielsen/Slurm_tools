@@ -19,6 +19,13 @@ then
 	echo $USAGE
 	exit 1
 fi
+if test "$state" = "down" 
+then
+	echo
+	echo NOTICE: Setting partition state=down will be reset if slurmctld is restarted.
+	echo Read the slurmctld man-page under the -R parameter.
+	echo
+fi
 
 # Find list of ALL Slurm partitions
 PARTITIONLIST=`sinfo -h -o "%R"`
