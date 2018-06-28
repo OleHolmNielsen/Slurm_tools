@@ -157,8 +157,8 @@ then
 	exit 1
 fi
 
-# Get user E-mail address and name
-USERID=`squeue -h -o '%u' -j $JOB`
+# Get user E-mail address and name (job arrays handled by uniq)
+USERID=`squeue -h -o '%u' -j $JOB | uniq`
 # USERMAIL=`grep Job_Owner $QSTATMSGS | awk '{print $3}'`
 USERMAIL=$USERID
 FULLNAME=`getent passwd | grep "^$USERID:" | awk -F: '{print $5}'`
