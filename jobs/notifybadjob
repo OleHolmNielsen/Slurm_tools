@@ -158,7 +158,7 @@ then
 fi
 
 # Get user E-mail address and name
-USERID=`scontrol -o show job $JOB | awk '{split($3, a, "[=(]"); print a[2]}'`
+USERID=`squeue -h -o '%u' -j $JOB`
 # USERMAIL=`grep Job_Owner $QSTATMSGS | awk '{print $3}'`
 USERMAIL=$USERID
 FULLNAME=`getent passwd | grep "^$USERID:" | awk -F: '{print $5}'`
