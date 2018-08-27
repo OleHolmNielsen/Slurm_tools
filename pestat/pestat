@@ -259,7 +259,7 @@ fi
 #
 
 # Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY FREE_MEM STATE
-$prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t" | $my_awk '
+$prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z" | $my_awk '
 BEGIN {
 	#####################################################################################
 	# Initialization
@@ -373,6 +373,8 @@ BEGIN {
 	memory=$5
 	freemem=$6
 	state=$7
+	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
+	threadspercore=$8
 	gsub("*", "", state)	# Strip "*" from nodename in default partition
 	gsub("$", "", state)	# Strip "$" for state=maintenance
 
@@ -399,14 +401,23 @@ BEGIN {
 			stateflag=" "
 			statecolor=NORMAL
 		}
-		# Flag unexpected CPU load average
-		loaddiff = cpuload - cpulist[1]
-		if (loaddiff > cpuload_delta1 || loaddiff < -cpuload_delta1) {
+		# Flag unexpected CPU load average on allocated cores (=cpulist[1])
+		if (threadspercore == 1) {
+			# Single thread per core: Ideal load equals number of physical cores.
+			ideal_load_min = cpulist[1]
+			ideal_load_max = cpulist[1]
+		} else {
+			# Multiple threads per CPU core: Load of 1..threadspercore per physical core is OK.
+			ideal_load_min = cpulist[1] / threadspercore
+			ideal_load_max = cpulist[1]
+		}
+		# Calculate if cpuload is outside ideal load bounds, plus some deltas
+		if (cpuload > ideal_load_max + cpuload_delta1 || cpuload < ideal_load_min - cpuload_delta1) {
 			loadflag="*"
 			loadcolor=RED
 			cpucolor=GREEN
 			listnode++
-		} else if (loaddiff > cpuload_delta2 || loaddiff < -cpuload_delta2) {
+		} else if (cpuload > ideal_load_max + cpuload_delta2 || cpuload < ideal_load_min - cpuload_delta2) {
 			loadflag="*"
 			loadcolor=MAGENTA
 			cpucolor=GREEN
