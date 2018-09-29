@@ -14,16 +14,23 @@ jobid=$1
 ###########################################################################
 # Get queue information
 
+TMPFILE=/tmp/showjob.$$
+
 # Check if job is in the queue
 jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
 	# Job found in the queue
 	echo "Queued job information:"
-	scontrol show job $jobid
+	scontrol show job $jobid | tee $TMPFILE
 else
 	echo "The job $jobid is not in the current Slurm queue."
 fi
+
+# Parse the job status information (read E-mail)
+export jobscript=`grep Command= $TMPFILE | sed s/Command=//`
+grep "mail-user" $jobscript
+rm -f $TMPFILE
 
 ###########################################################################
 # Execute sacct and print nicely formatted output
