@@ -28,8 +28,11 @@ else
 fi
 
 # Parse the job status information (read E-mail)
-export jobscript=`grep Command= $TMPFILE | sed s/Command=//`
-grep "mail-user" $jobscript
+export jobscript=`grep Command= $TMPFILE | sed 's/   Command=//'`
+if test "$jobscript" != "(null)"
+then
+	grep "mail-user" $jobscript
+fi
 rm -f $TMPFILE
 
 ###########################################################################
