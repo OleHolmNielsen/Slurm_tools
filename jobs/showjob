@@ -28,10 +28,15 @@ else
 fi
 
 # Parse the job status information (read E-mail)
-export jobscript=`grep Command= $TMPFILE | sed 's/   Command=//'`
+export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//'`
 if test "$jobscript" != "(null)"
 then
-	grep "mail-user" $jobscript
+	grep "mail-user" $jobscript > $TMPFILE
+	if test -s $TMPFILE
+	then
+		echo Job script E-mail has been set:
+		cat $TMPFILE
+	fi
 fi
 rm -f $TMPFILE
 
