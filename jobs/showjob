@@ -25,6 +25,7 @@ then
 	scontrol show job $jobid | tee $TMPFILE
 else
 	echo "The job $jobid is not in the current Slurm queue."
+	exit 1
 fi
 
 # Parse the job status information (read E-mail)
