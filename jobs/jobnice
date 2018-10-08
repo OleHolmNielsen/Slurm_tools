@@ -2,27 +2,41 @@
 
 # Slurm: Add nice level to jobs, or list jobs with non-zero nice level
 
+# List or set nice values:
+listnice=0
 # Default nice value
 NICE=-50000
 
 # Parse command options
-while getopts "ln:" options; do
+while getopts "lp:n:h" options; do
 	case $options in
-		l )     echo; echo "Jobs with a non-zero nice value:"; echo
-			# The %y option print nice level
-			squeue -o "%y %Q %T %A %u %g %N %S %e %j %b" | awk '{if ($1 != 0) print $0}' 
-			# squeue -h -o "%y %Q %T %A %u %g %N %S %e %j %b" 
-			exit 0;;
-		n )     export NICE=$OPTARG
+		l )	listnice=1
+			shift;;
+		p )	export partition="-p $OPTARG"
+			echo "Select partition $OPTARG"
+			listnice=1
+			shift 2;;
+		n )	export NICE=$OPTARG
+			listnice=0
 			echo Set job nice value to $NICE
 			shift 2;;
-		* )	echo "Usage: $0 -l | [-n nice-value] job [jobs ...]"
+		h | * )	echo "Usage: $0 -l [ -p partition ]"
+			echo "or $0 [-n nice-value] job [jobs ...]"
 			exit 1;;
 	esac
 done
 
-# Change nice level of jobs
-for j in $*
-do
-	scontrol update jobid=$j nice=$NICE
-done
+if test $listnice -eq 0
+then
+	JOBLIST="$*"
+	echo Job list: $JOBLIST
+	# Change nice level of jobs
+	for j in $JOBLIST
+	do
+		scontrol update jobid=$j nice=$NICE
+	done
+else
+	echo; echo "Jobs with a non-zero nice value:"; echo
+	# The %y option prints nice level
+	squeue $partition -o "%y %Q %T %A %P %u %g %N %S %e %j %b" | awk '{if ($1 != 0) print $0}' 
+fi
