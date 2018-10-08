@@ -20,8 +20,9 @@ while getopts "lp:n:h" options; do
 			listnice=0
 			echo Set job nice value to $NICE
 			shift 2;;
-		h | * )	echo "Usage: $0 -l [ -p partition ]"
-			echo "or $0 [-n nice-value] job [jobs ...]"
+		h | * )	echo "Usage:"
+			echo "Listing: $0 -l | -p partition"
+			echo "Setting: $0 [-n nice-value] job [jobs ...]"
 			exit 1;;
 	esac
 done
@@ -29,6 +30,11 @@ done
 if test $listnice -eq 0
 then
 	JOBLIST="$*"
+	if test -z "$JOBLIST"
+	then
+		echo $0: No job list provided
+		exit 1
+	fi
 	echo Job list: $JOBLIST
 	# Change nice level of jobs
 	for j in $JOBLIST
