@@ -8,6 +8,8 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```showjob```: Show status of Slurm job(s). Both queue information and accounting information is printed.
 
+* ```jobnice```: Add nice level to jobs, or list jobs with non-zero nice level.
+
 * ```sbadjob```: Print a warning about bad jobs hanging indefinitely in the queue.
 
 * ```notifybadjob```: Notify about or Kill a badly behaving job and send information mail to the user.

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Slurm: Add nice level to jobs, or list jobs with non-zero nice level
+
+# Default nice value
+NICE=-50000
+
+# Parse command options
+while getopts "ln:" options; do
+	case $options in
+		l )     echo; echo "Jobs with a non-zero nice value:"; echo
+			# The %y option print nice level
+			squeue -o "%y %Q %T %A %u %g %N %S %e %j %b" | awk '{if ($1 != 0) print $0}' 
+			# squeue -h -o "%y %Q %T %A %u %g %N %S %e %j %b" 
+			exit 0;;
+		n )     export NICE=$OPTARG
+			echo Set job nice value to $NICE
+			shift 2;;
+		* )	echo "Usage: $0 -l | [-n nice-value] job [jobs ...]"
+			exit 1;;
+	esac
+done
+
+# Change nice level of jobs
+for j in $*
+do
+	scontrol update jobid=$j nice=$NICE
+done
