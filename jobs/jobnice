@@ -6,6 +6,8 @@
 listnice=0
 # Default nice value
 NICE=-50000
+# squeue: the %y option prints nice level
+SQUEUE_FORMAT="%y %Q %T %A %P %u %g %N %S %e %j %b"
 
 # Parse command options
 while getopts "lp:n:h" options; do
@@ -41,8 +43,9 @@ then
 	do
 		scontrol update jobid=$j nice=$NICE
 	done
+	# Print a job status
+	squeue -o "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
 else
 	echo; echo "Jobs with a non-zero nice value:"; echo
-	# The %y option prints nice level
-	squeue $partition -o "%y %Q %T %A %P %u %g %N %S %e %j %b" | awk '{if ($1 != 0) print $0}' 
+	squeue $partition -o "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
 fi
