@@ -35,6 +35,7 @@ then
 	if test -z "$JOBLIST"
 	then
 		echo $0: No job list provided
+		$0 -h
 		exit 1
 	fi
 	echo Job list: $JOBLIST
