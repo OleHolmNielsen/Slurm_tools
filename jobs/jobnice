@@ -7,7 +7,7 @@ listnice=0
 # Default nice value
 NICE=-50000
 # squeue: the %y option prints nice level
-SQUEUE_FORMAT="%y %Q %T %A %P %u %g %N %S %e %j %b %R"
+SQUEUE_FORMAT="%y %Q %T %A %P %u %g %S %e %j %b %R"
 
 # Parse command options
 while getopts "lp:n:h" options; do
