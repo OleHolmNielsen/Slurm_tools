@@ -18,6 +18,7 @@ where:
         -g groupname: Print only users in group <groupname>
 	-G: Print only GROUP_TOTAL lines
         -p partition: Print only jobs in partition <partition-list>
+        -r: Print additional job Reason columns
         -h: Print this help information
 EOF
 }
@@ -31,8 +32,9 @@ export maxjobpercent=80
 # Process command arguments
 #
 export group_totals_only=0
+export reason_print=0
 
-while getopts "u:g:p:Gh" options; do
+while getopts "u:g:p:Grh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username
@@ -45,6 +47,12 @@ while getopts "u:g:p:Gh" options; do
 			;;
 		p ) 	export partition="-p $OPTARG"
 			echo Print only jobs in partition $OPTARG
+			;;
+		r ) 	export reason_print=1
+			echo "Print additional job Reason columns (see 'man squeue'):"
+			echo "    Dependency: Waiting for a dependent job to complete"
+			echo "    CpuLimit:   AssocGrpCpuLimit, AssocGrpCPURunMinutesLimit"
+			echo "    Held:       JobHeldUser, JobHeldAdmin"
 			;;
 		h|? ) usage
 			exit 1;;
@@ -120,24 +128,44 @@ fi
 echo | awk '
 BEGIN {
 	maxlength=ENVIRON["maxlength"]
-	fmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+	reason_print=ENVIRON["reason_print"]
 	line="============================="
 	print " "
-	printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
-	printf (fmt, maxlength, maxlength,
-		"Username", "Jobs", "CPUs", "Jobs", "CPUs", "Group", "Further info")
-	printf (fmt, maxlength, maxlength,
-		line, line, line, line, line, line, line)
+	if (reason_print==0) {
+		fmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+		printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
+		printf (fmt, maxlength, maxlength, "Username",
+			"Jobs", "CPUs", "Jobs", "CPUs", "Group", "Further info")
+		printf (fmt, maxlength, maxlength, line,
+			line, line, line, line,
+			line, line)
+	} else {
+		# Additional columns for job reasons
+		# reasonfmt = "%-*.*s %6s %6s   %6s %6s   %6s %6s   %6s %6s   %6s %6s  %-8s  %s\n"
+		reasonfmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+		printf (reasonfmt, maxlength, maxlength, "", "Running", "", "Idle", "",
+			"Dependency", "", "CpuLimit", "", "Held", "",
+			"", "")
+		printf (reasonfmt, maxlength, maxlength, "Username",
+			"Jobs", "CPUs", "Jobs", "CPUs",
+			"Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs",
+			"Group", "Further info")
+		printf (reasonfmt, maxlength, maxlength, line,
+			line, line, line, line,
+			line, line, line, line, line, line,
+			line, line)
+	}
 }'
 
 # The squeue -o format selects fields we are interested in:
-# Userid Account Jobstatus Nodecount CPUcount Partition
-squeue $partition --noheader -o "%.8u %.8a %.10T %.6D %.6C %P" | awk '
+# Userid Account Jobstatus Nodecount CPUcount Partition Reason
+squeue $partition --noheader -o "%.8u %.8a %.10T %.6D %.6C %P %r" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["groupname"]
 	maxlength=ENVIRON["maxlength"]
 	group_totals_only=ENVIRON["group_totals_only"]
+	reason_print=ENVIRON["reason_print"]
 	# First get the list of group names 
 	while ("getent group" | getline ) {
 		split($0,b,":")		# Split group line into fields
@@ -182,6 +210,7 @@ BEGIN {
 	nnodes=$4
 	nprocs=$5
 	partition=$6
+	reason=$7
 	if (userselect > 0 && uname !~ username[userid]) next	# Select specified username only
 	userlist[userid] = userid
 
@@ -193,24 +222,52 @@ BEGIN {
 	} else {
 		# PENDING jobs
 		idle[userid]++
-		totalidle++
 		idleprocs[userid] += nprocs
+		totalidle++
 		totalidleprocs += nprocs
+		if (reason_print == 1) {
+			if (reason == "Dependency") {
+				Dependency[userid]++
+				Dependency_procs[userid] += nprocs
+				totalDependency++
+				totalDependency_procs += nprocs
+			} else if (reason == "AssocGrpCpuLimit" || reason == "AssocGrpCPURunMinutesLimit") {
+				CpuLimit[userid]++
+				CpuLimit_procs[userid] += nprocs
+				totalCpuLimit++
+				totalCpuLimit_procs += nprocs
+			} else if (reason == "JobHeldUser" || reason == "JobHeldAdmin") {
+				Held[userid]++
+				Held_procs[userid] += nprocs
+				totalHeld++
+				totalHeld_procs += nprocs
+			}
+		}
 	}
 	
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	# Output line format string
 	fmt = "%-*.*s %6d %6d   %6d %6d  %-8s  %s\n"
+	# Additional columns for job reasons
+	reasonfmt = "%-*.*s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %-8s  %s\n"
 	# Future: Piping output to a sorting command 
 	# sorting = "env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
 
 	for (u in userlist) {
 		if (groupselect > 0 && gname !~ usergroup[u]) continue # Select specified groupname only
 		totalusers++
-		if (group_totals_only==0) printf(fmt, maxlength, maxlength,
-			userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
-			usergroup[u], fullname[u])
+		if (group_totals_only==0) {
+			if (reason_print == 0)
+				printf(fmt, maxlength, maxlength,
+				userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
+				usergroup[u], fullname[u])
+			else
+				printf(reasonfmt, maxlength, maxlength,
+				userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
+				Dependency[u], Dependency_procs[u], CpuLimit[u], CpuLimit_procs[u], Held[u], Held_procs[u],
+				usergroup[u], fullname[u])
+		}
 		# Accumulate group statistics
 		grp = usergroup[u]
 		grouplist[grp] = grp
@@ -219,6 +276,14 @@ BEGIN {
 		group_runprocs[grp] += runprocs[u]
 		group_idle[grp] += idle[u]
 		group_idleprocs[grp] += idleprocs[u]
+		if (reason_print == 1) {
+			group_Dependency[grp] += Dependency[u]
+			group_Dependency_procs[grp] += Dependency_procs[u]
+			group_CpuLimit[grp] += CpuLimit[u]
+			group_CpuLimit_procs[grp] += CpuLimit_procs[u]
+			group_Held[grp] += Held[u]
+			group_Held_procs[grp] += Held_procs[u]
+		}
 	}
 	if (userselect > 0) exit	# Finished (username specified)
 
@@ -226,15 +291,27 @@ BEGIN {
 	groupfmt = "Running+Idle=%d CPUs %d users"
 	for (grp in grouplist) {
 		groupinfo = sprintf(groupfmt, group_runprocs[grp]+group_idleprocs[grp], groupusers[grp])
-		printf(fmt, maxlength, maxlength,
-			"GROUP_TOTAL", group_running[grp], group_runprocs[grp],
-			group_idle[grp], group_idleprocs[grp], grp, groupinfo)
+		if (reason_print == 0)
+			printf(fmt, maxlength, maxlength,
+			"GROUP_TOTAL", group_running[grp], group_runprocs[grp], group_idle[grp], group_idleprocs[grp],
+			grp, groupinfo)
+		else
+			printf(reasonfmt, maxlength, maxlength,
+			"GROUP_TOTAL", group_running[grp], group_runprocs[grp], group_idle[grp], group_idleprocs[grp],
+			group_Dependency[grp], group_Dependency_procs[grp], group_CpuLimit[grp], group_CpuLimit_procs[grp], group_Held[grp], group_Held_procs[grp],
+			grp, groupinfo)
 	}
 	if (groupselect > 0) exit	# Finished (groupname specified)
 
 	groupinfo = sprintf(groupfmt, totalrunprocs+totalidleprocs, totalusers)
-	printf(fmt, maxlength, maxlength,
+	if (reason_print == 0)
+		printf(fmt, maxlength, maxlength,
 		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		"ALL", groupinfo)
+	else
+		printf(reasonfmt, maxlength, maxlength,
+		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		totalDependency, totalDependency_procs, totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
 		"ALL", groupinfo)
 }' | env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d
 
