@@ -40,7 +40,7 @@ export ALLGROUPS=0
 export SORTCOLUMN=5
 
 # Process options
-while getopts "p:u:g:s:e:cGh" options; do
+while getopts "p:u:g:s:e:r:cGh" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo Print only accounting in Slurm partition $OPTARG
@@ -142,7 +142,7 @@ fi
 # First report overall statistics including nicely formatted start/end date:
 # Change the date/time format in report header for readibility (formats in "man strftime")
 
-REPORT=$REPORT_PREFIX.$REPORT_NAME
+REPORT=${REPORT_PREFIX}${REPORT_NAME}
 
 export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
