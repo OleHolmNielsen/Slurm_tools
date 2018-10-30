@@ -45,7 +45,7 @@ EOF
 # Parse command options
 #
 
-while getopts "a:s:e:r:mh" options; do
+while getopts "a:s:e:r:mch" options; do
 	case $options in
 		a )	export accountlist="Accounts=$OPTARG"
 			echo Select accounts $OPTARG
@@ -58,6 +58,11 @@ while getopts "a:s:e:r:mh" options; do
 		e )	export END="$OPTARG"
 			echo End date $OPTARG
 			REPORT_NAME=${START}_${END}
+			;;
+		c )	export START=`date +%m01%y`
+			export END=`date +%m%d%y`
+			echo Select current month from $START until $END
+			REPORT_NAME=Current_month
 			;;
 		r )	export REPORTDIR="$OPTARG"
 			echo Copy report to directory $OPTARG
