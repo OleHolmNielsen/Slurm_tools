@@ -3,7 +3,9 @@ Slurm accounting report tool
 
 Generate user and group accounting statistics from Slurm as an alternative to the ```sreport``` command.
 
-Specific start and end Time/Date must be specified.
+Specific start and end Time/Date may be specified.
+The default period is last month.
+The -c option selects the current month until today.
 
 A specific user, group or node partition may be specified.
 
@@ -29,15 +31,16 @@ Usage
 -----
 
 ```
-Usage: slurmacct -s Start_time -e End_time [-p partition(s)] [-u username] [-g groupname] [-G]
+Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-h]
 where:
-        -s Start_time: Starting time of accounting period.
-        -e End_time: End time of accounting period.
-        -p partition: Select only Slurm partion <partition>
-        -u username: Print only user <username> 
-        -g groupname: Print only users in UNIX group <groupname>
-        -G: Print only groupwise summed accounting data
-        -h: Print this help information
+	-s Start_time [last month]: Starting time of accounting period.
+	-e End_time [last month]: End time of accounting period.
+	-c: Current month
+	-p partition: Select only Slurm partion <partition>
+	-u username: Print only user <username> 
+	-g groupname: Print only users in UNIX group <groupname>
+	-G: Print only groupwise summed accounting data
+	-h: Print this help information
 
 The Start_time and End_time values specify the date/time interval of
 job completion/termination (see "man sacct").

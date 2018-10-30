@@ -9,16 +9,17 @@
 #
 function usage()
 {
-        cat <<EOF
-Usage: slurmacct -s Start_time -e End_time [-p partition(s)] [-u username] [-g groupname] [-G]
+	cat <<EOF
+Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-h]
 where:
-        -s Start_time: Starting time of accounting period.
-        -e End_time: End time of accounting period.
-        -p partition: Select only Slurm partion <partition>
-        -u username: Print only user <username> 
-        -g groupname: Print only users in UNIX group <groupname>
-        -G: Print only groupwise summed accounting data
-        -h: Print this help information
+	-s Start_time [last month]: Starting time of accounting period.
+	-e End_time [last month]: End time of accounting period.
+	-c: Current month
+	-p partition: Select only Slurm partion <partition>
+	-u username: Print only user <username> 
+	-g groupname: Print only users in UNIX group <groupname>
+	-G: Print only groupwise summed accounting data
+	-h: Print this help information
 
 The Start_time and End_time values specify the date/time interval of
 job completion/termination (see "man sacct").
@@ -36,43 +37,54 @@ export ALLGROUPS=0
 export SORTCOLUMN=5
 
 # Process options
-while getopts "p:u:g:s:e:hG" options; do
-        case $options in
-                p )     export partition=$OPTARG
-                        # echo Print only accounting in Slurm partition $OPTARG
-                        ;;
-                u )     export username=$OPTARG
+while getopts "p:u:g:s:e:cGh" options; do
+	case $options in
+		p )     export partition=$OPTARG
+			# echo Print only accounting in Slurm partition $OPTARG
+			;;
+		u )     export username=$OPTARG
 			export ALLGROUPS=0
-                        ;;
-                g )     export groupname="$OPTARG"
+			;;
+		g )     export groupname="$OPTARG"
 			export ALLGROUPS=0
 	    		export SORTCOLUMN=5
-                        # echo Print only users in UNIX group $OPTARG
-                        ;;
-                G )     export ALLGROUPS=1
+			# echo Print only users in UNIX group $OPTARG
+			;;
+		G )     export ALLGROUPS=1
 			export username=""
 			export groupname=""
 	    		export SORTCOLUMN=4
-                        # echo Print only groupwise summed accounting data
-                        ;;
-                s )     export start_time=$OPTARG
-                        ;;
-                e )     export end_time=$OPTARG
-                        ;;
-                h|? ) usage
-                        exit 1;;
-                * ) usage
-                        exit 1;;
-        esac
+			# echo Print only groupwise summed accounting data
+			;;
+		s )     export start_time=$OPTARG
+			;;
+		e )     export end_time=$OPTARG
+			;;
+		c )     export start_time=`date +%m01%y`
+			export end_time=`date +%m%d%y`
+			echo Select current month from $start_time until $end_time
+			REPORT_NAME=Current_month
+			;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
 done
 
-# Check time interval
+#
+# Default period: last month 
+#
+# Test if either start_time or end_time are empty strings
 if test -z "$start_time" -o -z "$end_time"
 then
-	echo ERROR: Invalid time interval - start_time=$start_time end_time=$end_time
-	usage
-	exit 1
+	MONTH=`date -d "last month" +%B`
+	YEAR=`date -d "last month" +%Y`
+	REPORT_NAME=${MONTH}_${YEAR}
+	start_time=`date -d "last month" +%m01%y`
+	end_time=`date +%m01%y`
 fi
+
 # Check partition name
 if test -n "$partition"
 then
@@ -140,7 +152,7 @@ then
 	then
 		echo "Partition selected: $partition"
 	fi
-	echo "                             Wallclock          Average Average"
+	echo "			     Wallclock	  Average Average"
 	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name"
 	echo "--------    -----  ------- -----------  ------- ------- -------  ---------"
 else
@@ -152,7 +164,7 @@ else
 	then
 		echo "Partition selected: $partition"
 	fi
-	echo "                    Wallclock          Average Average"
+	echo "		    Wallclock	  Average Average"
 	echo "   Group    #jobs       hours  Percent  #nodes q-hours"
 	echo "   -----  ------- -----------  ------- ------- -------"
 fi
