@@ -31,7 +31,7 @@ Usage
 -----
 
 ```
-Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-h]
+Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-directory] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
@@ -40,6 +40,7 @@ where:
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
+	-r: Copy the report to a specified directory as well
 	-h: Print this help information
 
 The Start_time and End_time values specify the date/time interval of

@@ -10,7 +10,7 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-h]
+Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-prefix] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
@@ -19,6 +19,7 @@ where:
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
+	-r: Report name prefix
 	-h: Print this help information
 
 The Start_time and End_time values specify the date/time interval of
@@ -30,6 +31,8 @@ EOF
 
 #####################################################################################
 
+# Report file prefix
+REPORT_PREFIX=/tmp/Slurm_report
 export partition=""
 export username=""
 export groupname=""
@@ -40,7 +43,7 @@ export SORTCOLUMN=5
 while getopts "p:u:g:s:e:cGh" options; do
 	case $options in
 		p )     export partition=$OPTARG
-			# echo Print only accounting in Slurm partition $OPTARG
+			echo Print only accounting in Slurm partition $OPTARG
 			;;
 		u )     export username=$OPTARG
 			export ALLGROUPS=0
@@ -48,22 +51,29 @@ while getopts "p:u:g:s:e:cGh" options; do
 		g )     export groupname="$OPTARG"
 			export ALLGROUPS=0
 	    		export SORTCOLUMN=5
-			# echo Print only users in UNIX group $OPTARG
+			echo Print only users in UNIX group $OPTARG
 			;;
 		G )     export ALLGROUPS=1
 			export username=""
 			export groupname=""
 	    		export SORTCOLUMN=4
-			# echo Print only groupwise summed accounting data
+			echo Print only groupwise summed accounting data
 			;;
 		s )     export start_time=$OPTARG
+			echo Start date $OPTARG
+			REPORT_NAME=${start_time}_${end_time}
 			;;
 		e )     export end_time=$OPTARG
+			echo End date $OPTARG
+			REPORT_NAME=${start_time}_${end_time}
 			;;
 		c )     export start_time=`date +%m01%y`
 			export end_time=`date +%m%d%y`
 			echo Select current month from $start_time until $end_time
 			REPORT_NAME=Current_month
+			;;
+		r )     export REPORT_PREFIX="$OPTARG"
+			echo Copy report to $OPTARG.
 			;;
 		h|? ) usage
 			exit 1;;
@@ -131,42 +141,45 @@ fi
 #
 # First report overall statistics including nicely formatted start/end date:
 # Change the date/time format in report header for readibility (formats in "man strftime")
+
+REPORT=$REPORT_PREFIX.$REPORT_NAME
+
 export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
-sreport cluster utilization start=$start_time end=$end_time -t percent
+sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
 
 if test $ALLGROUPS -eq 0
 then
 	# User statistics
-	echo
-	echo Usage sorted by top users:
+	echo >> $REPORT
+	echo Usage sorted by top users: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if test -n "$username"
 	then
-		echo "User name selected: $username"
+		echo "User name selected: $username" >> $REPORT
 	fi
 	if test -n "$groupname"
 	then
-		echo "Group name selected: $groupname"
+		echo "Group name selected: $groupname" >> $REPORT
 	fi
 	if test -n "$partition"
 	then
-		echo "Partition selected: $partition"
+		echo "Partition selected: $partition" >> $REPORT
 	fi
-	echo "			     Wallclock	  Average Average"
-	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name"
-	echo "--------    -----  ------- -----------  ------- ------- -------  ---------"
+	echo "			     Wallclock	  Average Average" >> $REPORT
+	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
+	echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
 else
 	# Group statistics
-	echo
-	echo Usage sorted by top groups:
+	echo >> $REPORT
+	echo Usage sorted by top groups: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if test -n "$partition"
 	then
-		echo "Partition selected: $partition"
+		echo "Partition selected: $partition" >> $REPORT
 	fi
-	echo "		    Wallclock	  Average Average"
-	echo "   Group    #jobs       hours  Percent  #nodes q-hours"
-	echo "   -----  ------- -----------  ------- ------- -------"
+	echo "		    Wallclock	  Average Average" >> $REPORT
+	echo "   Group    #jobs       hours  Percent  #nodes q-hours" >> $REPORT
+	echo "   -----  ------- -----------  ------- ------- -------" >> $REPORT
 fi
 
 #####################################################################################
@@ -336,9 +349,12 @@ BEGIN {
 			nodesaverage, totalwaitaverage/3600)
 	}
 		
-} ' | env LC_ALL=C sort -r -n -k $SORTCOLUMN -k 3 -k 1d
+} ' | env LC_ALL=C sort -r -n -k $SORTCOLUMN -k 3 -k 1d >> $REPORT
+
 # The sort command sorts number of running procs in descending order
 # on keys $SORTCOLUMN and 3, and alphabetical sort on key 1
 # The LC_ALL=C ensures that Upper case is sorted before lower case.
+
+echo Report generated to file $REPORT
 
 exit 0
