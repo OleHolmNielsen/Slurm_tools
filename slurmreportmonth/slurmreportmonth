@@ -34,6 +34,7 @@ where:
 	-a: Select an account (or list of accounts)
 	-s -e: Select Start and End dates of the report
 	-c: Select current month from the 1st until today
+	-w: Select the last week
 	-r: Copy the report to a specified directory as well
 
 Date format: MMDD
@@ -46,7 +47,7 @@ EOF
 # Parse command options
 #
 
-while getopts "a:s:e:r:mch" options; do
+while getopts "a:s:e:r:mcwh" options; do
 	case $options in
 		a )	export accountlist="Accounts=$OPTARG"
 			echo Select accounts $OPTARG
@@ -64,6 +65,11 @@ while getopts "a:s:e:r:mch" options; do
 			export END=`date +%m%d%y`
 			echo Select current month from $START until $END
 			REPORT_NAME=Current_month
+			;;
+		w )	export START=`date -d "last week" +%m%d%y`
+			export END=`date +%m%d%y`
+			echo Select last week from $START until $END
+			REPORT_NAME=Last_week
 			;;
 		r )	export REPORTDIR="$OPTARG"
 			echo Copy report to directory $OPTARG

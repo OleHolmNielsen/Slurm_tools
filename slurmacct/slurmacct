@@ -10,11 +10,12 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct -s Start_time -e End_time [-c] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-prefix] [-h]
+Usage: slurmacct -s Start_time -e End_time [-c | -w] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-prefix] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
+	-w: Last week
 	-p partition: Select only Slurm partion <partition>
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
@@ -40,7 +41,7 @@ export ALLGROUPS=0
 export SORTCOLUMN=5
 
 # Process options
-while getopts "p:u:g:s:e:r:cGh" options; do
+while getopts "p:u:g:s:e:r:cwGh" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo Print only accounting in Slurm partition $OPTARG
@@ -71,6 +72,11 @@ while getopts "p:u:g:s:e:r:cGh" options; do
 			export end_time=`date +%m%d%y`
 			echo Select current month from $start_time until $end_time
 			REPORT_NAME=Current_month
+			;;
+		w )     export start_time=`date -d 'last week' +%m%d%y`
+			export end_time=`date +%m%d%y`
+			echo Select last week from $start_time until $end_time
+			REPORT_NAME=Last_week
 			;;
 		r )     export REPORT_PREFIX="$OPTARG"
 			echo Copy report to $OPTARG.
