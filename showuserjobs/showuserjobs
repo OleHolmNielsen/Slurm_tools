@@ -17,6 +17,7 @@ where:
         -u username: Print only user <username> (do not use with the -g flag)
         -g groupname: Print only users in group <groupname>
 	-G: Print only GROUP_TOTAL lines
+	-C: Print comma separated lines for Excel
         -p partition: Print only jobs in partition <partition-list>
         -r: Print additional job Reason columns
         -h: Print this help information
@@ -32,9 +33,11 @@ export maxjobpercent=80
 # Process command arguments
 #
 export group_totals_only=0
+export comma_separated=0
+export SORT_SEP=""
 export reason_print=0
 
-while getopts "u:g:p:Grh" options; do
+while getopts "u:g:p:GCrh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username
@@ -44,6 +47,10 @@ while getopts "u:g:p:Grh" options; do
 			;;
 		G ) 	export group_totals_only=1
 			echo Select only GROUP_TOTAL lines
+			;;
+		C ) 	export comma_separated=1
+			export SORT_SEP="-t ,"
+			echo Print comma separated lines for Excel
 			;;
 		p ) 	export partition="-p $OPTARG"
 			echo Print only jobs in partition $OPTARG
@@ -129,11 +136,13 @@ fi
 echo | awk '
 BEGIN {
 	maxlength=ENVIRON["maxlength"]
+	comma_separated=ENVIRON["comma_separated"]
 	reason_print=ENVIRON["reason_print"]
 	line="============================="
 	print " "
 	if (reason_print==0) {
 		fmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+		if (comma_separated==1) fmt="%*.*s,%s,%s,%s,%s,%s,%s\n"
 		printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
 		printf (fmt, maxlength, maxlength, "Username",
 			"Jobs", "CPUs", "Jobs", "CPUs", "Group", "Further info")
@@ -144,6 +153,7 @@ BEGIN {
 		# Additional columns for job reasons
 		# reasonfmt = "%-*.*s %6s %6s   %6s %6s   %6s %6s   %6s %6s   %6s %6s  %-8s  %s\n"
 		reasonfmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+		if (comma_separated==1) reasonfmt="%*.*s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
 		printf (reasonfmt, maxlength, maxlength, "", "Running", "", "Idle", "",
 			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "",
 			"", "")
@@ -165,6 +175,7 @@ BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["groupname"]
 	maxlength=ENVIRON["maxlength"]
+	comma_separated=ENVIRON["comma_separated"]
 	group_totals_only=ENVIRON["group_totals_only"]
 	reason_print=ENVIRON["reason_print"]
 	# First get the list of group names 
@@ -255,8 +266,10 @@ BEGIN {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	# Output line format string
 	fmt = "%-*.*s %6d %6d   %6d %6d  %-8s  %s\n"
+	if (comma_separated==1) fmt = "%*.*s,%d,%d,%d,%d,%s,%s\n"
 	# Additional columns for job reasons
 	reasonfmt = "%-*.*s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %-8s  %s\n"
+	if (comma_separated==1) reasonfmt = "%*.*s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s\n"
 	# Future: Piping output to a sorting command 
 	# sorting = "env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
 
@@ -324,7 +337,7 @@ BEGIN {
 		totalPriority, totalPriority_procs, totalDependency, totalDependency_procs,
 		totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
 		"ALL", groupinfo)
-}' | env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d
+}' | env LC_ALL=C sort $SORT_SEP -r -n -k 3 -k 5 -k 1d
 
 # The sort command sorts number of running procs in descending order on keys 3,5 and alphabetical sort on key 1
 # The LC_ALL=C ensures that Upper case is sorted before lower case.
