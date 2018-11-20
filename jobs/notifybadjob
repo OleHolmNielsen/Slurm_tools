@@ -42,7 +42,15 @@ while getopts "k" options; do
 			exit 1;;
 	esac
 done
-shift $((OPTIND-1))
+
+# Test for extraneous command line arguments
+if test $# -gt $(($OPTIND-1))
+then
+	echo ERROR: Too many command line arguments: $*
+	echo $USAGE
+	exit 1
+fi
+
 
 # Get the jobid as the arguments
 JOBLIST=$*
