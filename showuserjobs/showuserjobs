@@ -12,7 +12,7 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-u username | -a account] [-p partition] [-A] [-h]
+Usage: $0 [-u username] [-a account] [-p partition] [-A] [-h]
 where:
         -u username: Print only user <username>
         -a account: Print only jobs in Slurm account <account>
