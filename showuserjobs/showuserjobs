@@ -2,7 +2,7 @@
 
 # Slurm batch queue:
 # Show the current batch jobs status broken down into userids.
-# Can also show per-user or per-group status.
+# Can also show per-user or per-account status.
 
 # Author: Ole H. Nielsen, Technical University of Denmark
 # E-mail: Ole.H.Nielsen@fysik.dtu.dk
@@ -12,11 +12,11 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-u username | -g groupname] [-p partition] [-G] [-h]
+Usage: $0 [-u username | -a account] [-p partition] [-A] [-h]
 where:
-        -u username: Print only user <username> (do not use with the -g flag)
-        -g groupname: Print only users in group <groupname>
-	-G: Print only GROUP_TOTAL lines
+        -u username: Print only user <username>
+        -a account: Print only jobs in Slurm account <account>
+	-A: Print only ACCT_TOTAL lines
 	-C: Print comma separated lines for Excel
         -p partition: Print only jobs in partition <partition-list>
         -r: Print additional job Reason columns
@@ -32,21 +32,22 @@ export maxjobpercent=80
 #
 # Process command arguments
 #
-export group_totals_only=0
+export account_totals_only=0
 export comma_separated=0
 export SORT_SEP=""
 export reason_print=0
+export account=""
 
-while getopts "u:g:p:GCrh" options; do
+while getopts "u:a:p:ACrh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username
 			;;
-		g ) 	export groupname=$OPTARG
-			echo Select only users in group $groupname
+		a ) 	export account=$OPTARG
+			echo Select only users in account $account
 			;;
-		G ) 	export group_totals_only=1
-			echo Select only GROUP_TOTAL lines
+		A ) 	export account_totals_only=1
+			echo Select only ACCT_TOTAL lines
 			;;
 		C ) 	export comma_separated=1
 			export SORT_SEP="-t ,"
@@ -69,17 +70,19 @@ while getopts "u:g:p:GCrh" options; do
 	esac
 done
 
+# WARNING: GNU gawk version 4.0 or later is required for arrays of arrays
+awk_version=`awk --version | head -1 | awk '{version=$3; split(version,v,"."); print v[1]}'`
+if test "$awk_version" = "3"
+then
+	echo -n "Sorry, gawk version 4.0 or later is required.  Your version is: "
+	awk --version | head -1
+	exit 1
+fi
+
 # Test for extraneous command line arguments
 if test $# -gt $(($OPTIND-1))
 then
 	echo ERROR: Too many command line arguments: $*
-	usage
-	exit 1
-fi
-
-if test -n "$username" -a -n "$groupname"
-then
-	echo ERROR: Do not select both username and groupname
 	usage
 	exit 1
 fi
@@ -145,7 +148,7 @@ BEGIN {
 		if (comma_separated==1) fmt="%*.*s,%s,%s,%s,%s,%s,%s\n"
 		printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
 		printf (fmt, maxlength, maxlength, "Username",
-			"Jobs", "CPUs", "Jobs", "CPUs", "Group", "Further info")
+			"Jobs", "CPUs", "Jobs", "CPUs", "Account", "Further info")
 		printf (fmt, maxlength, maxlength, line,
 			line, line, line, line,
 			line, line)
@@ -160,7 +163,7 @@ BEGIN {
 		printf (reasonfmt, maxlength, maxlength, "Username",
 			"Jobs", "CPUs", "Jobs", "CPUs",
 			"Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs",
-			"Group", "Further info")
+			"Account", "Further info")
 		printf (reasonfmt, maxlength, maxlength, line,
 			line, line, line, line,
 			line, line, line, line, line, line, line, line,
@@ -173,24 +176,16 @@ BEGIN {
 squeue $partition --noheader -o "%.8u %.8a %.10T %.6D %.6C %P %r" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
-	gname=ENVIRON["groupname"]
+	gname=ENVIRON["account"]
 	maxlength=ENVIRON["maxlength"]
 	comma_separated=ENVIRON["comma_separated"]
-	group_totals_only=ENVIRON["group_totals_only"]
+	account_totals_only=ENVIRON["account_totals_only"]
 	reason_print=ENVIRON["reason_print"]
-	# First get the list of group names 
-	while ("getent group" | getline ) {
-		split($0,b,":")		# Split group line into fields
-		groupgid[b[3]] = b[1]	# Group name b[1] of this groupid (b[3])
-		groupname[b[1]] = b[1]	# Group name b[1]
-	}
-	close("getent group")
 	# Then get the list of user full names from passwd lines
 	while ("getent passwd" | getline ) {
 		split($0,b,":")		# Split password line into fields
 		username[b[1]] = b[1]	# Username b[1]
 		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
-		usergroup[b[1]] = groupgid[b[4]]	# Group name of this GID (numeric group id)
 	}
 	close("getent passwd")
 	if (length(uname)>0) {		# Select username
@@ -200,15 +195,6 @@ BEGIN {
 		if (userselect != 1) {
 			printf("ERROR: Username %s is not in password file\n", uname)
 			errorexit = -1
-		}
-	}
-	if (length(gname)>0) {		# Select groupname
-		for (g in groupname) {
-			if (g == gname) groupselect=1	# Group found
-		}
-		if (groupselect != 1) {
-			printf("ERROR: Groupname %s is not in group file\n", gname)
-			errorexit = -2
 		}
 	}
 	if (errorexit != 0) exit errorexit	# Will jump to END section
@@ -223,39 +209,41 @@ BEGIN {
 	nprocs=$5
 	partition=$6
 	reason=$7
-	if (userselect > 0 && uname !~ username[userid]) next	# Select specified username only
-	userlist[userid] = userid
+	# if (userselect > 0 && uname !~ username[userid]) next	# Select specified username only
+	if (userselect > 0 && uname !~ userid) next	# Select specified username only
+	userlist[userid][account] = userid
+	accountlist[userid][account] = account
 
 	if (status == "RUNNING" ) {
-		running[userid]++
+		running[userid][account]++
 		totalrun++
-		runprocs[userid] += nprocs
+		runprocs[userid][account] += nprocs
 		totalrunprocs += nprocs
 	} else {
 		# PENDING jobs
-		idle[userid]++
-		idleprocs[userid] += nprocs
+		idle[userid][account]++
+		idleprocs[userid][account] += nprocs
 		totalidle++
 		totalidleprocs += nprocs
 		if (reason_print == 1) {
 			if (reason == "Dependency") {
-				Dependency[userid]++
-				Dependency_procs[userid] += nprocs
+				Dependency[userid][account]++
+				Dependency_procs[userid][account] += nprocs
 				totalDependency++
 				totalDependency_procs += nprocs
 			} else if (reason == "Resources" || reason == "Priority") {
-				Priority[userid]++
-				Priority_procs[userid] += nprocs
+				Priority[userid][account]++
+				Priority_procs[userid][account] += nprocs
 				totalPriority++
 				totalPriority_procs += nprocs
 			} else if (reason == "AssocGrpCpuLimit" || reason == "AssocGrpCPURunMinutesLimit") {
-				CpuLimit[userid]++
-				CpuLimit_procs[userid] += nprocs
+				CpuLimit[userid][account]++
+				CpuLimit_procs[userid][account] += nprocs
 				totalCpuLimit++
 				totalCpuLimit_procs += nprocs
 			} else if (reason == "JobHeldUser" || reason == "JobHeldAdmin") {
-				Held[userid]++
-				Held_procs[userid] += nprocs
+				Held[userid][account]++
+				Held_procs[userid][account] += nprocs
 				totalHeld++
 				totalHeld_procs += nprocs
 			}
@@ -274,69 +262,73 @@ BEGIN {
 	# sorting = "env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
 
 	for (u in userlist) {
-		if (groupselect > 0 && gname !~ usergroup[u]) continue # Select specified groupname only
+	for (a in userlist[u]) {
+		userid = userlist[u][a]
+		account = accountlist[u][a]
+		if (length(gname)>0 && gname !~ account) continue # Proceed for specified account only
 		totalusers++
-		if (group_totals_only==0) {
+		if (account_totals_only==0) {
 			if (reason_print == 0)
 				printf(fmt, maxlength, maxlength,
-				userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
-				usergroup[u], fullname[u])
+				userid, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
+				account, fullname[userid])
 			else
 				printf(reasonfmt, maxlength, maxlength,
-				userlist[u], running[u], runprocs[u], idle[u], idleprocs[u],
-				Priority[u], Priority_procs[u], Dependency[u], Dependency_procs[u],
-				CpuLimit[u], CpuLimit_procs[u], Held[u], Held_procs[u],
-				usergroup[u], fullname[u])
+				userid, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
+				Priority[u][a], Priority_procs[u][a], Dependency[u][a], Dependency_procs[u][a],
+				CpuLimit[u][a], CpuLimit_procs[u][a], Held[u][a], Held_procs[u][a],
+				account, fullname[userid])
 		}
-		# Accumulate group statistics
-		grp = usergroup[u]
-		grouplist[grp] = grp
-		groupusers[grp]++
-		group_running[grp] += running[u]
-		group_runprocs[grp] += runprocs[u]
-		group_idle[grp] += idle[u]
-		group_idleprocs[grp] += idleprocs[u]
+		# Accumulate account statistics
+		grp = account
+		accounts[grp] = grp
+		accountusers[grp]++
+		account_running[grp] += running[u][a]
+		account_runprocs[grp] += runprocs[u][a]
+		account_idle[grp] += idle[u][a]
+		account_idleprocs[grp] += idleprocs[u][a]
 		if (reason_print == 1) {
-			group_Dependency[grp] += Dependency[u]
-			group_Dependency_procs[grp] += Dependency_procs[u]
-			group_Priority[grp] += Priority[u]
-			group_Priority_procs[grp] += Priority_procs[u]
-			group_CpuLimit[grp] += CpuLimit[u]
-			group_CpuLimit_procs[grp] += CpuLimit_procs[u]
-			group_Held[grp] += Held[u]
-			group_Held_procs[grp] += Held_procs[u]
+			account_Dependency[grp] += Dependency[u][a]
+			account_Dependency_procs[grp] += Dependency_procs[u][a]
+			account_Priority[grp] += Priority[u][a]
+			account_Priority_procs[grp] += Priority_procs[u][a]
+			account_CpuLimit[grp] += CpuLimit[u][a]
+			account_CpuLimit_procs[grp] += CpuLimit_procs[u][a]
+			account_Held[grp] += Held[u][a]
+			account_Held_procs[grp] += Held_procs[u][a]
 		}
+	}
 	}
 	if (userselect > 0) exit	# Finished (username specified)
 
-	# Group info format string
-	groupfmt = "Running+Idle=%d CPUs %d users"
-	for (grp in grouplist) {
-		groupinfo = sprintf(groupfmt, group_runprocs[grp]+group_idleprocs[grp], groupusers[grp])
+	# Account info format string
+	accountfmt = "Running+Idle=%d CPUs, %d users"
+	for (grp in accounts) {
+		accountinfo = sprintf(accountfmt, account_runprocs[grp]+account_idleprocs[grp], accountusers[grp])
 		if (reason_print == 0)
 			printf(fmt, maxlength, maxlength,
-			"GROUP_TOTAL", group_running[grp], group_runprocs[grp], group_idle[grp], group_idleprocs[grp],
-			grp, groupinfo)
+			"ACCT_TOTAL", account_running[grp], account_runprocs[grp], account_idle[grp], account_idleprocs[grp],
+			grp, accountinfo)
 		else
 			printf(reasonfmt, maxlength, maxlength,
-			"GROUP_TOTAL", group_running[grp], group_runprocs[grp], group_idle[grp], group_idleprocs[grp],
-			group_Priority[grp], group_Priority_procs[grp], group_Dependency[grp], group_Dependency_procs[grp],
-			group_CpuLimit[grp], group_CpuLimit_procs[grp], group_Held[grp], group_Held_procs[grp],
-			grp, groupinfo)
+			"ACCT_TOTAL", account_running[grp], account_runprocs[grp], account_idle[grp], account_idleprocs[grp],
+			account_Priority[grp], account_Priority_procs[grp], account_Dependency[grp], account_Dependency_procs[grp],
+			account_CpuLimit[grp], account_CpuLimit_procs[grp], account_Held[grp], account_Held_procs[grp],
+			grp, accountinfo)
 	}
-	if (groupselect > 0) exit	# Finished (groupname specified)
+	if (length(gname) > 0) exit	# Finished (account specified)
 
-	groupinfo = sprintf(groupfmt, totalrunprocs+totalidleprocs, totalusers)
+	accountinfo = sprintf(accountfmt, totalrunprocs+totalidleprocs, totalusers)
 	if (reason_print == 0)
 		printf(fmt, maxlength, maxlength,
 		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
-		"ALL", groupinfo)
+		"ALL", accountinfo)
 	else
 		printf(reasonfmt, maxlength, maxlength,
 		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
 		totalPriority, totalPriority_procs, totalDependency, totalDependency_procs,
 		totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
-		"ALL", groupinfo)
+		"ALL", accountinfo)
 }' | env LC_ALL=C sort $SORT_SEP -r -n -k 3 -k 5 -k 1d
 
 # The sort command sorts number of running procs in descending order on keys 3,5 and alphabetical sort on key 1
