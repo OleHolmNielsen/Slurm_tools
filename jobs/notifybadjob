@@ -42,6 +42,7 @@ while getopts "k" options; do
 			exit 1;;
 	esac
 done
+shift $((OPTIND-1))
 
 # Get the jobid as the arguments
 JOBLIST=$*
