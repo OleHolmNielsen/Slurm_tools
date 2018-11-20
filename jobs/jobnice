@@ -13,21 +13,22 @@ SQUEUE_FORMAT="%y %Q %T %A %P %u %g %S %e %j %b %R"
 while getopts "lp:n:h" options; do
 	case $options in
 		l )	listnice=1
-			shift;;
+			;;
 		p )	export partition="-p $OPTARG"
 			echo "Select partition $OPTARG"
 			listnice=1
-			shift 2;;
+			;;
 		n )	export NICE=$OPTARG
 			listnice=0
 			echo Set job nice value to $NICE
-			shift 2;;
+			;;
 		h | * )	echo "Usage:"
 			echo "Listing: $0 -l | -p partition"
 			echo "Setting: $0 [-n nice-value] job [jobs ...]"
 			exit 1;;
 	esac
 done
+shift $((OPTIND-1))
 
 if test $listnice -eq 0
 then
