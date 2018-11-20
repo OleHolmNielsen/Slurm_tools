@@ -87,6 +87,7 @@ while getopts "p:u:g:s:e:r:cwGh" options; do
 			exit 1;;
 	esac
 done
+shift $((OPTIND-1))
 
 #
 # Default period: last month 
