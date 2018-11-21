@@ -258,8 +258,8 @@ fi
 # Main pestat function: Execute Slurm commands and print output.
 #
 
-# Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY FREE_MEM STATE
-$prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z" | $my_awk '
+# Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY FREE_MEM STATE GRES
+$prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
 BEGIN {
 	#####################################################################################
 	# Initialization
@@ -348,13 +348,14 @@ BEGIN {
 	close (JOBLIST)
 	# The job information may include EndTime
 	JobInfo = "JobId User"
-	if (printgres == 1) JobInfo = JobInfo " GRES"
+	if (printgres == 1) JobInfo = JobInfo " GRES/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
 	JobInfo = JobInfo " ..."
 	# Print a header line (variable hostnamelength)
-	printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
-	printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", JobInfo)
+	if (printgres == 1) { gresheader1 = "GRES/   "; gresheader2 = "node    "}
+	printf("%*s %15s %8s %7s %8s %8s %8s  %s%s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", gresheader1, "Joblist")
+	printf("%*s %15s %8s %7s %8s %8s %8s  %s%s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", gresheader2, JobInfo)
 }
 {
 	#####################################################################################
@@ -373,10 +374,12 @@ BEGIN {
 	memory=$5
 	freemem=$6
 	state=$7
-	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
-	threadspercore=$8
 	gsub("*", "", state)	# Strip "*" from nodename in default partition
 	gsub("$", "", state)	# Strip "$" for state=maintenance
+	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
+	threadspercore=$8
+	# Generic resources (GRES) associated with the node
+	nodegres=$9
 
 	# Select only subset of nodes with certain values/states
 	listnode = printallnodes
@@ -462,6 +465,7 @@ BEGIN {
 		printf("%s%3d%s %3d ", cpucolor, cpulist[1], NORMAL, cpulist[4])
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
 		printf("%s%8d %s%8d%1s%s ", memcolor, memory, freememcolor, freemem, memflag, NORMAL)
+		if (printgres == 1) printf("%s ", nodegres)
 		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
 		printf("\n")
 	}
