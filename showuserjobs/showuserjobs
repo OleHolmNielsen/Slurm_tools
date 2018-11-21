@@ -6,7 +6,7 @@
 
 # Author: Ole H. Nielsen, Technical University of Denmark
 # E-mail: Ole.H.Nielsen@fysik.dtu.dk
-
+# Home page: https://github.com/OleHolmNielsen/Slurm_tools
 
 # Command usage:
 function usage()
@@ -144,26 +144,24 @@ BEGIN {
 	line="============================="
 	print " "
 	if (reason_print==0) {
-		fmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+		fmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s  %s\n"
 		if (comma_separated==1) fmt="%*.*s,%s,%s,%s,%s,%s,%s\n"
-		printf (fmt, maxlength, maxlength, "", "Running", "", "Idle", "", "", "")
-		printf (fmt, maxlength, maxlength, "Username",
-			"Jobs", "CPUs", "Jobs", "CPUs", "Account", "Further info")
+		printf (fmt, maxlength, maxlength, "Username/", "", "Running", "", "Idle", "", "")
+		printf (fmt, maxlength, maxlength, "Totals", "Account",
+			"Jobs", "CPUs", "Jobs", "CPUs", "Further info")
 		printf (fmt, maxlength, maxlength, line,
 			line, line, line, line,
 			line, line)
 	} else {
 		# Additional columns for job reasons
-		# reasonfmt = "%-*.*s %6s %6s   %6s %6s   %6s %6s   %6s %6s   %6s %6s  %-8s  %s\n"
-		reasonfmt="%-*.*s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %-8.8s  %s\n"
+		reasonfmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %s\n"
 		if (comma_separated==1) reasonfmt="%*.*s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
-		printf (reasonfmt, maxlength, maxlength, "", "Running", "", "Idle", "",
-			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "",
-			"", "")
-		printf (reasonfmt, maxlength, maxlength, "Username",
+		printf (reasonfmt, maxlength, maxlength, "Username/", "", "Running", "", "Idle", "",
+			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "", "")
+		printf (reasonfmt, maxlength, maxlength, "Totals", "Account", 
 			"Jobs", "CPUs", "Jobs", "CPUs",
 			"Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs",
-			"Account", "Further info")
+			"Further info")
 		printf (reasonfmt, maxlength, maxlength, line,
 			line, line, line, line,
 			line, line, line, line, line, line, line, line,
@@ -253,83 +251,80 @@ BEGIN {
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	# Output line format string
-	fmt = "%-*.*s %6d %6d   %6d %6d  %-8s  %s\n"
-	if (comma_separated==1) fmt = "%*.*s,%d,%d,%d,%d,%s,%s\n"
+	fmt = "%-*.*s %-8s %6d %6d   %6d %6d  %s\n"
+	if (comma_separated==1) fmt = "%*.*s,%s,%d,%d,%d,%d,%s\n"
 	# Additional columns for job reasons
-	reasonfmt = "%-*.*s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %-8s  %s\n"
-	if (comma_separated==1) reasonfmt = "%*.*s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%s\n"
-	# Future: Piping output to a sorting command 
-	# sorting = "env LC_ALL=C sort -r -n -k 3 -k 5 -k 1d"
+	reasonfmt = "%-*.*s %-8s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %s\n"
+	if (comma_separated==1) reasonfmt = "%*.*s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
 
 	for (u in userlist) {
-	for (a in userlist[u]) {
-		userid = userlist[u][a]
-		account = accountlist[u][a]
-		if (length(gname)>0 && gname !~ account) continue # Proceed for specified account only
-		totalusers++
-		if (account_totals_only==0) {
-			if (reason_print == 0)
-				printf(fmt, maxlength, maxlength,
-				userid, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
-				account, fullname[userid])
-			else
-				printf(reasonfmt, maxlength, maxlength,
-				userid, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
-				Priority[u][a], Priority_procs[u][a], Dependency[u][a], Dependency_procs[u][a],
-				CpuLimit[u][a], CpuLimit_procs[u][a], Held[u][a], Held_procs[u][a],
-				account, fullname[userid])
+		for (a in userlist[u]) {
+			userid = userlist[u][a]
+			account = accountlist[u][a]
+			if (length(gname)>0 && gname !~ account) continue # Proceed for specified account only
+			totalusers++
+			if (account_totals_only==0) {
+				if (reason_print == 0)
+					printf(fmt, maxlength, maxlength,
+					userid, account, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
+					fullname[userid])
+				else
+					printf(reasonfmt, maxlength, maxlength,
+					userid, account, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
+					Priority[u][a], Priority_procs[u][a], Dependency[u][a], Dependency_procs[u][a],
+					CpuLimit[u][a], CpuLimit_procs[u][a], Held[u][a], Held_procs[u][a],
+					fullname[userid])
+			}
+			# Accumulate account statistics
+			accounts[account] = account
+			accountusers[account]++
+			account_running[account] += running[u][a]
+			account_runprocs[account] += runprocs[u][a]
+			account_idle[account] += idle[u][a]
+			account_idleprocs[account] += idleprocs[u][a]
+			if (reason_print == 1) {
+				account_Dependency[account] += Dependency[u][a]
+				account_Dependency_procs[account] += Dependency_procs[u][a]
+				account_Priority[account] += Priority[u][a]
+				account_Priority_procs[account] += Priority_procs[u][a]
+				account_CpuLimit[account] += CpuLimit[u][a]
+				account_CpuLimit_procs[account] += CpuLimit_procs[u][a]
+				account_Held[account] += Held[u][a]
+				account_Held_procs[account] += Held_procs[u][a]
+			}
 		}
-		# Accumulate account statistics
-		grp = account
-		accounts[grp] = grp
-		accountusers[grp]++
-		account_running[grp] += running[u][a]
-		account_runprocs[grp] += runprocs[u][a]
-		account_idle[grp] += idle[u][a]
-		account_idleprocs[grp] += idleprocs[u][a]
-		if (reason_print == 1) {
-			account_Dependency[grp] += Dependency[u][a]
-			account_Dependency_procs[grp] += Dependency_procs[u][a]
-			account_Priority[grp] += Priority[u][a]
-			account_Priority_procs[grp] += Priority_procs[u][a]
-			account_CpuLimit[grp] += CpuLimit[u][a]
-			account_CpuLimit_procs[grp] += CpuLimit_procs[u][a]
-			account_Held[grp] += Held[u][a]
-			account_Held_procs[grp] += Held_procs[u][a]
-		}
-	}
 	}
 	if (userselect > 0) exit	# Finished (username specified)
 
 	# Account info format string
 	accountfmt = "Running+Idle=%d CPUs, %d users"
-	for (grp in accounts) {
-		accountinfo = sprintf(accountfmt, account_runprocs[grp]+account_idleprocs[grp], accountusers[grp])
+	for (acct in accounts) {
+		accountinfo = sprintf(accountfmt, account_runprocs[acct]+account_idleprocs[acct], accountusers[acct])
 		if (reason_print == 0)
 			printf(fmt, maxlength, maxlength,
-			"ACCT_TOTAL", account_running[grp], account_runprocs[grp], account_idle[grp], account_idleprocs[grp],
-			grp, accountinfo)
+			"ACCT_TOTAL", acct, account_running[acct], account_runprocs[acct], account_idle[acct], account_idleprocs[acct],
+			accountinfo)
 		else
 			printf(reasonfmt, maxlength, maxlength,
-			"ACCT_TOTAL", account_running[grp], account_runprocs[grp], account_idle[grp], account_idleprocs[grp],
-			account_Priority[grp], account_Priority_procs[grp], account_Dependency[grp], account_Dependency_procs[grp],
-			account_CpuLimit[grp], account_CpuLimit_procs[grp], account_Held[grp], account_Held_procs[grp],
-			grp, accountinfo)
+			"ACCT_TOTAL", acct, account_running[acct], account_runprocs[acct], account_idle[acct], account_idleprocs[acct],
+			account_Priority[acct], account_Priority_procs[acct], account_Dependency[acct], account_Dependency_procs[acct],
+			account_CpuLimit[acct], account_CpuLimit_procs[acct], account_Held[acct], account_Held_procs[acct],
+			accountinfo)
 	}
 	if (length(gname) > 0) exit	# Finished (account specified)
 
 	accountinfo = sprintf(accountfmt, totalrunprocs+totalidleprocs, totalusers)
 	if (reason_print == 0)
 		printf(fmt, maxlength, maxlength,
-		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
-		"ALL", accountinfo)
+		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		accountinfo)
 	else
 		printf(reasonfmt, maxlength, maxlength,
-		"GRAND_TOTAL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
 		totalPriority, totalPriority_procs, totalDependency, totalDependency_procs,
 		totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
-		"ALL", accountinfo)
-}' | env LC_ALL=C sort $SORT_SEP -r -n -k 3 -k 5 -k 1d
+		accountinfo)
+}' | env LC_ALL=C sort $SORT_SEP -r -n -k 4 -k 6 -k 1d
 
-# The sort command sorts number of running procs in descending order on keys 3,5 and alphabetical sort on key 1
+# The sort command sorts number of running procs in descending order on keys 4,6 and alphabetical sort on key 1
 # The LC_ALL=C ensures that Upper case is sorted before lower case.
