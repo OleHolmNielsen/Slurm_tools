@@ -30,13 +30,14 @@ export PESTAT_CONFIG=$HOME/.pestat.conf
 function usage()
 {
 	cat <<EOF
-Usage: pestat [-p partition(s)] [-u username] [-g groupname]
+Usage: pestat [-p partition(s)] [-u username] [-g groupname] [-a accountname]
 	[-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
 	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-E] [-C|-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
+	-a accountname: Print only users in Slurm account <accountname>
 	-q qoslist: Print only QOS in the qoslist <qoslist>
 	-R reservationlist: Print only node reservations <reservationlist>
 	-s statelist: Print only nodes with state in <statelist> 
@@ -134,7 +135,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:q:s:n:j:w:m:M:R:CcdhVFf12ENG" options; do
+while getopts "p:u:g:a:q:s:n:j:w:m:M:R:CcdhVFf12ENG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -154,6 +155,16 @@ while getopts "p:u:g:q:s:n:j:w:m:M:R:CcdhVFf12ENG" options; do
 				echo Print only users in UNIX group $OPTARG
 			else
 				echo Error selecting UNIX group $OPTARG
+				exit -1
+			fi
+			;;
+		a )	export accountlist=$OPTARG
+			if test "`$prefix/sacctmgr -n -p show account $accountlist`"
+			then
+				echo Select only Slurm account=$accountlist
+			else
+				echo Error selecting Slurm account $accountlist
+				echo Print all available accounts by: sacctmgr show account
 				exit -1
 			fi
 			;;
@@ -269,6 +280,7 @@ BEGIN {
 	username=ENVIRON["username"]
 	groupname=ENVIRON["groupname"]
 	qoslist=ENVIRON["qoslist"]
+	accountlist=ENVIRON["accountlist"]
 	reservationlist=ENVIRON["reservationlist"]
 	free_mem_less=ENVIRON["free_mem_less"]
 	free_mem_more=ENVIRON["free_mem_more"]
@@ -294,6 +306,7 @@ BEGIN {
 		NORMAL="\033[0m"
 	}
 
+	if (accountlist != "") selection = selection " -A " accountlist
 	if (qoslist != "") selection = selection " -q " qoslist
 	if (reservationlist != "") selection = selection " -R " reservationlist
 	# The "scontrol show hostnames" command is used to expand NodeList expressions
