@@ -16,6 +16,7 @@ where:
         -p partition: Select only partion <partition>
         -u username: Print only user <username>
         -g groupname: Print only users in UNIX group <groupname>
+	-a accountname: Print only users in Slurm account <accountname>
         -q qoslist: Print only QOS in the qoslist <qoslist>
         -R reservationlist: Print only node reservations <reservationlist>
         -s statelist: Print only nodes with state in <statelist>
