@@ -9,7 +9,7 @@ Usage
 -----
 
 ```
-Usage: pestat [-p partition(s)] [-u username] [-g groupname]
+Usage: pestat [-p partition(s)] [-u username] [-g groupname] [-a accountname]
         [-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
         [-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-E] [-C|-c] [-V] [-h]
 where:
