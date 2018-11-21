@@ -3,7 +3,7 @@ Slurm node and batch job status
 
 Print the current node status and batch jobs status broken down into userids.
 
-Can also display per-user or per-group status.  A partition may be selected.
+Can also display per-user or per-account status.  A partition may be selected.
 
 The maximum username length may be changed in the script:
 * export maxlength=11
@@ -28,23 +28,24 @@ Example output
 
 ```
 $ showuserjobs 
-Batch job status at Tue Nov 20 15:26:49 CET 2018
+Batch job status at Wed Nov 21 09:10:34 CET 2018
  
 Node states summary:
-alloc     783 nodes (10472 CPUs)
-idle        2 nodes (40 CPUs)
-mix        17 nodes (272 CPUs)
+mix        19 nodes (288 CPUs)
+alloc     759 nodes (10280 CPUs)
+drng        1 nodes (16 CPUs)
+idle       23 nodes (200 CPUs)
 Total     802 nodes (10784 CPUs)
 
-Job summary: 4132 jobs total (max=20000) in all partitions.
+Job summary: 3092 jobs total (max=20000) in all partitions.
  
-            Runnin            Idle                   
-Username      Jobs   CPUs     Jobs   CPUs  Account   Further info
-=========== ====== ======   ====== ======  ========  =============================
-GRAND_TOTAL    470  10599     3662 106834  ALL       Running+Idle=117433 CPUs, 53 users
-ACCT_TOTAL     304   4824     2753  88217  camdvip   Running+Idle=93041 CPUs, 12 users
-ACCT_TOTAL      55   1576      121   2932  ecsvip    Running+Idle=4508 CPUs, 11 users
-user01         150   1200       51    442  camdvip   User name 1
-user02           4   1152      112  31712  camdvip   User name 2
+Username/            Runnin            Idle         
+Totals      Account    Jobs   CPUs     Jobs   CPUs  Further info
+=========== ======== ====== ======   ====== ======  =============================
+GRAND_TOTAL ALL         379  10498     2713  95305  Running+Idle=105803 CPUs, 46 users
+ACCT_TOTAL  camdvip     214   4406     2301  81335  Running+Idle=85741 CPUs, 11 users
+ACCT_TOTAL  ecsvip       51   1516       91   2264  Running+Idle=3780 CPUs, 8 users
+user01      camdvip       8   1200       47   6384  Full name 1
+user02      camdvip       6   1166      101  28824  Full name 2
 ...
 ```
