@@ -87,7 +87,9 @@ then
 	exit 1
 fi
 
-echo Batch job status at `date`
+export SYSTEMNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
+
+echo Batch job status for cluster $SYSTEMNAME at `date`
 
 #
 # Print a nodes state summary
