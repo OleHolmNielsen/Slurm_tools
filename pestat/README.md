@@ -16,7 +16,7 @@ where:
         -p partition: Select only partion <partition>
         -u username: Print only user <username>
         -g groupname: Print only users in UNIX group <groupname>
-	-a accountname: Print only users in Slurm account <accountname>
+	-a accountname: Print only jobs in Slurm account <accountname>
         -q qoslist: Print only QOS in the qoslist <qoslist>
         -R reservationlist: Print only node reservations <reservationlist>
         -s statelist: Print only nodes with state in <statelist>
@@ -73,7 +73,14 @@ Users may copy and edit this file as ```$HOME/.pestat.conf```.
 Configuration
 -------------
 
-Global configuration file for pestat: ```/etc/pestat.conf```
+Some Environment configuration lines lines near the top of pestat may need to be changed for your environment, for example:
+
+```
+# Directory where Slurm commands live:
+export prefix=/usr/bin
+```
+
+The global configuration file for pestat: ```/etc/pestat.conf```
 
 Per-user configuration file for pestat: ```$HOME/.pestat.conf```
 
