@@ -316,7 +316,7 @@ BEGIN {
 	# Gather the list of running jobs with squeue
 
 	# Running jobs info: JobState JobId User group NodeList StartTime EndTime JobName GRES
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j %b\" " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j %P %b\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
@@ -328,7 +328,8 @@ BEGIN {
 		StartTime=$6
 		EndTime=$7
 		JobName=$8
-		GRES=$9
+		Partition=$9
+		GRES=$10
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
 		if (printgres == 1) JobInfo = JobInfo GRES " "
@@ -351,6 +352,7 @@ BEGIN {
 			n = jobnodes[i]
 			hostname[n] = n
 			jobs[n] = jobs[n] JobInfo
+			partitions[n] = Partition
 			numjobs[n]++
 			# If username has been selected and node "n" runs job belonging to username:
 			if (User == username) selecteduser[n] = User
@@ -380,7 +382,12 @@ BEGIN {
 	if (username != "" && selecteduser[node] == "") next
 	if (groupname != "" && selectedgroup[node] == "") next
 
-	partition=$2
+	# Get partition information from squeue if possible, but fallback to sinfo
+	if (node in partitions) {
+		partition=partitions[node]
+	} else {
+		partition=$2
+	}
 	# sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
 	split($3,cpulist,"/")
 	cpuload=$4
