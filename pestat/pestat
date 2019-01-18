@@ -347,12 +347,20 @@ BEGIN {
 			while ((cmd | getline) > 0) jobnodes[++i] = $1
 			close (cmd)
 		}
-		# Populate the node arrays with "JobId User" (multiple jobs may exist, EndTime may be added)
+		# Populate the jobs arrays with "JobId User" (Multiple jobs may exist on each node, and EndTime may be added).
+		# Populate the partitions array from job info.
 		for (i in jobnodes) {
 			n = jobnodes[i]
 			hostname[n] = n
 			jobs[n] = jobs[n] JobInfo
-			partitions[n] = Partition
+			# Has partitions on this node been set previously?
+			if (partitions[n] == "") {
+				# Set the partition name from this running job
+				partitions[n] = Partition
+			} else if (partitions[n] != Partition) {
+				# This node runs jobs from multiple, distinct partitions: Denote this by a "+"
+				multipartitions[n] = "+"
+			}
 			numjobs[n]++
 			# If username has been selected and node "n" runs job belonging to username:
 			if (User == username) selecteduser[n] = User
@@ -382,13 +390,15 @@ BEGIN {
 	if (username != "" && selecteduser[node] == "") next
 	if (groupname != "" && selectedgroup[node] == "") next
 
-	# Get partition information from squeue if possible, but fallback to sinfo
+	# Get partition information from squeue (job centric info) if possible
 	if (node in partitions) {
-		partition=partitions[node]
+		# Add the multipartitions "+" character if jobs from more than 1 partition run on the node
+		partition = partitions[node] multipartitions[node]
 	} else {
-		partition=$2
+		# Fallback to node centric information from sinfo
+		partition = $2
 	}
-	# sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
+	# CPU info: sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
 	split($3,cpulist,"/")
 	cpuload=$4
 	memory=$5
