@@ -391,11 +391,11 @@ BEGIN {
 	if (groupname != "" && selectedgroup[node] == "") next
 
 	# Get partition information from squeue (job centric info) if possible
-	if (node in partitions) {
+	if (uniquenodes && node in partitions) {
 		# Add the multipartitions "+" character if jobs from more than 1 partition run on the node
 		partition = partitions[node] multipartitions[node]
 	} else {
-		# Fallback to node centric information from sinfo
+		# Fallback to node centric information from sinfo (also if uniquenodes is set from the option -2)
 		partition = $2
 	}
 	# CPU info: sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
