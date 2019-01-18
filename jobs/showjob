@@ -23,23 +23,21 @@ then
 	# Job found in the queue
 	echo "Queued job information:"
 	scontrol show job $jobid | tee $TMPFILE
+	# Parse the job status information (read E-mail)
+	export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//'`
+	if test "$jobscript" != "(null)"
+	then
+		grep "mail-user" $jobscript > $TMPFILE
+		if test -s $TMPFILE
+		then
+			echo Job script E-mail has been set:
+			cat $TMPFILE
+		fi
+	fi
+	rm -f $TMPFILE
 else
 	echo "The job $jobid is not in the current Slurm queue."
-	exit 1
 fi
-
-# Parse the job status information (read E-mail)
-export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//'`
-if test "$jobscript" != "(null)"
-then
-	grep "mail-user" $jobscript > $TMPFILE
-	if test -s $TMPFILE
-	then
-		echo Job script E-mail has been set:
-		cat $TMPFILE
-	fi
-fi
-rm -f $TMPFILE
 
 ###########################################################################
 # Execute sacct and print nicely formatted output
