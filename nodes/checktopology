@@ -9,15 +9,15 @@ export TOPOLOGY_LIST=/tmp/topology.conf_list.$$
 export NODELIST=/tmp/slurm.conf_list.$$
 
 echo Extract nodelist from $TOPOLOGYCONF
-export TOPOLOGY_ALLNODES=`grep -i Nodes= $TOPOLOGYCONF | awk -F= '{printf("%s,", $3)}'`
-scontrol show hostnames $TOPOLOGY_ALLNODES | sort > $TOPOLOGY_LIST
+export TOPOLOGY_ALLNODES=`grep -i Nodes= $TOPOLOGYCONF | grep -v '^\s*#' | awk -F= '{printf("%s,", $3)}'`
+scontrol show hostnames $TOPOLOGY_ALLNODES | sort -V > $TOPOLOGY_LIST
 
 # Get current Slurm node list
 # (Nodes in multiple partitions will be printed multiple times)
-sinfo -h -N -o %n | sort | uniq > $NODELIST
+sinfo -h -N -o %N | sort -V | uniq > $NODELIST
 
 echo Differences between nodelists in $SLURMCONF and $TOPOLOGYCONF:
 diff -is -c $NODELIST $TOPOLOGY_LIST
 
-# ls $TOPOLOGY_LIST $NODELIST
+# Cleanup
 rm -f $TOPOLOGY_LIST $NODELIST
