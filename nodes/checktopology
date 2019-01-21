@@ -5,6 +5,17 @@
 
 SLURMCONF=/etc/slurm/slurm.conf
 TOPOLOGYCONF=/etc/slurm/topology.conf
+if test ! -s $SLURMCONF
+then
+	echo Slurm file $SLURMCONF not found
+	exit 1
+fi
+if test ! -s $TOPOLOGYCONF
+then
+	echo Slurm file $TOPOLOGYCONF not found
+	exit 1
+fi
+
 export TOPOLOGY_LIST=/tmp/topology.conf_list.$$
 export NODELIST=/tmp/slurm.conf_list.$$
 
