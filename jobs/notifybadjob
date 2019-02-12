@@ -4,8 +4,6 @@
 # Author: Ole Holm Nielsen, Ole.H.Nielsen@fysik.dtu.dk
 
 ### CONFIGURE these lines:
-# Name of this cluster
-CLUSTERNAME=<cluster name>
 # Mail to the system managers
 ADMINMAIL=support@your.domain
 # Mail to the superuser
@@ -16,6 +14,9 @@ INFOURL=https://your.domain
 
 # Command usage:
 USAGE="Usage: $0 '[-k]' job-id"
+
+# Name of this cluster
+CLUSTERNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
 
 # Location of locally developed commands needed
 PSJOB=/usr/local/bin/psjob
@@ -168,6 +169,12 @@ fi
 
 # Get user E-mail address and name (job arrays handled by uniq)
 USERID=`squeue -h -o '%u' -j $JOB | uniq`
+if test -z "$USERID"
+then
+	echo ERROR: Could not get userid of job $JOB
+	exit 1
+fi
+
 # USERMAIL=`grep Job_Owner $QSTATMSGS | awk '{print $3}'`
 USERMAIL=$USERID
 FULLNAME=`getent passwd | grep "^$USERID:" | awk -F: '{print $5}'`
