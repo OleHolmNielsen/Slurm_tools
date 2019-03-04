@@ -28,6 +28,15 @@ The following scripts are used to monitor the ```slurmctld``` and the ```slurmdb
 * ```notify_slurmdbd_resumed```: Trigger script for primary_slurmdbd_resumed
 * ```notify_slurmctld_acct_buffer_full```: Trigger script for slurmctld_acct_buffer_full
 
+Slurm database scripts
+----------------------
+
+Some convenient scripts for working with the ```slurmdbd``` database MySQL/MariaDB.
+The following scripts are used to monitor the ```slurmdbd``` database connection using the ```strigger``` command:
+
+* ```notify_primary_database_failure```: Trigger script for primary_database_failure
+* ```notify_primary_database_resumed_operation```: Trigger script for primary_database_resumed_operation
+
 Usage of daemon triggers
 ------------------------
 
@@ -40,6 +49,8 @@ Initialize the triggers by:
 slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
 slurm> strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
 slurm> strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
+slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_failure
+slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_resumed_operation
 ```
 
 Usage of node triggers

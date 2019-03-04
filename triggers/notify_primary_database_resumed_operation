@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Slurm trigger script for Slurm primary_database_resumed_operation
+#
+# MUST be executed by the slurm user, consistent with:
+# scontrol show config | grep SlurmUser
+
+# Configure these variables for your system:
+slurm_user=slurm
+slurm_notify=root
+my_mail=/usr/bin/mailx
+
+# This will make the trigger permanent:
+# my_flags="--flags=PERM"
+
+# Check that we run as the slurm user
+if test "`id -nu`" != "$slurm_user"
+then
+	echo ERROR: The strigger command must be executed by the $slurm_user user
+	exit -1
+fi
+
+# Commands to be run for notification
+function my_tasks() {
+	# Submit trigger for next event ($0 = this script)
+	echo Setting new trigger --primary_database_resumed_operation --program=$0
+	strigger --set --primary_database_resumed_operation --program=$0 $my_flags
+}
+
+# Notify Slurm administrator of node state
+my_tasks 2>&1 | $my_mail -s "Slurm primary database resumed operation: $@" $slurm_notify
