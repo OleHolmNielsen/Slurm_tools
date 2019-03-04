@@ -35,9 +35,9 @@ Copy these scripts to /usr/local/bin/.
 
 Initialize the triggers by:
 ```
-# strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
-# strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
-# strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
+slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
+slurm> strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
+slurm> strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
 ```
 
 Usage of node triggers
