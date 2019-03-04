@@ -33,6 +33,8 @@ Usage of daemon triggers
 
 Copy these scripts to /usr/local/bin/.
 
+Become the *slurm* user.
+
 Initialize the triggers by:
 ```
 slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
