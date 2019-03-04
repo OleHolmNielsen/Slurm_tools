@@ -4,14 +4,38 @@ Slurm trigger scripts
 Slurm "triggers" include events such as:
 
 * a node is down, is drained, or fails.
-* daemon stops or restarts
+* a Slurm daemon stops or restarts
 * a job reaching its time limit
 * a job terminating.
 
 See the [strigger](https://slurm.schedmd.com/strigger.html) manual page.
 
-Usage
------
+Slurm controller scripts
+------------------------
+
+Some convenient scripts for working with the Slurm controller ```slurmctld```.
+The following scripts are used to monitor the ```slurmctld``` and the ```slurmdbd``` using the ```strigger``` command:
+
+* ```notify_slurmdbd_down```: Trigger script for primary_slurmdbd_failure
+* ```notify_slurmdbd_resumed```: Trigger script for primary_slurmdbd_resumed
+* ```notify_slurmctld_acct_buffer_full```: Trigger script for slurmctld_acct_buffer_full
+
+See ```man strigger``` about usage of this command.
+
+Usage of daemon triggers
+------------------------
+
+Copy these scripts to /usr/local/bin/.
+
+Initialize the triggers by:
+```
+# strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
+# strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
+# strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
+```
+
+Usage of node triggers
+----------------------
 
 Copy the scripts ```notify_nodes_down``` and ```notify_nodes_drained``` to /usr/local/bin/.
 If necessary modify the variables slurm_user, slurm_notify, my_mail in the scripts.
