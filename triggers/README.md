@@ -10,6 +10,14 @@ Slurm "triggers" include events such as:
 
 See the [strigger](https://slurm.schedmd.com/strigger.html) manual page.
 
+Slurm node scripts
+------------------
+
+Some convenient scripts for working with node triggers:
+
+* ```notify_nodes_down```: Trigger script for node down state
+* ```notify_nodes_drained```: Trigger script for node drained state
+
 Slurm controller scripts
 ------------------------
 
@@ -19,8 +27,6 @@ The following scripts are used to monitor the ```slurmctld``` and the ```slurmdb
 * ```notify_slurmdbd_down```: Trigger script for primary_slurmdbd_failure
 * ```notify_slurmdbd_resumed```: Trigger script for primary_slurmdbd_resumed
 * ```notify_slurmctld_acct_buffer_full```: Trigger script for slurmctld_acct_buffer_full
-
-See ```man strigger``` about usage of this command.
 
 Usage of daemon triggers
 ------------------------
