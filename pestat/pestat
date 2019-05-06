@@ -21,6 +21,8 @@ export hostnamelength="8"
 export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
 # Per-user configuration file for pestat
 export PESTAT_CONFIG=$HOME/.pestat.conf
+# Omit nodes with states:
+export statedown="down drain maint"
 # End of CONFIGURE lines
 
 #####################################################################################
@@ -49,7 +51,7 @@ where:
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
 	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
-	-d: Omit nodes with states: down drained
+	-d: Omit nodes with states: $statedown
 	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
 	-2: 2..N lines per node which participates in multiple partitions 
 	-E: Job EndTime is printed after each jobid/user
@@ -91,7 +93,7 @@ export printallnodes=1
 # We have changed uniquenodes=1 to be the default now
 export uniquenodes=1
 
-# Omit nodes with states: down drained
+# Omit nodes with states: $statedown
 export omitdown=0
 
 # Controls whether GRES (Generic Resources) will be printed
@@ -188,7 +190,7 @@ while getopts "p:u:g:a:q:s:n:j:w:m:M:R:CcdhVFf12ENG" options; do
 			echo Select only nodes in hostlist=$OPTARG
 			;;
 		d )	export omitdown=1
-			echo Omit nodes with states: down drained
+			echo Omit nodes with states: $statedown
 			;;
 		j )	hostlist="-n `$prefix/squeue -j $OPTARG -h -o %N`"
 			echo Select only nodes with jobs in joblist=$OPTARG
@@ -290,6 +292,7 @@ BEGIN {
 	memory_thres2=ENVIRON["memory_thres2"]
 	printallnodes=ENVIRON["printallnodes"]
 	omitdown=ENVIRON["omitdown"]
+	statedown=ENVIRON["statedown"]
 	printgres=ENVIRON["printgres"]
 	printjobname=ENVIRON["printjobname"]
 	printjobendtime=ENVIRON["printjobendtime"]
@@ -304,6 +307,10 @@ BEGIN {
 		GREEN="\033[1;32m"
 		MAGENTA="\033[1;35m"
 		NORMAL="\033[0m"
+	}
+	# Omit nodes with states: statedown
+	if (omitdown > 0) {
+		split(statedown,statedownlist," ")
 	}
 
 	if (accountlist != "") selection = selection " -A " accountlist
@@ -413,9 +420,11 @@ BEGIN {
 
 	# Select only subset of nodes with certain values/states
 	listnode = printallnodes
-	# Omit nodes with states: down, drained
+	# Omit nodes with statedown states (a $ may be appended to state)
 	if (omitdown > 0) {
-		if (state == "drain" || state == "down") next
+		for (i in statedownlist) {
+			if (index(state, statedownlist[i]) > 0) next
+		}
 	}
 
 	if (free_mem_less > 0) {
