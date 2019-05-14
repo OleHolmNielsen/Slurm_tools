@@ -21,7 +21,7 @@ export hostnamelength="8"
 export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
 # Per-user configuration file for pestat
 export PESTAT_CONFIG=$HOME/.pestat.conf
-# Omit nodes with states:
+# Omit nodes with these states (list separated by spaces):
 export statedown="down drain maint"
 # End of CONFIGURE lines
 
@@ -413,6 +413,7 @@ BEGIN {
 	state=$7
 	gsub("*", "", state)	# Strip "*" from nodename in default partition
 	gsub("$", "", state)	# Strip "$" for state=maintenance
+	gsub("@", "", state)	# Strip "@" for pending reboot nodes
 	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
 	threadspercore=$8
 	# Generic resources (GRES) associated with the node
