@@ -68,9 +68,16 @@ EOF
 export passwd_tmp="/tmp/passwd.$$"
 export group_tmp="/tmp/group.$$"
 export assoc_tmp="/tmp/assoc.$$"
+export users_tmp="/tmp/users.$$"
 $remote getent passwd > $passwd_tmp
 $remote getent group > $group_tmp
-$remote sacctmgr -snorp show associations > $assoc_tmp
+ 
+# sacctmgr show associations format (non-default) adding GrpJobsAccrue,MaxJobsAccrue
+# Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
+# See "man acctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
+export fmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins,GrpJobsAccrue,MaxJobsAccrue"
+$remote sacctmgr -snorp show associations format=$fmt > $assoc_tmp
+$remote sacctmgr -nrp show user > $users_tmp
 
 cat $passwd_tmp | gawk -F: '
 BEGIN {
@@ -80,6 +87,7 @@ BEGIN {
         passwd	= ENVIRON["passwd_tmp"]
         group	= ENVIRON["group_tmp"]
         assoc	= ENVIRON["assoc_tmp"]
+        users	= ENVIRON["users_tmp"]
 	debug = 0	# Debugging flag
 
 	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
@@ -89,8 +97,8 @@ BEGIN {
 	defaults["GrpTRES"]		= ENVIRON["GrpTRES"]
 	defaults["GrpTRESRunMins"]	= ENVIRON["GrpTRESRunMins"]
 
-	# Create an array of Slurm factors
-	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS"
+	# Create an array of Slurm factors (slurm_factors)
+	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS GrpJobsAccrue MaxJobsAccrue"
 	split(string, slurm_factors, " ")
 
 	# Define index values of the setting[] array
@@ -106,11 +114,19 @@ BEGIN {
 	}
 	close (group)
 
-	# Read list of existing accounts (parseable output)
-	# Header of sacctmgr -snorp show associations:
-	# Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
-	FS="|"	# Set the Field Separator to | for the parseable account list
+	# Set the Field Separator to | for the parseable account list
+	FS="|"
 
+	# Read list of existing users and their default account (parseable output)
+	# Header of sacctmgr -nrp show user: User|Def Acct|Admin|
+	while ((getline < users) > 0) {
+		if (debug > 1) print "Got user " $0
+		if ($1 != "root") defaultaccount[$1] = $2
+	}
+	close (users)
+
+	# Read list of existing accounts (parseable output)
+	# Header of sacctmgr -snorp show associations: See the "fmt" variable above.
 	while ((getline < assoc) > 0) {
 		if (debug > 1) print "Got account " $0
 		a = $2	# account
@@ -125,8 +141,14 @@ BEGIN {
 			# accountfairshare[a] = $5
 		} else {
 			item = u	# User account
-			useraccount[u]	= a
 			user[u]		= u
+			if (defaultaccount[u] == "") {
+				print "### NOTICE: No default account for user " u ", setting it to ", a
+				defaultaccount[u] = a
+			}
+			useraccount[u]	= defaultaccount[u]
+			if (debug > 1 && a != defaultaccount[u])
+				print "### NOTICE: Default account for user " u "=" useraccount[u] ", cannot set it to " a
 		}
 		# Record the user/group settings
 		setting[item][current]["fairshare"]	= $5
@@ -144,13 +166,16 @@ BEGIN {
 		setting[item][current]["QOS"]		= toupper($17)
 		setting[item][current]["DefaultQOS"]	= toupper($18)
 		setting[item][current]["GrpTRESRunMins"]= tolower($19)	# cpu= must be in lowercase
+		setting[item][current]["GrpJobsAccrue"]	= $20
+		setting[item][current]["MaxJobsAccrue"]	= $21
 	}
 	close (assoc)
 
 	#
-	# Read the account settings configuration file
+	# Read the account settings configuration file: user_settings_conf
 	#
 	FS=":"	# Set the Field Separator
+
 	# Syntax of this file is 3 items separated by ":" like:
 	# [DEFAULT|UNIX_group|username]:[Type]:value
 	# Type: fairshare, GrpTRES, GrpTRESRunMins etc.
@@ -162,7 +187,7 @@ BEGIN {
 		if ($1 == "DEFAULT") {			# Default value
 			defaults[$2] = $3
 		} else if (groupname[$1] == "") {	# Unknown UNIX group: Assume that $1 is a username
-			if (useraccount[$1] == "") print "### NOTICE: Slurm account for group/user " $1 " is unknown"
+			if (useraccount[$1] == "") print "### NOTICE: Slurm account in user_settings_conf for group/user " $1 " is unknown"
 			setting[$1][config][$2] = $3
 		} else {				# UNIX group value
 			setting[$1][config][$2] = $3
@@ -199,13 +224,15 @@ $3 >= MINUID {
 	userexists[u] = u	# Record existing users
 
 	# Gather arguments for the sacctmgr command
-	COMMAND = ""		# We are going to set a number of variables below
+	COMMAND = ""		# We are going to append a number of variables to COMMAND below
 
+	# Adding a user to an existing account
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (useraccount[u] != g) {
-		printf("### NOTICE: User %s in group %s has default account=%s. You may delete it by:\n", u, g, useraccount[u])
-		printf("### sacctmgr delete user name=%s account=%s\n", u, useraccount[u])
+		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
+		# Add this user to his/her new account
+		print sacctmgr " -i add user " u " account=" g
 	}
 
 	# Loop over the setting[] array and configure any changes
@@ -254,4 +281,4 @@ END {
 }'
 
 # Clean-up
-rm -f $passwd_tmp $group_tmp $assoc_tmp
+rm -f $passwd_tmp $group_tmp $assoc_tmp $users_tmp
