@@ -37,6 +37,8 @@ From now on you may update these configuration files and subsequently use the fo
 
 4. Run ```slurmusersettings``` to update your Slurm user settings.
 
+5. Run ```showuserlimits``` to display a Slurm user's limits.
+
 These commands don't modify the Slurm database, they only print commands which you should review before actually executing them.
 
 slurmaccounts tool
