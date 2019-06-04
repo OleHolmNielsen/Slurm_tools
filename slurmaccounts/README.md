@@ -168,3 +168,16 @@ slurmusersettings2conf
 ```
 
 The output should be copied to the file ```/etc/slurm/user_settings.conf```.
+
+showuserlimits tool
+-------------------
+
+This tool prints out the Slurm associations limits for a user.
+
+Usage:
+
+```
+showuserlimits			# Current user
+showuserlimits -u <userid>
+showuserlimits -a		# All users
+```
