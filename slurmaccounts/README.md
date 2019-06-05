@@ -120,7 +120,7 @@ export MINUID=1002
 The file ```/etc/slurm/user_settings.conf``` defines users' Slurm factors including:
 
 ```
-fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS
+fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS GrpJobsAccrue MaxJobsAccrue
 ```
 
 The syntax of this file is 3 items separated by ```:``` like:
@@ -141,6 +141,7 @@ DEFAULT:GrpTRESRunMins:cpu=3000000
 DEFAULT:QOS:normal
 DEFAULT:MaxJobs:500
 DEFAULT:MaxSubmitJobs:5000
+DEFAULT:MaxJobsAccrue:50
 
 # UNIX group defaults
 camdfac:fairshare:5
