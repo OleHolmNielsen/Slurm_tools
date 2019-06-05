@@ -23,9 +23,7 @@ EOF
 cat $ACCOUNTS_CONF | awk '
 BEGIN {
 	# Read list of existing accounts (parseable output)
-	command="/usr/bin/sacctmgr -snorp show accounts"
-	# sacctmgr -snorp output is:
-	# Account|Descr|Org|Cluster|Par Name|User|Share|GrpJobs|GrpNodes|GrpCPUs|GrpMem|GrpSubmit|GrpWall|GrpCPUMins|MaxJobs|MaxNodes|MaxCPUs|MaxSubmit|MaxWall|MaxCPUMins|QOS|Def QOS|
+	command="/usr/bin/sacctmgr -nrp show accounts WithAssoc format=Account,Descr,Org,Cluster,ParentName,User,Share"
 	FS="|"	# Set the Field Separatator to | for the account list
 	while ((command | getline) > 0) {
 		if ($6 != "") continue		# Only modify non-user accounts
