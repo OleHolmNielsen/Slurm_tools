@@ -4,16 +4,31 @@
 SELECT="user=$USER"
 
 #
+# Command usage:
+#
+function usage()
+{
+        cat <<EOF
+Usage: $0 [-u username | -a | -h ]
+where:
+        -u username: Print only user <username> 
+        -a Print all users
+        -h Print help information
+EOF
+}
+
+
+#
 # Parse command options
 #
 
-while getopts "u:a" options; do
+while getopts "u:ah" options; do
 case $options in
 	u ) SELECT="user=$OPTARG"	# Select this user
 	    ;;
 	a ) SELECT=""	# All users
 	    ;;
-	* ) usage
+	h|*|? ) usage
 	    exit 1;;
 esac
 done
