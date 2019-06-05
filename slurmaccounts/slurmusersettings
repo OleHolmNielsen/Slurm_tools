@@ -147,7 +147,6 @@ BEGIN {
 				continue	# Skip it
 			}
 			item = a	# Not a user account: UNIX group 
-			# accountfairshare[a] = $5
 		} else {
 			item = u	# User account
 			user[u]		= u
@@ -185,9 +184,9 @@ BEGIN {
 	#
 	FS=":"	# Set the Field Separator
 
-	# Syntax of this file is 3 items separated by ":" like:
+	# Syntax of this file is 3 items separated by ":"
 	# [DEFAULT|UNIX_group|username]:[Type]:value
-	# Type: fairshare, GrpTRES, GrpTRESRunMins etc.
+	# Type may be: fairshare, GrpTRES, GrpTRESRunMins, etc.
 
 	while ((getline < user_settings_conf) > 0) {
 		if (index($1,"#") >= 1) continue	# Skip lines with # comments
@@ -222,6 +221,11 @@ $3 >= MINUID {
 	# Check the user UNIX account
 	if (g == "") {
 		printf("### ERROR: User %s GID %d has no GROUPNAME\n", u, GID)
+		next
+	}
+	# Check that the UNIX group exists as a Slurm account
+	if (!isarray(setting[g])) {
+		printf("### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
