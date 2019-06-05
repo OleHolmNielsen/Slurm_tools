@@ -75,9 +75,11 @@ $remote getent group > $group_tmp
 # sacctmgr show associations format (non-default) adding GrpJobsAccrue,MaxJobsAccrue
 # Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 # See "man acctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
-export fmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins,GrpJobsAccrue,MaxJobsAccrue"
-$remote sacctmgr -snorp show associations format=$fmt > $assoc_tmp
-$remote sacctmgr -nrp show user > $users_tmp
+assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins,GrpJobsAccrue,MaxJobsAccrue"
+$remote sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
+# Format for users:
+userfmt="User,DefaultAccount,Account,Cluster"
+$remote sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
 
 cat $passwd_tmp | gawk -F: '
 BEGIN {
@@ -118,15 +120,22 @@ BEGIN {
 	FS="|"
 
 	# Read list of existing users and their default account (parseable output)
-	# Header of sacctmgr -nrp show user: User|Def Acct|Admin|
+	# Header of sacctmgr -nrp show user: See the "userfmt" variable above.
 	while ((getline < users) > 0) {
 		if (debug > 1) print "Got user " $0
-		if ($1 != "root") defaultaccount[$1] = $2
+		u = $1	# User
+		d = $2	# Default Account
+		a = $3	# Account
+		c = $4	# Cluster
+		if (u != "root") {
+			defaultaccount[u] = d
+			if (a != d) useraccounts[u][a] = a	# Record non-default accounts for this user
+		}
 	}
 	close (users)
 
 	# Read list of existing accounts (parseable output)
-	# Header of sacctmgr -snorp show associations: See the "fmt" variable above.
+	# Header of sacctmgr -snorp show associations: See the "assocfmt" variable above.
 	while ((getline < assoc) > 0) {
 		if (debug > 1) print "Got account " $0
 		a = $2	# account
@@ -276,6 +285,10 @@ END {
 			printf("### Slurm account %s has no available home directory %s\n", u, nohomedir[u])
 		else
 			printf("### Slurm account %s has no user entry in the passwd file\n", u)
+		# First delete non-default accounts for this user
+		for (a in useraccounts[u])
+			print sacctmgr " -i delete user " u " account=" useraccounts[u][a]
+		# The delete the user
 		print sacctmgr " -i delete user " u
 	}
 }'
