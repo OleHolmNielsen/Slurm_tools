@@ -244,8 +244,9 @@ $3 >= MINUID {
 	if (useraccount[u] != g) {
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
-		# Add this user to his/her new account
-		print sacctmgr " -i add user " u " account=" g
+		# Add already existing user to his/her new account
+		if (useraccount[u] != "")
+			print sacctmgr " -i add user " u " account=" g
 	}
 
 	# Loop over the setting[] array and configure any changes
