@@ -43,7 +43,6 @@ fi
 
 echo
 echo Slurm associations limits:
-echo
 
 # sacctmgr show associations format (non-default) adding GrpJobsAccrue,MaxJobsAccrue
 # Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
@@ -58,7 +57,7 @@ if (NR==1) {
 	split($0,assoc,"|")
 	if (length(assoc[3]) == 0) next	# Skip non-user accounts
 	if (length(assoc[4]) == 0) assoc[4] = "(any)"
-	printf("Association: User=%s Account=%s Cluster=%s Partition=%s\n",
+	printf("\nAssociation: User=%s Account=%s Cluster=%s Partition=%s\n",
 		assoc[3], assoc[2], assoc[1], assoc[4])
 	for (i=5; i<length(assoc); i++)
 		if (length(assoc[i]) > 0)
