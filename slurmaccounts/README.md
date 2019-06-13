@@ -3,19 +3,28 @@ Slurm account and user updating tools
 
 Maintenance of Slurm accounts and user settings is a tedious and error-prone task if done manually.
 The tools in this project offer a way of defining and configuring Slurm accounts and user settings by means of 
-some tools with corresponding configuration files,
-which you use to define your site's preferences.
+some tools with corresponding configuration files, which you use to define your site's preferences.
+
+Basic concepts
+--------------
+
+UNIX group names (the ```/etc/group``` file) are used to define the corresponding Slurm account names.
+We have selected the users' UNIX groups as the bottom level of the account tree.
+This mapping of groups to Slurm accounts is the basic concept of this project!
+
+
+
 
 * Firstly, you need to define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
-This is the purpose of the ```slurmaccounts``` tool.
-We have selected the users' UNIX groups as the bottom level of the account tree.
+Use the UNIX group names to define the bottom level of the account tree.
+Creation of this tree is the purpose of the ```slurmaccounts``` tool.
 You may use the ```slurmaccounts2conf``` tool to create a configuration file using the contents of your current Slurm database.
 
 * Secondly, when the account tree has been defined, users can be defined in the Slurm database.
 This is the purpose of the ```slurmusersettings``` tool.
-The user's Slurm ```default account``` is selected to be the UNIX group name at the bottom of the account tree.
+The user's Slurm ```default account``` is selected to be the primary UNIX group name at the bottom of the account tree.
 Furthermore, a number of user settings can be defined in the configuration file:
-```fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS```.
+```fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS MaxJobsAccrue GrpJobsAccrue```.
 
 When users or accounts are added, removed or modified in the configuration files,
 rerun the tools to pick up the changes to the Slurm database.

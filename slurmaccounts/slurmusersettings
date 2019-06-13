@@ -38,7 +38,8 @@ export sacctmgr=/usr/bin/sacctmgr
 export user_settings_conf=/etc/slurm/user_settings.conf
 if test ! -f $user_settings_conf
 then
-	echo "### WARNING : No account settings configuration file $user_settings_conf"
+	echo "### ERROR: No account settings configuration file $user_settings_conf"
+	exit 1
 fi
 
 # WARNING: GNU gawk version 4.0 or later is required for arrays of arrays
@@ -109,27 +110,36 @@ BEGIN {
 	# Get the list of UNIX group names from the system by getent(1)
 	FS=":"	# Set the Field Separator
 	while ((getline < group) > 0) {
-		split($0,b,":")	 # Split group line into fields
-		b[1] = tolower(b[1])	# Make it lowercase
-		unixgroup[b[3]] = b[1]	# Group name b[1] of this GID (b[3])
-		groupname[b[1]] = b[1]	# Group name b[1]
+		split($0, b, ":")	# Split group line into fields
+		g = tolower(b[1])	# Make the group name lowercase
+		unixgroup[b[3]] = g	# Group name b[1] of this GID (b[3])
+		groupname[g] = g	# Group name b[1]
+		groupusers[g][1] = ""	# List of secondary group users for each group name
+		split(b[4], groupusers[g], ",")	# Split user list into an array
+		# Add the user secondary groups to the corresponding Slurm account (if it exists)
+		for (i in groupusers[g]) {
+			u = groupusers[g][i]
+			# print "### Add user " u " to Slurm account named " g
+			groupaccounts[u][g] = g
+		}
 	}
 	close (group)
 
 	# Set the Field Separator to | for the parseable account list
 	FS="|"
 
-	# Read list of existing users and their default account (parseable output)
+	# Read list of existing Slurm users and their default account (parseable output)
 	# Header of sacctmgr -nrp show user: See the "userfmt" variable above.
 	while ((getline < users) > 0) {
 		if (debug > 1) print "Got user " $0
+		# These 4 items constitute a Slurm "association":
 		u = $1	# User
 		d = $2	# Default Account
 		a = $3	# Account
 		c = $4	# Cluster
 		if (u != "root") {
 			defaultaccount[u] = d
-			if (a != d) useraccounts[u][a] = a	# Record non-default accounts for this user
+			if (a != d) useraccounts[u][a] = a	# Record non-default accounts for user u
 		}
 	}
 	close (users)
@@ -139,6 +149,7 @@ BEGIN {
 	while ((getline < assoc) > 0) {
 		if (debug > 1) print "Got account " $0
 		a = $2	# account
+		accountname[a] = a
 		u = $3	# user
 		if (a == "root") continue	# Skip the root account
 		if (u == "") {
@@ -245,8 +256,23 @@ $3 >= MINUID {
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
 		# Add already existing user to his/her new account
-		if (useraccount[u] != "")
+		if (useraccount[u] != "") {
+			print "### Existing user " u " account " useraccount[u] " add to account " g
 			print sacctmgr " -i add user " u " account=" g
+		}
+	}
+
+	# Add user to existing account if user is a member of the UNIX group
+	if (isarray(groupaccounts[u])) {
+		for (i in groupaccounts[u]) {
+			gg = groupaccounts[u][i]
+			# Check if user secondary group gg equals primary group g (redundant and superfluous)
+			# Check if account already exists
+			if (gg != g && useraccounts[u][gg] == "" && length(accountname[gg]) > 0) {
+				print "### User " u " with primary UNIX group " g " is a secondary member of the UNIX group " gg
+				print sacctmgr " -i add user " u " account=" gg
+			}
+		}
 	}
 
 	# Loop over the setting[] array and configure any changes
