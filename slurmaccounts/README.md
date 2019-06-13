@@ -9,11 +9,8 @@ Basic concepts
 --------------
 
 UNIX group names (the ```/etc/group``` file) are used to define the corresponding Slurm account names.
-We have selected the users' UNIX groups as the bottom level of the account tree.
-This mapping of groups to Slurm accounts is the basic concept of this project!
-
-
-
+We have selected the users' UNIX groups as the bottom level of the Slurm account tree.
+The mapping of groups to Slurm accounts is the fundamental concept of this project!
 
 * Firstly, you need to define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
 Use the UNIX group names to define the bottom level of the account tree.
@@ -26,7 +23,7 @@ The user's Slurm ```default account``` is selected to be the primary UNIX group 
 Furthermore, a number of user settings can be defined in the configuration file:
 ```fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS MaxJobsAccrue GrpJobsAccrue```.
 
-When users or accounts are added, removed or modified in the configuration files,
+When Slurm accounts are added, removed or modified in the configuration files, or UNIX users are changed in the system passwd/group files,
 rerun the tools to pick up the changes to the Slurm database.
 
 Getting started
