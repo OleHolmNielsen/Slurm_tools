@@ -260,6 +260,7 @@ $3 >= MINUID {
 	HOMEDIR		= $6
 	SHELL		= $7
 	if (SHELL == "/sbin/nologin") next	# Skip non-login users
+	if (index(password,"!") == 1) next	# Skip locked users
 	g = unixgroup[GID]	# UNIX group
 	if (debug > 0) print "User " u " group " g 
 	# Check the user UNIX account
