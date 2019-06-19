@@ -13,6 +13,9 @@ then
 	exit 1
 fi
 
+# Set the LANG for 8-bit characters
+export LANG=C
+
 # Print a header
 cat <<EOF
 ###
