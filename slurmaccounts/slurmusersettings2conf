@@ -35,7 +35,7 @@ function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d", $1,$2,$3); }'; 
 # Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 # See "man acctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
 export assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins"
-# Add paremeters from  newer Slurm versions
+# Add parameters from newer Slurm versions
 if test $(version $SLURM_VERSION) -ge $(version 18.08)
 then
         assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
