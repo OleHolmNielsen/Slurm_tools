@@ -88,7 +88,9 @@ BEGIN {
 	}
 	for (i in slurm_factors) {
 		sf = slurm_factors[i]
-		if (setting[u][sf] != "") {
+		# if (setting[u][sf] != "") {
+		# Allow for empty string values:
+		{
 			# Count the setting values
 			v = setting[u][sf]
 			if (debug > 0) printf("%s:%s:%s\n", u, sf, v)
@@ -123,6 +125,8 @@ BEGIN {
 		}
 		if (globaldefaultvalue[sf] != "")
 			printf("%s:%s:%s\n", "DEFAULT", sf, globaldefaultvalue[sf])
+		else
+			printf("### Empty default value: %s:%s:%s\n", "DEFAULT", sf, globaldefaultvalue[sf])
 	}
 	print "### The account default values of settings"
 	for (i in accounts) {
