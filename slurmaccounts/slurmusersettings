@@ -259,8 +259,14 @@ $3 >= MINUID {
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
-	if (SHELL == "/sbin/nologin") next	# Skip non-login users
-	if (index(password,"!") == 1) next	# Skip locked users
+	if (SHELL == "/sbin/nologin") {		# Skip non-login users
+		userinformation[u] = "User " u " UNIX account has non-login shell"
+		next
+	}
+	if (index(password,"!") == 1) {		# Skip locked users
+		userinformation[u] = "User " u " UNIX account is locked"
+		next
+	}
 	g = unixgroup[GID]	# UNIX group
 	if (debug > 0) print "User " u " group " g 
 	# Check the user UNIX account
@@ -271,16 +277,16 @@ $3 >= MINUID {
 	# Check that the UNIX group exists as a Slurm account
 	if (!isarray(setting[g])) {
 		printf("\n### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
-		userexists[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
+		userinformation[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
 	if (system("test -d \""HOMEDIR"\"") != 0) {
 		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
-		userexists[u] = "User " u " has NO HOME directory=" HOMEDIR
+		userinformation[u] = "User " u " has NO HOME directory=" HOMEDIR
 		next
 	}
-	userexists[u] = u	# Record existing valid users
+	userinformation[u] = u	# Record existing valid users
 
 	# Gather arguments for the sacctmgr command
 	COMMAND = ""		# We are going to append a number of variables to COMMAND below
@@ -347,8 +353,8 @@ $3 >= MINUID {
 END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
-		if (userexists[u] == u) continue
-		printf("\n### Slurm account %s error: %s\n", u, userexists[u])
+		if (userinformation[u] == u) continue
+		printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
 		# First delete non-default accounts for this user
 		if (isarray(useraccounts[u]))
 			for (a in useraccounts[u])
