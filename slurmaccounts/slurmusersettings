@@ -72,11 +72,23 @@ export assoc_tmp="/tmp/assoc.$$"
 export users_tmp="/tmp/users.$$"
 $remote getent passwd > $passwd_tmp
 $remote getent group > $group_tmp
+
+# Get the Slurm version
+SLURM_VERSION="`$sacctmgr --version | awk '{print $2}'`"
+# Version comparison, https://apple.stackexchange.com/questions/83939/compare-multi-digit-version-numbers-in-bash/
+function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d", $1,$2,$3); }'; }
  
 # sacctmgr show associations format (non-default) adding GrpJobsAccrue,MaxJobsAccrue
 # Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 # See "man acctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
-assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins,GrpJobsAccrue,MaxJobsAccrue"
+assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins"
+# Add paremeters from  newer Slurm versions
+if test $(version $SLURM_VERSION) -ge $(version 18.08)
+then
+	assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
+	echo "### Slurm $SLURM_VERSION Format=$assocfmt"
+fi
+
 $remote sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
 # Format for users:
 userfmt="User,DefaultAccount,Account,Cluster"
@@ -195,21 +207,36 @@ BEGIN {
 	#
 	FS=":"	# Set the Field Separator
 
-	# Syntax of this file is 3 items separated by ":"
-	# [DEFAULT|UNIX_group|username]:[Type]:value
+	# Syntax of this file is 3, 4 or 5 items separated by ":"
+	# [DEFAULT|UNIX_group|username]:[Type]:value[:partition[:cluster]]
 	# Type may be: fairshare, GrpTRES, GrpTRESRunMins, etc.
+	# The partition and cluster fields (4,5) are optional, defaults are chosen if omitted.
 
 	while ((getline < user_settings_conf) > 0) {
 		if (index($1,"#") >= 1) continue	# Skip lines with # comments
-		if (NF != 3) continue			# Skip lines which do not have 3 fields (incl. empty lines)
-		for (f in slurm_factors) if (tolower($2) == tolower(slurm_factors[f])) $2 = slurm_factors[f]	# Force correct spelling of $2
-		if ($1 == "DEFAULT") {			# Default value
-			defaults[$2] = $3
-		} else if (groupname[$1] == "") {	# Unknown UNIX group: Assume that $1 is a username
-			if (useraccount[$1] == "") print "### NOTICE: Slurm account in user_settings_conf for group/user " $1 " is unknown"
-			setting[$1][config][$2] = $3
+		if (NF < 3) continue			# Skip lines which do not have 3 fields (incl. empty lines)
+		item = $1
+		type = $2
+		value = $3
+		if (NF >= 4)
+			partition = $4
+		else
+			partition = ""
+		if (NF >= 5)
+			cluster = $5
+		else
+			cluster = ""
+		for (f in slurm_factors)
+			if (tolower(type) == tolower(slurm_factors[f]))
+				type = slurm_factors[f]	# Force correct spelling of type
+		if (item == "DEFAULT") {			# Default value
+			defaults[type] = value
+		} else if (groupname[item] == "") {	# Unknown UNIX group: Assume that item is a username
+			if (useraccount[item] == "")
+				print "### NOTICE: Slurm account in user_settings_conf for group/user " item " is unknown: " $0
+			setting[item][config][type] = value
 		} else {				# UNIX group value
-			setting[$1][config][$2] = $3
+			setting[item][config][type] = value
 		}
 	}
 	close (user_settings_conf)
@@ -237,15 +264,16 @@ $3 >= MINUID {
 	# Check that the UNIX group exists as a Slurm account
 	if (!isarray(setting[g])) {
 		printf("### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
+		userexists[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
 	if (system("test -d \""HOMEDIR"\"") != 0) {
 		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
-		nohomedir[u] = HOMEDIR	# Record users with no available homedir
+		userexists[u] = "User " u " has NO HOME directory=" HOMEDIR
 		next
 	}
-	userexists[u] = u	# Record existing users
+	userexists[u] = u	# Record existing valid users
 
 	# Gather arguments for the sacctmgr command
 	COMMAND = ""		# We are going to append a number of variables to COMMAND below
@@ -262,7 +290,7 @@ $3 >= MINUID {
 		}
 	}
 
-	# Add user to existing account if user is a member of the UNIX group
+	# Add user to existing Slurm account if user is a member of the corresponding UNIX group
 	if (isarray(groupaccounts[u])) {
 		for (i in groupaccounts[u]) {
 			gg = groupaccounts[u][i]
@@ -294,7 +322,7 @@ $3 >= MINUID {
 		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
 		if (setting[u][current][i] != setting[u][config][i]) {
 			if (setting[u][current][i] != "")
-				print "# User " u " currently has " i "=" setting[u][current][i] " but configuration is " setting[u][config][i]
+				print "# User " u " currently has " i "=" setting[u][current][i] " but configuration is " i "=" setting[u][config][i]
 			COMMAND = COMMAND " " i "=" setting[u][config][i]
 		}
 	}
@@ -311,14 +339,12 @@ $3 >= MINUID {
 END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
-		if (userexists[u] != "") continue
-		if (nohomedir[u] != "") 
-			printf("### Slurm account %s has no available home directory %s\n", u, nohomedir[u])
-		else
-			printf("### Slurm account %s has no user entry in the passwd file\n", u)
+		if (userexists[u] == u) continue
+		printf("### Slurm account %s error: %s\n", u, userexists[u])
 		# First delete non-default accounts for this user
-		for (a in useraccounts[u])
-			print sacctmgr " -i delete user " u " account=" useraccounts[u][a]
+		if (isarray(useraccounts[u]))
+			for (a in useraccounts[u])
+				print sacctmgr " -i delete user " u " account=" useraccounts[u][a]
 		# The delete the user
 		print sacctmgr " -i delete user " u
 	}
