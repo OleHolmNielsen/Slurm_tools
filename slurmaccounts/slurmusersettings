@@ -8,6 +8,8 @@
 # Execute commands on a remote host by password-less SSH:
 # export remote="ssh <slurm-host>"
 
+### CONFIGURE these settings for your cluster
+
 # Skip users with UID < MINUID
 export MINUID=1002
 
@@ -20,13 +22,13 @@ export MINUID=1002
 # 3. A default value set by fairshare.
 # Set a default user Fairshare:
 # export fairshare="parent"
-export fairshare="2"
+# export fairshare="2"
 
 # Resource limits configuration 
 # See https://slurm.schedmd.com/resource_limits.html
 # Our global default user TRES parameters:
-export GrpTRES="cpu=1500"
-export GrpTRESRunMins="cpu=3000000"
+# export GrpTRES="cpu=1500"
+# export GrpTRESRunMins="cpu=3000000"
 # If you want to clear these values use -1:
 # export GrpTRES="cpu=-1"
 # export GrpTRESRunMins="cpu=-1"
@@ -36,6 +38,9 @@ export sacctmgr=/usr/bin/sacctmgr
 
 # User settings configuration file:
 export user_settings_conf=/etc/slurm/user_settings.conf
+
+### END CONFIGURE these settings for your cluster
+
 if test ! -f $user_settings_conf
 then
 	echo "### ERROR: No account settings configuration file $user_settings_conf"
