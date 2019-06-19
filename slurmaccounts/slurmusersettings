@@ -91,7 +91,7 @@ assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,Grp
 if test $(version $SLURM_VERSION) -ge $(version 18.08)
 then
 	assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
-	echo "### Slurm $SLURM_VERSION Format=$assocfmt"
+	echo "### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt"
 fi
 
 $remote sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
@@ -179,6 +179,7 @@ BEGIN {
 			item = u	# User account
 			user[u]		= u
 			if (defaultaccount[u] == "") {
+				print ""
 				print "### NOTICE: No default account for user " u ", setting it to ", a
 				defaultaccount[u] = a
 			}
@@ -268,7 +269,7 @@ $3 >= MINUID {
 	}
 	# Check that the UNIX group exists as a Slurm account
 	if (!isarray(setting[g])) {
-		printf("### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
+		printf("\n### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
 		userexists[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
 		next
 	}
@@ -286,6 +287,7 @@ $3 >= MINUID {
 	# Adding a user to an existing account
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (useraccount[u] != g) {
+		print ""
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
 		# Add already existing user to his/her new account
@@ -316,7 +318,7 @@ $3 >= MINUID {
 			if (setting[u][config][i] == "") setting[u][config][i] = setting[g][config][i]
 		}
 	} else {
-		print "### NOTICE: Group " g " has no settings, using default values for user " u
+		if (debug > 0) print "### NOTICE: Group " g " has no settings, assuming default values for user " u
 	}
 	# If user setting not explicitly given, then use the default setting
 	for (i in defaults) {
