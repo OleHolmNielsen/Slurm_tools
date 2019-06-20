@@ -256,18 +256,18 @@ $3 < MINUID { if (debug > 0) print "Skip user " $1 " with UID=" $3 }	# Skip user
 $3 >= MINUID {
 	u		= $1
 	GID		= $4
+	g = unixgroup[GID]	# UNIX group
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
 	if (SHELL == "/sbin/nologin") {		# Skip non-login users
-		userinformation[u] = "User " u " UNIX account has non-login shell"
+		userinformation[u] = "User " u " UNIX account has non-login shell " SHELL
 		next
 	}
 	if (index(password,"!") == 1) {		# Skip locked users
-		userinformation[u] = "User " u " UNIX account is locked"
+		userinformation[u] = "User " u " UNIX account in group " g ": The password is LOCKED"
 		next
 	}
-	g = unixgroup[GID]	# UNIX group
 	if (debug > 0) print "User " u " group " g 
 	# Check the user UNIX account
 	if (g == "") {
