@@ -260,7 +260,7 @@ $3 >= MINUID {
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
-	if (SHELL == "/sbin/nologin") {		# Skip non-login users
+	if (SHELL == "/sbin/nologin" || SHELL == "/bin/false") {		# Skip non-login users
 		userinformation[u] = "User " u " UNIX account has non-login shell " SHELL
 		next
 	}
