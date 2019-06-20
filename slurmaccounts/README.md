@@ -9,7 +9,7 @@ Basic concepts
 --------------
 
 The mapping of groups to Slurm accounts is the fundamental concept of this project!
-UNIX group names (the ```/etc/group``` file) are used to define the corresponding Slurm account names.
+UNIX group names (the UNIX ```group``` file) are used to define the corresponding Slurm account names.
 We have selected the users' UNIX groups as the bottom level (leaf nodes) of the Slurm account tree.
 
 In this setup, the user's primary UNIX group becomes the user's Slurm *Default account*.
@@ -19,7 +19,7 @@ The tools read the UNIX user database using the commands ```getent passwd``` and
 If these commands list the complete user database relevant for Slurm, you should be ready to start.
 Furthermore, the Slurm command ```sacctmgr``` is used to read the list of Slurm accounts.
 
-* Firstly, you need to define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
+* Firstly, you can define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
 Use the UNIX group names to define the bottom level of the account tree.
 Creation of this tree is the purpose of the ```slurmaccounts``` tool.
 You may use the ```slurmaccounts2conf``` tool to create a configuration file using the contents of your current Slurm database.
@@ -46,11 +46,11 @@ Review the new files in ```/etc/slurm/``` to make sure they correctly reflect yo
 
 From now on you may update these configuration files and subsequently use the following tools to print commands for updating the Slurm database:
 
-3. Run ```slurmaccounts``` to update your account hierarchy.
+3. Run ```slurmaccounts``` to update your account hierarchy when new (group) accounts are added or accounts deleted.
 
 4. Run ```slurmusersettings``` to update your Slurm user settings.
 
-5. Run ```showuserlimits``` to display a Slurm user's limits.
+5. Run ```showuserlimits``` to display a Slurm user's limits, or the limits of all users.
 
 These commands don't modify the Slurm database, they only print commands which you should review before actually executing them.
 
