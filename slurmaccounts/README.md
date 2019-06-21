@@ -8,9 +8,9 @@ some tools with corresponding configuration files, which you use to define your 
 Basic concepts
 --------------
 
-The mapping of groups to Slurm accounts is the fundamental concept of this project!
+The mapping of UNIX groups onto Slurm accounts is the fundamental concept of this project!
 UNIX group names (the UNIX ```group``` file) are used to define the corresponding Slurm account names.
-We have selected the users' UNIX groups as the bottom level (leaf nodes) of the Slurm account tree.
+In the present project we have selected the users' UNIX groups as the bottom level (leaf nodes) of the Slurm account tree.
 
 In this setup, the user's primary UNIX group becomes the user's Slurm *Default account*.
 If the user has any secondary UNIX group memberships, the user is also added to the corresponding Slurm accounts (if they exist).
