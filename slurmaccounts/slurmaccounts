@@ -5,7 +5,9 @@
 
 ACCOUNTS_CONF=/etc/slurm/accounts.conf
 # Syntax of the file ACCOUNTS_CONF is:
-# account:parent:FairShare:Description
+# account:parent:FairShare:Description[:Alias_group]
+# The 5th field Alias_group is optional and must be added manually,
+# it says that an account is an alias for the UNIX group Alias_group
 
 if test ! -f $ACCOUNTS_CONF
 then
@@ -44,11 +46,15 @@ BEGIN {
 }
 {
 	if (index($1,"#") >= 1) next	# Skip lines with # comments
-	if (NF != 4) next		# Skip lines which do not have 4 fields (incl. empty lines)
+	if (NF < 4) next		# Skip lines which have less than 4 fields (incl. empty lines)
 	ACC=tolower($1)
 	PARENT=tolower($2)
 	FAIRSHARE=$3
 	DESC=tolower($4)
+	if (NF >= 5) {
+		print "### Slurm account " ACC " is just an alias for the account " $5
+		next		# Skip aliased accounts
+	}
 	account_exists[ACC] = ACC	# Record that this account is defined in ACCOUNTS_CONF
 	if (account[ACC] == "") {
 		# Create a new account
