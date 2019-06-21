@@ -91,8 +91,8 @@ assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,Grp
 if test $(version $SLURM_VERSION) -ge $(version 18.08)
 then
 	assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
-	echo "### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt"
 fi
+echo "### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt"
 
 $remote sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
 # Format for users:
@@ -239,7 +239,7 @@ BEGIN {
 			defaults[type] = value
 		} else if (groupname[item] == "") {	# Unknown UNIX group: Assume that item is a username
 			if (useraccount[item] == "")
-				print "### NOTICE: Slurm account in user_settings_conf for group/user " item " is unknown: " $0
+				print "### NOTICE: Slurm account in " user_settings_conf " for group/user " item " is unknown: " $0
 			setting[item][config][type] = value
 		} else {				# UNIX group value
 			setting[item][config][type] = value
@@ -264,7 +264,7 @@ $3 >= MINUID {
 		userinformation[u] = "User " u " UNIX account has non-login shell " SHELL
 		next
 	}
-	if (index(password,"!") == 1) {		# Skip locked users
+	if (index(password,"!!") == 1) {		# Skip locked users
 		userinformation[u] = "User " u " UNIX account in group " g ": The password is LOCKED"
 		next
 	}
