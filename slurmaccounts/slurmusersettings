@@ -169,7 +169,6 @@ BEGIN {
         	DESC=tolower($4)
                 print "### Slurm account " ACCT " is just an alias for the UNIX group " $5
                 group2account[$5] = ACCT # Record that this account is a UNIX group alias
-                account_alias[ACCT] = $5 # Record that account ACCT is an alias for account $5
         	account_exists[ACCT] = ACCT   
 	}
 	close (accounts_conf)
@@ -290,11 +289,11 @@ $3 >= MINUID {
 	password	= $2
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
-	# The case where the UNIX group is aliased to a Slurm account group name
-	if (account_alias[g] != "")
-		ACCT = account_alias[g]
-	else
+	if (group2account[g] == "")
 		ACCT = g
+	else
+		# The case where the UNIX group is aliased to a Slurm account name
+		ACCT = group2account[g]
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
