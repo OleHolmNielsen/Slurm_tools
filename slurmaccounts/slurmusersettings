@@ -163,13 +163,14 @@ BEGIN {
 	while ((getline < accounts_conf) > 0) {
 		if (index($1,"#") >= 1) continue    # Skip lines with # comments
         	if (NF < 5) continue                # Skip lines which have less than 5 fields (incl. empty lines)
-        	ACC=tolower($1)
+        	ACCT=tolower($1)
         	PARENT=tolower($2)
         	FAIRSHARE=$3
         	DESC=tolower($4)
-                print "### Slurm account " ACC " is just an alias for the UNIX group " $5
-                group2account[$5] = ACC # Record that this account is a UNIX group alias
-        	account_exists[ACC] = ACC   
+                print "### Slurm account " ACCT " is just an alias for the UNIX group " $5
+                group2account[$5] = ACCT # Record that this account is a UNIX group alias
+                account_alias[ACCT] = $5 # Record that account ACCT is an alias for account $5
+        	account_exists[ACCT] = ACCT   
 	}
 	close (accounts_conf)
 
@@ -290,10 +291,10 @@ $3 >= MINUID {
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
 	# The case where the UNIX group is aliased to a Slurm account group name
-	if (group2account[g] == "")
-		ACC = g
+	if (account_alias[g] != "")
+		ACCT = account_alias[g]
 	else
-		ACC = group2account[g]
+		ACCT = g
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
@@ -312,9 +313,9 @@ $3 >= MINUID {
 		next
 	}
 	# Check that the UNIX group exists as a Slurm account
-	if (ignore_primary_groups == 0 && !isarray(setting[ACC])) {
-		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, g)
-		userinformation[u] = "User " u " has NO SLURM ACCOUNT " ACC " for primary UNIX group " g
+	if (ignore_primary_groups == 0 && !isarray(setting[ACCT])) {
+		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, ACCT)
+		userinformation[u] = "User " u " has NO SLURM ACCOUNT " ACCT " for primary UNIX group " g
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
@@ -330,18 +331,18 @@ $3 >= MINUID {
 
 	# Adding a user to an existing account
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
-	if (ignore_primary_groups == 0 && useraccount[u] != g) {
+	if (ignore_primary_groups == 0 && useraccount[u] != ACCT) {
 		print ""
 		if (defaultaccount[u] == "") {
 			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new user to be created\n", u)
 			printf("### Password entry: %s\n", $0)
 		}
-		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
-		COMMAND = COMMAND " defaultaccount=" g
+		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], ACCT)
+		COMMAND = COMMAND " defaultaccount=" ACCT
 		# Add already existing user to his/her new account
 		if (useraccount[u] != "") {
-			print "### Existing user " u " account " useraccount[u] " add to account " g
-			print sacctmgr " -i add user " u " account=" g
+			print "### Existing user " u " account " useraccount[u] " add to account " ACCT
+			print sacctmgr " -i add user " u " account=" ACCT
 		}
 	}
 
@@ -351,8 +352,8 @@ $3 >= MINUID {
 			gg = groupaccounts[u][i]
 			# Check if user secondary group gg equals primary group g (redundant and superfluous)
 			# Check if account already exists
-			if (gg != g && useraccounts[u][gg] == "" && length(accountname[gg]) > 0) {
-				print "### User " u " with primary UNIX group " g " is a secondary member of the UNIX group " gg
+			if (gg != ACCT && useraccounts[u][gg] == "" && length(accountname[gg]) > 0) {
+				print "### User " u " with primary UNIX group " g " and account " ACCT " is a secondary member of the UNIX group " gg
 				print sacctmgr " -i add user " u " account=" gg
 			}
 		}
@@ -361,12 +362,12 @@ $3 >= MINUID {
 	# Loop over the setting[] array and configure any changes
 
 	# If user setting not explicitly given, then use the group setting
-	if (isarray(setting[g]) && isarray(setting[g][config])) {
-		for (i in setting[g][config]) {
-			if (setting[u][config][i] == "") setting[u][config][i] = setting[g][config][i]
+	if (isarray(setting[ACCT]) && isarray(setting[ACCT][config])) {
+		for (i in setting[ACCT][config]) {
+			if (setting[u][config][i] == "") setting[u][config][i] = setting[ACCT][config][i]
 		}
 	} else {
-		if (debug > 0) print "### NOTICE: Group " g " has no settings, assuming default values for user " u
+		if (debug > 0) print "### NOTICE: Group " ACCT " has no settings, assuming default values for user " u
 	}
 	# If user setting not explicitly given, then use the default setting
 	for (i in defaults) {
