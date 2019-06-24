@@ -395,6 +395,7 @@ END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
 		if (userinformation[u] == u) continue
+		if (userinformation[u] == "") userinformation[u] = "No password entry"
 		printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
 		# First delete non-default accounts for this user
 		if (isarray(useraccounts[u]))
