@@ -44,6 +44,8 @@ export ignore_primary_groups=0
 # Slurm commands
 export sacctmgr=/usr/bin/sacctmgr
 
+# Configure input files:
+
 # User settings configuration file:
 export user_settings_conf=/etc/slurm/user_settings.conf
 
@@ -286,6 +288,9 @@ $3 >= MINUID {
 	u		= $1
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
+	# The case where the UNIX group is aliased to a Slurm account group name
+	if (account_alias[g] != "")
+		g = account_alias[g]
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
@@ -324,6 +329,8 @@ $3 >= MINUID {
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (ignore_primary_groups == 0 && useraccount[u] != g) {
 		print ""
+		if (defaultaccount[u] == "")
+			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new user to be created\n", u)
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
 		# Add already existing user to his/her new account
