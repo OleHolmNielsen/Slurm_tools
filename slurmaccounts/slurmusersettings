@@ -11,7 +11,15 @@
 ### CONFIGURE these settings for your cluster
 
 # Skip users with UID < MINUID
-export MINUID=1002
+export MINUID=100
+
+# Skip users with locked password by setting skip_locked=1
+# See https://unix.stackexchange.com/questions/109314/two-ways-to-lock-a-password-but-only-one-to-unlock
+export skip_locked=0
+
+# Set ignore_primary_groups=1 in order to ignore the UNIX primary group.
+# This assumes that only UNIX secondary groups are being used for Slurm accounts
+export ignore_primary_groups=0
 
 # FairShare configuration:
 # See https://slurm.schedmd.com/fair_tree.html
@@ -38,6 +46,9 @@ export sacctmgr=/usr/bin/sacctmgr
 
 # User settings configuration file:
 export user_settings_conf=/etc/slurm/user_settings.conf
+
+# Slurm account configuration file:
+export accounts_conf=/etc/slurm/accounts.conf
 
 ### END CONFIGURE these settings for your cluster
 
@@ -102,7 +113,10 @@ $remote sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
 cat $passwd_tmp | gawk -F: '
 BEGIN {
         MINUID = ENVIRON["MINUID"]
+        skip_locked = ENVIRON["skip_locked"]
+        ignore_primary_groups = ENVIRON["ignore_primary_groups"]
 	user_settings_conf = ENVIRON["user_settings_conf"]
+        accounts_conf	= ENVIRON["accounts_conf"]
 	sacctmgr = ENVIRON["sacctmgr"]
         passwd	= ENVIRON["passwd_tmp"]
         group	= ENVIRON["group_tmp"]
@@ -141,6 +155,21 @@ BEGIN {
 		}
 	}
 	close (group)
+
+	# Read the accounts_conf file for account aliases
+	FS=":"	# Set the Field Separator
+	while ((getline < accounts_conf) > 0) {
+		if (index($1,"#") >= 1) continue    # Skip lines with # comments
+        	if (NF < 5) continue                # Skip lines which have less than 5 fields (incl. empty lines)
+        	ACC=tolower($1)
+        	PARENT=tolower($2)
+        	FAIRSHARE=$3
+        	DESC=tolower($4)
+                print "### Slurm account " ACC " is just an alias for the UNIX group " $5
+                account_alias[ACC] = $5 # Record that this account is a UNIX group alias
+        	account_exists[ACC] = ACC   
+	}
+	close (accounts_conf)
 
 	# Set the Field Separator to | for the parseable account list
 	FS="|"
@@ -264,7 +293,7 @@ $3 >= MINUID {
 		userinformation[u] = "User " u " UNIX account has non-login shell " SHELL
 		next
 	}
-	if (index(password,"!!") == 1) {		# Skip locked users
+	if (skip_locked > 0 && index(password,"!") == 1) {		# Skip locked users
 		userinformation[u] = "User " u " UNIX account in group " g ": The password is LOCKED"
 		next
 	}
@@ -275,7 +304,7 @@ $3 >= MINUID {
 		next
 	}
 	# Check that the UNIX group exists as a Slurm account
-	if (!isarray(setting[g])) {
+	if (ignore_primary_groups == 0 && !isarray(setting[g])) {
 		printf("\n### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
 		userinformation[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
 		next
@@ -293,7 +322,7 @@ $3 >= MINUID {
 
 	# Adding a user to an existing account
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
-	if (useraccount[u] != g) {
+	if (ignore_primary_groups == 0 && useraccount[u] != g) {
 		print ""
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
@@ -320,7 +349,7 @@ $3 >= MINUID {
 	# Loop over the setting[] array and configure any changes
 
 	# If user setting not explicitly given, then use the group setting
-	if (isarray(setting[g][config])) {
+	if (isarray(setting[g]) && isarray(setting[g][config])) {
 		for (i in setting[g][config]) {
 			if (setting[u][config][i] == "") setting[u][config][i] = setting[g][config][i]
 		}
