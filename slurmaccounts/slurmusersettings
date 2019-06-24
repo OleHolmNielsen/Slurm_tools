@@ -286,6 +286,7 @@ BEGIN {
 $3 < MINUID { if (debug > 0) print "Skip user " $1 " with UID=" $3 }	# Skip users with UID < MINUID
 $3 >= MINUID {
 	u		= $1
+	password	= $2
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
 	# The case where the UNIX group is aliased to a Slurm account group name
@@ -310,7 +311,7 @@ $3 >= MINUID {
 	}
 	# Check that the UNIX group exists as a Slurm account
 	if (ignore_primary_groups == 0 && !isarray(setting[g])) {
-		printf("\n### WARNING for user %s: The UNIX group %s has no corresponding Slurm account\n", u, g)
+		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, g)
 		userinformation[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
 		next
 	}
