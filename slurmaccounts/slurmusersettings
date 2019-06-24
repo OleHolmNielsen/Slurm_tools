@@ -332,7 +332,7 @@ $3 >= MINUID {
 		print ""
 		if (defaultaccount[u] == "") {
 			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new user to be created\n", u)
-			printf("### Password file entry:\n%s\n", $0)
+			printf("### Password file entry:\n### %s\n", $0)
 		}
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
