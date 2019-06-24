@@ -14,15 +14,29 @@ then
 fi
 
 cat no_slurm_account | awk '
+BEGIN {
+        # Read list of existing accounts (parseable output)
+        command="/usr/bin/sacctmgr -nrp show accounts WithAssoc format=Account,User"
+        FS="|"  # Set the Field Separatator to | for the account list
+        while ((command | getline) > 0) {
+		a = $1
+		u = $2
+                if (a == "root") continue      # Ignore the root account
+                account[u][a]     = a	# Each user may have multiple accounts
+                # Debug: print "Got account ", $0
+        }
+        close(command)
+        FS=" "  # Now reset the Field Separatator
+}
 {
-        cmd = "sacctmgr -nor show assoc user=" $2 " format=Account"
-        account=""
-        while (( cmd | getline account ) > 0) {
-                if (account=="") account="(no_account)"
-                printf("%s %s %s\n", $1, $2, account)
-        } 
-        close(cmd)
-        if (account=="") printf("### Group %s user %s account No_account\n", $1, $2)
+        acct=""
+	g = $1
+	u = $2
+	if (isarray(account[u])) {
+		for (i in account[u])
+                	printf("%s %s %s\n", g, u, account[u][i])
+	} else
+        	printf("### Group %s user %s account No_account\n", g, u)
 }' > /tmp/accountlist
 
 cat <<EOF
