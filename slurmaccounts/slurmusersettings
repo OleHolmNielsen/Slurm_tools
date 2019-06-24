@@ -168,7 +168,7 @@ BEGIN {
         	FAIRSHARE=$3
         	DESC=tolower($4)
                 print "### Slurm account " ACC " is just an alias for the UNIX group " $5
-                account_alias[ACC] = $5 # Record that this account is a UNIX group alias
+                group2account[$5] = ACC # Record that this account is a UNIX group alias
         	account_exists[ACC] = ACC   
 	}
 	close (accounts_conf)
@@ -203,7 +203,7 @@ BEGIN {
 		if (u == "") {
 			if (groupname[a] == "") {	# Non-existent group
 				if (debug > 0) print "### NOTICE: UNIX group " a " does not exist"
-				continue	# Skip it
+				# continue	# Skip it
 			}
 			item = a	# Not a user account: UNIX group 
 		} else {
@@ -290,8 +290,10 @@ $3 >= MINUID {
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
 	# The case where the UNIX group is aliased to a Slurm account group name
-	if (account_alias[g] != "")
-		g = account_alias[g]
+	if (group2account[g] == "")
+		ACC = g
+	else
+		ACC = group2account[g]
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
@@ -310,9 +312,9 @@ $3 >= MINUID {
 		next
 	}
 	# Check that the UNIX group exists as a Slurm account
-	if (ignore_primary_groups == 0 && !isarray(setting[g])) {
+	if (ignore_primary_groups == 0 && !isarray(setting[ACC])) {
 		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, g)
-		userinformation[u] = "User " u " has NO SLURM ACCOUNT for primary UNIX group " g
+		userinformation[u] = "User " u " has NO SLURM ACCOUNT " ACC " for primary UNIX group " g
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
@@ -332,7 +334,7 @@ $3 >= MINUID {
 		print ""
 		if (defaultaccount[u] == "") {
 			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new user to be created\n", u)
-			printf("### Password file entry:\n### %s\n", $0)
+			printf("### Password entry: %s\n", $0)
 		}
 		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], g)
 		COMMAND = COMMAND " defaultaccount=" g
