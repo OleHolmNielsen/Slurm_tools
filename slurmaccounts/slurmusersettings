@@ -17,6 +17,10 @@ export MINUID=100
 # See https://unix.stackexchange.com/questions/109314/two-ways-to-lock-a-password-but-only-one-to-unlock
 export skip_locked=0
 
+# Check if user home directories exist by setting check_homedirs=1
+# This can be a heavy operation if each homedir is NFS-mounted separately.
+export check_homedirs=1
+
 # Set ignore_primary_groups=1 in order to ignore the UNIX primary group.
 # This assumes that only UNIX secondary groups are being used for Slurm accounts
 export ignore_primary_groups=0
@@ -116,6 +120,7 @@ cat $passwd_tmp | gawk -F: '
 BEGIN {
         MINUID = ENVIRON["MINUID"]
         skip_locked = ENVIRON["skip_locked"]
+        check_homedirs = ENVIRON["check_homedirs"]
         ignore_primary_groups = ENVIRON["ignore_primary_groups"]
 	user_settings_conf = ENVIRON["user_settings_conf"]
         accounts_conf	= ENVIRON["accounts_conf"]
@@ -321,7 +326,7 @@ $3 >= MINUID {
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
-	if (system("test -d \""HOMEDIR"\"") != 0) {
+	if (check_homedirs > 0 && system("test -d \""HOMEDIR"\"") != 0) {
 		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
 		userinformation[u] = "User " u " has NO HOME directory=" HOMEDIR
 		next
