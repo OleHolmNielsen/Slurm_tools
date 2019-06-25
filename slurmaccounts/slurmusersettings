@@ -158,7 +158,7 @@ BEGIN {
 	}
 	close (group)
 
-	# Read the accounts_conf file for account aliases
+	# Read the accounts_conf file for group-to-Slurm-account aliases
 	FS=":"	# Set the Field Separator
 	while ((getline < accounts_conf) > 0) {
 		if (index($1,"#") >= 1) continue    # Skip lines with # comments
@@ -167,8 +167,11 @@ BEGIN {
         	PARENT=tolower($2)
         	FAIRSHARE=$3
         	DESC=tolower($4)
-                print "### Slurm account " ACCT " is just an alias for the UNIX group " $5
-                group2account[$5] = ACCT # Record that this account is a UNIX group alias
+                print "### The UNIX group(s) " $5 " is/are aliased to the Slurm account " ACCT
+		# Multiple UNIX comma-separated groups may be given, split them into separate items
+		split($5, grouplist, ",")
+		for (i in grouplist)
+			group2account[grouplist[i]] = ACCT	# Record that this UNIX group is an alias for ACCT
         	account_exists[ACCT] = ACCT   
 	}
 	close (accounts_conf)
@@ -292,7 +295,7 @@ $3 >= MINUID {
 	if (group2account[g] == "")
 		ACCT = g
 	else
-		# The case where the UNIX group is aliased to a Slurm account name
+		# The case where the UNIX group g is an alias for a Slurm account name
 		ACCT = group2account[g]
 	FULLNAME	= $5
 	HOMEDIR		= $6
