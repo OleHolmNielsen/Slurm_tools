@@ -168,16 +168,22 @@ BEGIN {
 	while ((getline < accounts_conf) > 0) {
 		if (index($1,"#") >= 1) continue    # Skip lines with # comments
         	if (NF < 5) continue                # Skip lines which have less than 5 fields (incl. empty lines)
-        	ACCT=tolower($1)
-        	PARENT=tolower($2)
-        	FAIRSHARE=$3
-        	DESC=tolower($4)
-                print "### The UNIX group(s) " $5 " is/are aliased to the Slurm account " ACCT
+		if ($1 == "NOACCOUNT")
+        		acct = "NOACCOUNT"
+		else {
+        		acct = tolower($1)
+        		account_exists[acct] = acct   
+		}
 		# Multiple UNIX comma-separated groups may be given, split them into separate items
-		split($5, grouplist, ",")
-		for (i in grouplist)
-			group2account[grouplist[i]] = ACCT	# Record that this UNIX group is an alias for ACCT
-        	account_exists[ACCT] = ACCT   
+		n = split($5, grouplist, ",")
+		if (n == 0) 
+                	print "### Slurm account " acct ": No UNIX group aliases given in field 5"
+		else if (n == 1)
+                	print "### The UNIX group " $5 " is aliased to the Slurm account: " acct
+		else
+                	print "### The UNIX groups " $5 " are aliased to the Slurm account: " acct
+		if (n > 0) for (i in grouplist)
+			group2account[grouplist[i]] = acct	# Record that this UNIX group is an alias for acct
 	}
 	close (accounts_conf)
 
@@ -298,10 +304,12 @@ $3 >= MINUID {
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
 	if (group2account[g] == "")
-		ACCT = g
+		acct = g
+	else if (group2account[g] == "NOACCOUNT")
+		next	# Skip users whose UNIX group is aliased to Slurm NOACCOUNT
 	else
 		# The case where the UNIX group g is an alias for a Slurm account name
-		ACCT = group2account[g]
+		acct = group2account[g]
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
@@ -320,9 +328,9 @@ $3 >= MINUID {
 		next
 	}
 	# Check that the UNIX group exists as a Slurm account
-	if (ignore_primary_groups == 0 && !isarray(setting[ACCT])) {
-		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, ACCT)
-		userinformation[u] = "User " u " has NO SLURM ACCOUNT " ACCT " for primary UNIX group " g
+	if (ignore_primary_groups == 0 && !isarray(setting[acct])) {
+		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, acct)
+		userinformation[u] = "User " u " has NO SLURM ACCOUNT " acct " for primary UNIX group " g
 		next
 	}
 	# Check for existence of the user home directory, skip user if absent:
@@ -338,18 +346,18 @@ $3 >= MINUID {
 
 	# Adding a user to an existing account
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
-	if (ignore_primary_groups == 0 && useraccount[u] != ACCT) {
+	if (ignore_primary_groups == 0 && useraccount[u] != acct) {
 		print ""
 		if (defaultaccount[u] == "") {
-			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new user to be created\n", u)
+			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new Slurm user to be created\n", u)
 			printf("### Password entry: %s\n", $0)
 		}
-		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], ACCT)
-		COMMAND = COMMAND " defaultaccount=" ACCT
+		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], acct)
+		COMMAND = COMMAND " defaultaccount=" acct
 		# Add already existing user to his/her new account
 		if (useraccount[u] != "") {
-			print "### Existing user " u " account " useraccount[u] " add to account " ACCT
-			print sacctmgr " -i add user " u " account=" ACCT
+			print "### Existing user " u " account " useraccount[u] " add to account " acct
+			print sacctmgr " -i add user " u " account=" acct
 		}
 	}
 
@@ -359,8 +367,8 @@ $3 >= MINUID {
 			gg = groupaccounts[u][i]
 			# Check if user secondary group gg equals primary group g (redundant and superfluous)
 			# Check if account already exists
-			if (gg != ACCT && useraccounts[u][gg] == "" && length(accountname[gg]) > 0) {
-				print "### User " u " with primary UNIX group " g " and account " ACCT " is a secondary member of the UNIX group " gg
+			if (gg != acct && useraccounts[u][gg] == "" && length(accountname[gg]) > 0) {
+				print "### User " u " with primary UNIX group " g " and account " acct " is a secondary member of the UNIX group " gg
 				print sacctmgr " -i add user " u " account=" gg
 			}
 		}
@@ -369,12 +377,12 @@ $3 >= MINUID {
 	# Loop over the setting[] array and configure any changes
 
 	# If user setting not explicitly given, then use the group setting
-	if (isarray(setting[ACCT]) && isarray(setting[ACCT][config])) {
-		for (i in setting[ACCT][config]) {
-			if (setting[u][config][i] == "") setting[u][config][i] = setting[ACCT][config][i]
+	if (isarray(setting[acct]) && isarray(setting[acct][config])) {
+		for (i in setting[acct][config]) {
+			if (setting[u][config][i] == "") setting[u][config][i] = setting[acct][config][i]
 		}
 	} else {
-		if (debug > 0) print "### NOTICE: Group " ACCT " has no settings, assuming default values for user " u
+		if (debug > 0) print "### NOTICE: Group " acct " has no settings, assuming default values for user " u
 	}
 	# If user setting not explicitly given, then use the default setting
 	for (i in defaults) {
