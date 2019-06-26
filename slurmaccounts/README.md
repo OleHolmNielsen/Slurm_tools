@@ -74,11 +74,16 @@ slurmaccounts | bash
 It is however recommended to review and edit the commands before actually executing them.
 
 The file ```/etc/slurm/accounts.conf``` defines the hierarchical tree of Slurm accounts.
-The syntax of this file is 4 items separated by ```:``` like:
+The syntax of this file is 4 or 5 items separated by ```:``` like:
 
 ```
-account_name:parent_account:fairshare_value:Description_of_account
+account_name:parent_account:fairshare_value:Description_of_account[:group1[,group2]...]
 ```
+
+The optional field 5 is a comma-separated list of UNIX groups which are aliased to the Slurm ```account_name```,
+and this list must be added manually.
+It is possible to add also a fake ```account_name=NOACCOUNT``` where the UNIX groups listed in field 5 will be ignored from further processing.
+
 
 The example file in this directory should be edited and copied to ```/etc/slurm/accounts.conf```.
 
