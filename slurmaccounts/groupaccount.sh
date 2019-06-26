@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This script lists users whose UNIX group has no corresponding Slurm account.
-# The Slurm user's Slurm account is queried and a list of UNIX group versus Slurm account is produced.
+# The Slurm account list is queried and a list of UNIX group versus account is produced.
 
 echo Listing users whose UNIX group has no corresponding Slurm account
 echo
@@ -10,7 +10,7 @@ echo
 if test ! -f no_slurm_account
 then
 	echo Generating no_slurm_account file
-        ./slurmusersettings | grep 'has no corresponding Slurm account' | awk '{print $9, $5}' | sort | uniq | sed /:/s/// > no_slurm_account
+        ./slurmusersettings | grep 'No Slurm account named' | awk '{print $9, $5}' | sort | uniq | sed /:/s/// > no_slurm_account
 fi
 
 cat no_slurm_account | awk '
