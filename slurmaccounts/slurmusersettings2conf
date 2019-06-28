@@ -103,6 +103,7 @@ BEGIN {
 		}
 	}
 } END {
+	print "###"
 	print "### The global DEFAULT values of settings"
 	for (j in slurm_factors) {
 		sf = slurm_factors[j]
@@ -128,6 +129,7 @@ BEGIN {
 		else
 			printf("### Empty default value: %s:%s:%s\n", "DEFAULT", sf, globaldefaultvalue[sf])
 	}
+	print "###"
 	print "### The account default values of settings"
 	for (i in accounts) {
 		a = accounts[i]
@@ -144,7 +146,7 @@ BEGIN {
 			for (k in counts[a][sf]) {
 				c = counts[a][sf][k]
 				v = value[a][sf][k]
-				if (debug > 0) print "# Account " a " setting " sf " value " v " count=" c
+				if (debug > 0) print "# Account " a " setting " sf " value=\"" v "\" has count=" c
 				# Locate the highest count, assumed to be the default for this account
 				if (c > cmax) {
 					cmax = c
@@ -156,6 +158,7 @@ BEGIN {
 				printf("%s:%s:%s\n", a, sf, defaultvalue[a][sf])
 		}
 	}
+	print "###"
 	print "### The user settings, omitting group DEFAULT values"
 	for (i in user) {
 		u = user[i]
@@ -163,7 +166,7 @@ BEGIN {
 		if (debug > 0) print "# User " u " in group " a
 		for (j in slurm_factors) {
 			sf = slurm_factors[j]
-			# Print the value if it differs from the account default
+			# Print the value only if it differs from the account default
 			if (setting[u][sf] != "" && setting[u][sf] != defaultvalue[a][sf])
 				printf("%s:%s:%s\n", u, sf, setting[u][sf])
 		}
