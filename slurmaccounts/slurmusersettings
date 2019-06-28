@@ -68,7 +68,7 @@ fi
 awk_version=`awk --version | head -1 | awk '{version=$3; split(version,v,"."); print v[1]}'`
 if test "$awk_version" = "3"
 then
-	echo -n "Sorry, gawk version 4.0 or later is required.  Your version is: "
+	echo -n "Sorry, gawk version 4.0 or later is required. Your version is: "
 	awk --version | head -1
 	exit 1
 fi
@@ -118,17 +118,17 @@ $remote sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
 
 cat $passwd_tmp | gawk -F: '
 BEGIN {
-        MINUID = ENVIRON["MINUID"]
-        skip_locked = ENVIRON["skip_locked"]
-        check_homedirs = ENVIRON["check_homedirs"]
-        ignore_primary_groups = ENVIRON["ignore_primary_groups"]
+	MINUID = ENVIRON["MINUID"]
+	skip_locked = ENVIRON["skip_locked"]
+	check_homedirs = ENVIRON["check_homedirs"]
+	ignore_primary_groups = ENVIRON["ignore_primary_groups"]
 	user_settings_conf = ENVIRON["user_settings_conf"]
-        accounts_conf	= ENVIRON["accounts_conf"]
+	accounts_conf	= ENVIRON["accounts_conf"]
 	sacctmgr = ENVIRON["sacctmgr"]
-        passwd	= ENVIRON["passwd_tmp"]
-        group	= ENVIRON["group_tmp"]
-        assoc	= ENVIRON["assoc_tmp"]
-        users	= ENVIRON["users_tmp"]
+	passwd	= ENVIRON["passwd_tmp"]
+	group	= ENVIRON["group_tmp"]
+	assoc	= ENVIRON["assoc_tmp"]
+	users	= ENVIRON["users_tmp"]
 	debug = 0	# Debugging flag
 
 	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
@@ -166,24 +166,27 @@ BEGIN {
 	# Read the accounts_conf file for group-to-Slurm-account aliases
 	FS=":"	# Set the Field Separator
 	while ((getline < accounts_conf) > 0) {
-		if (index($1,"#") >= 1) continue    # Skip lines with # comments
-        	if (NF < 5) continue                # Skip lines which have less than 5 fields (incl. empty lines)
+		if (index($1,"#") >= 1) continue	# Skip lines with # comments
+		if (NF < 5) continue		# Only process lines including the optional 5th field
 		if ($1 == "NOACCOUNT")
-        		acct = "NOACCOUNT"
+			acct = "NOACCOUNT"
 		else {
-        		acct = tolower($1)
-        		account_exists[acct] = acct   
+			acct = tolower($1)
+			account_exists[acct] = acct 
 		}
 		# Multiple UNIX comma-separated groups may be given, split them into separate items
 		n = split($5, grouplist, ",")
 		if (n == 0) 
-                	print "### Slurm account " acct ": No UNIX group aliases given in field 5"
+			print "### Slurm account " acct ": No UNIX group aliases given in field 5"
 		else if (n == 1)
-                	print "### The UNIX group " $5 " is aliased to the Slurm account: " acct
+			print "### The UNIX group " $5 " is aliased to the Slurm account: " acct
 		else
-                	print "### The UNIX groups " $5 " are aliased to the Slurm account: " acct
+			print "### The UNIX groups " $5 " are aliased to the Slurm account: " acct
 		if (n > 0) for (i in grouplist)
-			group2account[grouplist[i]] = acct	# Record that this UNIX group is an alias for acct
+			if (group2account[grouplist[i]] == "")
+				group2account[grouplist[i]] = acct	# Record that this UNIX group is an alias for acct
+			else
+				print "### ERROR: group2account alias is already defined for group " grouplist[i] " as " group2account[grouplist[i]]
 	}
 	close (accounts_conf)
 
@@ -306,7 +309,7 @@ $3 >= MINUID {
 	if (group2account[g] == "")
 		acct = g
 	else if (group2account[g] == "NOACCOUNT")
-		next	# Skip users whose UNIX group is aliased to Slurm NOACCOUNT
+		next	# Skip users whose primary UNIX group is aliased to Slurm NOACCOUNT
 	else
 		# The case where the UNIX group g is an alias for a Slurm account name
 		acct = group2account[g]
