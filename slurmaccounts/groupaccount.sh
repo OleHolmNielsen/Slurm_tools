@@ -40,7 +40,7 @@ BEGIN {
 }' > /tmp/accountlist
 
 cat <<EOF
-Count	UNIX Group	Slurm Account
+#users	UNIX Group	Slurm Account
 =======	==========	=============
 EOF
 
