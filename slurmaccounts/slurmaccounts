@@ -22,7 +22,19 @@ export LANG=C
 # Print a header
 cat <<EOF
 ###
-### Update Slurm accounts from the accounts configuration file $ACCOUNTS_CONF
+### Update hierarchical tree of Slurm accounts
+### from the accounts configuration file $ACCOUNTS_CONF
+###
+### The syntax of this file is 4 or 5 items separated by : like:
+### 
+### account_name:parent_account:fairshare_value:Description_of_account[:group1[,group2]...]
+### 
+### The optional field 5 is a comma-separated list of UNIX groups which are aliased to the Slurm account_name,
+### and this list must be added manually.
+### 
+### It is possible to add also a fake account_name=NOACCOUNT where the UNIX groups listed in field 5 will be ignored from further processing, for example:
+### 
+### NOACCOUNT:::We ignore these groups:group3,group4
 ###
 EOF
 
@@ -57,7 +69,7 @@ BEGIN {
 		if ($5 in account)
 			print "### Slurm account for UNIX group " $5 " is " account[$5]
 		else {
-			print "### WARNING: Slurm account " $5 " does not exist"
+			print "### NOTICE: Slurm account " $5 " does not exist"
 			account_alias[ACC] = $5 # Record that this account is a UNIX group alias
 			next		# Skip aliased accounts
 		}
