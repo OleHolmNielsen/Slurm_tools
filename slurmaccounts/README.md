@@ -10,7 +10,7 @@ Basic concepts
 
 The mapping of UNIX groups onto Slurm accounts is the fundamental concept of this project!
 UNIX group names (the UNIX ```group``` file) are used to define the corresponding Slurm account names.
-In the present project we have selected the users' UNIX groups as the bottom level (leaf nodes) of the Slurm account tree.
+In the present project we have chosen the users' UNIX groups as the bottom level (leaf nodes) of the Slurm account tree.
 
 In this setup, the user's primary UNIX group becomes the user's Slurm *Default account*.
 If the user has any secondary UNIX group memberships, the user is also added to the corresponding Slurm accounts (if they exist).
@@ -18,6 +18,9 @@ If the user has any secondary UNIX group memberships, the user is also added to 
 The tools read the UNIX user database using the commands ```getent passwd``` and ```getent group```.
 If these commands list the complete user database relevant for Slurm, you should be ready to start.
 Furthermore, the Slurm command ```sacctmgr``` is used to read the list of Slurm accounts.
+
+These tools may be run by any non-administrator account initially while you test whether they work as expected in your environment.
+The configuration files ```accounts.conf``` and ```user_settings.conf``` files would have to be placed in a temporary location while testing.
 
 * Firstly, you can define a hierarchical tree of Slurm accounts from the top-level root and down through the organization.
 Use the UNIX group names to define the bottom level of the account tree.
