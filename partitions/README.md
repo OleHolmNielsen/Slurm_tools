@@ -1,7 +1,7 @@
 The Slurm tool "showpartitions"
 -------------------------------
 
-Prints a Slurm cluster partition status 
+Prints a Slurm cluster partition status overview with 1 line per partition.
 
 Author: Ole Holm Nielsen <Ole.H.Nielsen \at/ fysik.dtu.dk>
 
@@ -11,7 +11,7 @@ Usage
 ```
 Usage: showpartitions [-p partition(s)] [-g]
 where:
-        -p partition: Select only partion <partition>
+        -p partition: Select only partition <partition>
 	-g: Print also GRES (Generic Resources)
 ```
 
