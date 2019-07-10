@@ -36,8 +36,14 @@ Partition statistics for cluster niflheim at Wed Jul 10 10:45:23 CEST 2019
 Some Slurm flags shown are:
 
 1. A \* after the partition ```name``` identifies the default Slurm partition.
-2. Long partition names will be truncated, and the last character is changed to a ```+```.
+2. Long partition names will be truncated, and the last character is changed to a ```+```. See also ```maxlength``` below.
 3. A @ after the partition ```state``` means that some nodes are pending a reboot.
+
+Note: You may change the maximum length of partition names in this script line:
+
+```
+export maxlength=12
+```
 
 History
 -------
