@@ -105,7 +105,8 @@ BEGIN {
 	if (n > 0)
 		memoryplus[p] = "+"
 	else
-		memoryplus[p] = " "
+		if (memoryplus[p] == "")
+			memoryplus[p] = " "	# Only overwrite empty string
 	memory[p] = int(mem / 1000)	# Convert MB to GB
 
 	gsub(":00$", "", $6)	# Strip time limit seconds :00
