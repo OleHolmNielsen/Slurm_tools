@@ -113,7 +113,7 @@ BEGIN {
 	if (nodestate == "idle")
 		freenodes[p] = $3
 	if ($10 != "(null)") {	# Node GRES
-		gres[p] = gres[p] $10 "(" $3 ")"
+		gres[p] = gres[p] $10 "(" $3 ") "
 	}
 } END {
 	# Sort arrays by element values:
