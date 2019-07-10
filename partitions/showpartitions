@@ -10,7 +10,7 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-p partition] [-h]
+Usage: $0 [-p partition] [-g] [-h]
 where:
 	-p partition: Print only jobs in partition <partition-list>
 	-g: Print also GRES information
@@ -86,7 +86,7 @@ BEGIN {
 	part_order[p] = NR	# Slurms order of partitions
 	state[p] = $2		# State: up or down
 	nodes[p] += $3		# Number of nodes
-	split($4, cpus, "/")	# Split CPU fields in $4
+	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
 	freecores[p] += cpus[2]
 	totalcores[p] += cpus[4]
 	if (corespernode[p] == 0)
@@ -108,13 +108,13 @@ BEGIN {
 	minnodes[p] = jobsize[1]
 	maxnodes[p] = jobsize[2]
 	nodestate = $9		# Node state
-	if ($10 != "(null)") {	# Node GRES
-		gres[p] = gres[p] $10 "(" $3 ")"
-	}
 	n = sub("@", "", nodestate)
 	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
 	if (nodestate == "idle")
 		freenodes[p] = $3
+	if ($10 != "(null)") {	# Node GRES
+		gres[p] = gres[p] $10 "(" $3 ")"
+	}
 } END {
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
