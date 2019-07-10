@@ -1,7 +1,7 @@
 The Slurm tool "showpartitions"
 -------------------------------
 
-Prints a Slurm cluster partition status overview with 1 line per partition.
+Print a Slurm cluster partition status overview with 1 line per partition.
 
 Author: Ole Holm Nielsen <Ole.H.Nielsen \at/ fysik.dtu.dk>
 
@@ -35,8 +35,8 @@ Partition statistics for cluster niflheim at Wed Jul 10 10:45:23 CEST 2019
 
 Some Slurm flags shown are:
 
-1. A "\*" after the partition ```name``` identifies the default Slurm partition.
-2. A "@" after the partition ```state``` means that some nodes are pending a reboot.
+1. A \* after the partition ```name``` identifies the default Slurm partition.
+2. A @ after the partition ```state``` means that some nodes are pending a reboot.
 
 History
 -------
