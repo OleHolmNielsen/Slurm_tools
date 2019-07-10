@@ -83,7 +83,7 @@ BEGIN {
 	# Process output of sinfo
 	p = $1
 	partition[p] = p	# Partition name
-	part_order[p] = NR	# Slurms order of partitions
+	part_order[p] = NR	# Slurm ordering of partitions
 	state[p] = $2		# State: up or down
 	nodes[p] += $3		# Number of nodes
 	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
