@@ -121,8 +121,14 @@ BEGIN {
 	PROCINFO["sorted_in"] = "@val_type_asc"
 	for (p in part_order) {
 		if (pending_reboot[p] != "") state[p] = state[p] "@"
+		# Truncate long partition names > 12 characters
+		if (length(p) <= 12)
+			pname = p
+		else {
+			pname = sprintf("%11.11s+", partition[p])	# Replace last character by a +
+		}
 		printf("%12s %5s %8d %8d %8d %8d %8d %8d %5s %5.5s %11s %7d %8s%1s",
-			partition[p], state[p], freecores[p], totalcores[p], freenodes[p], nodes[p],
+			pname, state[p], freecores[p], totalcores[p], freenodes[p], nodes[p],
 			pending_resources[p], pending_other[p], minnodes[p], maxnodes[p],
 			timelimit[p], corespernode[p], memory[p], memoryplus[p])
 		if (printgres == 1)

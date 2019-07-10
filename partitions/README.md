@@ -36,7 +36,8 @@ Partition statistics for cluster niflheim at Wed Jul 10 10:45:23 CEST 2019
 Some Slurm flags shown are:
 
 1. A \* after the partition ```name``` identifies the default Slurm partition.
-2. A @ after the partition ```state``` means that some nodes are pending a reboot.
+2. Long partition names will be truncated, and the last character is changed to a ```+```.
+3. A @ after the partition ```state``` means that some nodes are pending a reboot.
 
 History
 -------
