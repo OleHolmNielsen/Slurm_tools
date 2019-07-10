@@ -343,6 +343,11 @@ BEGIN {
 
 		# Print format
 		format = "%8s %8d  %10.1f  %7.2f %7.2f %7.2f\n"
+
+		# Sort arrays by element values:
+		# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
+		PROCINFO["sorted_in"] = "@ind_num_desc"
+
 		for (group in groupname) {
 			if (gr_jobs[group] > 0 && gr_wallcpu[group] > 0) printf(format,
 				groupname[group],
