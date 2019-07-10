@@ -49,7 +49,7 @@ if test $printgres -eq 1
 then
 	cat <<EOF
         PARTITION      FREE    TOTAL     FREE    TOTAL    #CPUS   #OTHER   MIN   MAX  MAXJOBTIME   CORES     NODE    GRES
-        NAME STATE    CORES    CORES    NODES    NODES   PENDNG   PENDNG     NODES     DAY-HR:MN   /NODE   MEM(GB) (COUNT)
+        NAME STATE    CORES    CORES    NODES    NODES   PENDNG   PENDNG     NODES     DAY-HR:MN   /NODE   MEM(GB) (NODES:STATE)
 EOF
 else
 	cat <<EOF
@@ -113,10 +113,15 @@ BEGIN {
 	if (nodestate == "idle")
 		freenodes[p] = $3
 	if ($10 != "(null)") {	# Node GRES
-		if (gres[p] == "")
-			gres[p] = $10 "(" $3 ")"
+		if (nodestate == "idle")
+			gpustate = ":free"
 		else
-			gres[p] = gres[p] "+" $10 "(" $3 ")"
+			gpustate = ":used"
+
+		if (gres[p] == "")
+			gres[p] = $10 "(" $3 gpustate ")"
+		else
+			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 	}
 } END {
 	# Sort arrays by element values:
