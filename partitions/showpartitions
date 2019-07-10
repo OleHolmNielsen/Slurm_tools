@@ -1,0 +1,133 @@
+#!/bin/sh
+
+# Show the Slurm partitions statistics
+
+# Author: Ole H. Nielsen, Technical University of Denmark
+# E-mail: Ole.H.Nielsen@fysik.dtu.dk
+# Home page: https://github.com/OleHolmNielsen/Slurm_tools
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 [-p partition] [-h]
+where:
+	-p partition: Print only jobs in partition <partition-list>
+	-g: Print also GRES information
+	-h: Print this help information
+EOF
+}
+
+export printgres=0
+
+while getopts "p:gh" options; do
+	case $options in
+		p ) 	export partition="-p $OPTARG"
+			echo Print only jobs in partition $OPTARG
+			;;
+		g ) 	export printgres=1
+			;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
+done
+
+# Test for extraneous command line arguments
+if test $# -gt $(($OPTIND-1))
+then
+	echo ERROR: Too many command line arguments: $*
+	usage
+	exit 1
+fi
+
+export SYSTEMNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
+echo Partition statistics for cluster $SYSTEMNAME at `date`
+
+if test $printgres -eq 1
+then
+	cat <<EOF
+        PARTITION      FREE    TOTAL     FREE    TOTAL    #CPUS   #OTHER   MIN   MAX  MAXJOBTIME   CORES     NODE    GRES
+        NAME STATE    CORES    CORES    NODES    NODES   PENDNG   PENDNG     NODES     DAY-HR:MN   /NODE   MEM(GB) (COUNT)
+EOF
+else
+	cat <<EOF
+        PARTITION      FREE    TOTAL     FREE    TOTAL    #CPUS   #OTHER   MIN   MAX  MAXJOBTIME   CORES     NODE
+        NAME STATE    CORES    CORES    NODES    NODES   PENDNG   PENDNG     NODES     DAY-HR:MN   /NODE   MEM(GB)
+EOF
+fi
+
+# sinfo output header:
+# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES
+sinfo --noheader $partition -o "%P %a %D %C %m %l %L %s %T %G" | awk '
+BEGIN {
+	# Environment variables
+	printgres  = ENVIRON["printgres"]
+	partitionlist  = ENVIRON["partition"]
+
+	# Get the list of all pending jobs (JobID Partition CPUs Reason)
+	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " partitionlist
+	while ((JOBLIST | getline) > 0) {
+		p = $2
+		numcpus = $3
+		reason = $4
+		if (reason == "(Resources)" || reason == "(Priority)")
+			pending_resources[p] += numcpus
+		else
+			pending_other[p] += numcpus
+	}
+	close (JOBLIST)
+}
+{
+	# Process output of sinfo
+	p = $1
+	partition[p] = p	# Partition name
+	part_order[p] = NR	# Slurms order of partitions
+	state[p] = $2		# State: up or down
+	nodes[p] += $3		# Number of nodes
+	split($4, cpus, "/")	# Split CPU fields in $4
+	freecores[p] += cpus[2]
+	totalcores[p] += cpus[4]
+	if (corespernode[p] == 0)
+		corespernode[p] = cpus[4] / nodes[p]
+
+	mem = $5		# Node memory
+	n = sub("+", "", mem)	# Strip trailing +
+	if (n > 0)
+		memoryplus[p] = "+"
+	else
+		memoryplus[p] = " "
+	memory[p] = int(mem / 1000)	# Convert MB to GB
+
+	gsub(":00$", "", $6)	# Strip time limit seconds :00
+	timelimit[p] = $6
+	gsub(":00$", "", $7)	# Strip time limit seconds :00
+	defaulttime[p] = $7
+	split($8, jobsize, "-")	# Job size min-max nodes
+	minnodes[p] = jobsize[1]
+	maxnodes[p] = jobsize[2]
+	nodestate = $9		# Node state
+	if ($10 != "(null)") {	# Node GRES
+		gres[p] = gres[p] $10 "(" $3 ")"
+	}
+	n = sub("@", "", nodestate)
+	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
+	if (nodestate == "idle")
+		freenodes[p] = $3
+} END {
+	# Sort arrays by element values:
+	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
+	PROCINFO["sorted_in"] = "@val_type_asc"
+	for (p in part_order) {
+		if (pending_reboot[p] != "") state[p] = state[p] "@"
+		printf("%12s %5s %8d %8d %8d %8d %8d %8d %5s %5.5s %11s %7d %8s%1s",
+			partition[p], state[p], freecores[p], totalcores[p], freenodes[p], nodes[p],
+			pending_resources[p], pending_other[p], minnodes[p], maxnodes[p],
+			timelimit[p], corespernode[p], memory[p], memoryplus[p])
+	if (printgres == 1)
+		print " " gres[p]
+	else
+		print ""
+	}
+}' 
