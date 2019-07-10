@@ -22,7 +22,7 @@ export printgres=0
 
 while getopts "p:gh" options; do
 	case $options in
-		p ) 	export partition="-p $OPTARG"
+		p ) 	export partitionlist="-p $OPTARG"
 			echo Print only jobs in partition $OPTARG
 			;;
 		g ) 	export printgres=1
@@ -60,11 +60,11 @@ fi
 
 # sinfo output header:
 # PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES
-sinfo --noheader $partition -o "%P %a %D %C %m %l %L %s %T %G" | awk '
+sinfo --noheader $partitionlist -o "%P %a %D %C %m %l %L %s %T %G" | awk '
 BEGIN {
 	# Environment variables
 	printgres  = ENVIRON["printgres"]
-	partitionlist  = ENVIRON["partition"]
+	partitionlist  = ENVIRON["partitionlist"]
 
 	# Get the list of all pending jobs (JobID Partition CPUs Reason)
 	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " partitionlist
