@@ -125,9 +125,9 @@ BEGIN {
 			partition[p], state[p], freecores[p], totalcores[p], freenodes[p], nodes[p],
 			pending_resources[p], pending_other[p], minnodes[p], maxnodes[p],
 			timelimit[p], corespernode[p], memory[p], memoryplus[p])
-	if (printgres == 1)
-		print " " gres[p]
-	else
-		print ""
+		if (printgres == 1)
+			print " " gres[p]
+		else
+			print ""
 	}
 }' 
