@@ -116,7 +116,11 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 	print " "
 	print "Node states summary:"
 	format = "%-7s %5d nodes (%d CPUs)\n"
-	asort(nodestates)	# Sort nodestates so that "alloc" comes first
+
+	# Sort arrays by element values:
+	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
+	PROCINFO["sorted_in"] = "@val_type_asc"
+
 	for (i in nodestates) {
 		s =  nodestates[i]
 		printf(format, s, nodecount[s],  cpucount[s])
