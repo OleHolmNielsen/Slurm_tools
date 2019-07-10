@@ -62,8 +62,8 @@ BEGIN {
 	# Column format string
 	columnfmt= "%*s %5s %7d %7d %7d %7d %7d %7d %5s %5.5s %11s %7d %8s%1s"
 	# Print a header
-        header1 = "PARTITION       #CORES          #NODES      #CORES-PENDING   JOB-NODES  MAXJOBTIME   CORES     NODE"
-        header2 = "NAME STATE    FREE   TOTAL    FREE   TOTAL  RESOUR   OTHER   MIN   MAX   DAY-HR:MN   /NODE   MEM(GB)"
+        header1 = "PARTITION       #CORES          #NODES      #CORES_PENDING   JOB_NODES  MAXJOBTIME   CORES     NODE"
+        header2 = "NAME STATE    FREE   TOTAL    FREE   TOTAL  RESOUR   OTHER   MIN   MAX   DAY-HR:MN   /NODE   MEM/GB"
 	if (printgres > 0) {	# Append GRES header
 		header1 = header1 "    GRES      "
 		header2 = header2 " (NODES:STATE)"
