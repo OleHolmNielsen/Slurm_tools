@@ -12,7 +12,7 @@ function usage()
 cat <<EOF
 Usage: $0 [-p partition] [-g] [-m] [-a] [-h]
 where:
-	-p partition: Print only jobs in partition <partition-list>
+	-p partition: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
@@ -163,10 +163,10 @@ BEGIN {
 	}
 } END {
 	# Partition column output format string:
-	# The format assumes <100k cores and <100k nodes, it can be adjusted for larger numbers
+	# The format assumes <100k cores and <100k nodes (5 digits), but this can be adjusted 
 	columnfmt= "%*s %5s %5d %5d %5d %5d %5d %5d %5.5s %5.5s %10s %5.5s %8s"
 	# Print a header
-        header1 = "PARTITION      #CORES      #NODES  #CORES_PEND   JOB_NODES MAXJOBTIME CORES     NODE"
+        header1 = "PARTITION     #CORES      #NODES   #CORES_PEND   JOB_NODES MAXJOBTIME CORES     NODE"
         header2 = "NAME STATE  FREE TOTAL  FREE TOTAL RESRC OTHER   MIN   MAX  DAY-HR:MN /NODE   MEM/GB"
 	if (printgres > 0) {	# Append GRES header
 		header1 = header1 "    GRES      "
