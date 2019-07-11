@@ -15,7 +15,7 @@ where:
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
-	-f: Show all partitions from the federation if a member of one. Slurm 18.08 and newer.
+	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
 	-h: Print this help information
 
 ```

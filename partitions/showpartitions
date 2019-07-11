@@ -16,7 +16,7 @@ where:
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
-	-f: Show all partitions from the federation if a member of one. Slurm 18.08 and newer.
+	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
 	-h: Print this help information
 
 Notes about the columns:
@@ -30,7 +30,7 @@ EOF
 export sinfo_options="%P %a %D %C %m %l %L %s %T %G"
 # Printing of GRES is disabled by default
 export printgres=0
-# Printing of GRES is disabled by default
+# Printing of federation clusters is disabled by default
 export federation=""
 # By default sinfo does not show hidden and unavailable partitions
 export all_partitions=""
