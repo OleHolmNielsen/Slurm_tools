@@ -16,7 +16,7 @@ where:
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
-	-f: Show all partitions from the federation if a member of one.
+	-f: Show all partitions from the federation if a member of one. Slurm 18.08 and newer.
 	-h: Print this help information
 
 Notes about the columns:
@@ -26,6 +26,9 @@ Notes about the columns:
 EOF
 }
 
+# sinfo output options:
+# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES
+export sinfo_options="%P %a %D %C %m %l %L %s %T %G"
 # Printing of GRES is disabled by default
 export printgres=0
 # Printing of GRES is disabled by default
@@ -47,6 +50,8 @@ while getopts "p:gmafh" options; do
 		a ) 	export all_partitions="-all"
 			;;
 		f ) 	export federation="--federation"
+			# Append sinfo option %V (CLUSTER) for Slurm 18.08 and newer.
+			export sinfo_options="$sinfo_options %V"
 			;;
 		h|? ) usage
 			exit 1;;
@@ -66,10 +71,7 @@ fi
 export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
 echo Partition statistics for cluster $mycluster at `date`
 
-# sinfo output header:
-# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES CLUSTER
-# sinfo --noheader $partitionlist -o "%R %a %D %C %m %l %L %s %T %G" | awk '
-sinfo --noheader --exact $federation $partitionlist $all_partitions -o "%P %a %D %C %m %l %L %s %T %G %V" | awk '
+sinfo --noheader --exact $federation $partitionlist $all_partitions -o "$sinfo_options" | awk '
 BEGIN {
 	# Environment variables
 	printgres	= ENVIRON["printgres"]
