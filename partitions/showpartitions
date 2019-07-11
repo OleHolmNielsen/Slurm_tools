@@ -95,14 +95,14 @@ BEGIN {
 {
 	# Process output of sinfo
 	n = sub("*", "", $1)	# Strip trailing * for default partition
-	p = $1
-	if (n > 0) defaultpartition[p] = 1	# The default partition
+	p = $1			# Partition name
 	partition[p] = p	# Partition name
-	part_order[p] = NR	# Slurm ordering of partitions
-	state[p] = $2		# State: up or down
-	nodes[p] += $3		# Number of nodes
+	if (n > 0) defaultpartition[p] = 1	# The default partition
 	n = length(p)		# Length of partition name string
 	if (n > maxlength) maxlength = n	# Calculate maximum string length
+	part_order[p] = NR	# Slurm ordering (index) of partitions
+	state[p] = $2		# State: up or down
+	nodes[p] += $3		# Number of nodes
 
 	# CPU cores
 	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
@@ -185,7 +185,7 @@ BEGIN {
 	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
 	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
 
-	if (federation != "") {		# Prepend cluster name header
+	if (federation != "") {		# Prepend cluster name header (8 characters)
 		header1 = " CLUSTER " header1
 		header2 = "    NAME " header2
 	}
@@ -222,7 +222,7 @@ BEGIN {
 				cores = mincores[p] "-" maxcores[p]
 		}
 
-		if (federation != "")	# Print the cluster name
+		if (federation != "")	# Print the cluster name (8 characters max)
 			printf("%8.8s ", clustername[p])
 		printf(columnfmt, maxlength, pname, state[p],
 			freecores[p], totalcores[p], freenodes[p], nodes[p],
