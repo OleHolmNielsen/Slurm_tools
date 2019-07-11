@@ -34,7 +34,7 @@ export printgres=0
 export federation=""
 # By default sinfo does not show hidden and unavailable partitions
 export all_partitions=""
-# Print both min and max values
+# Print both min and max values (disabled by default)
 export minmax=0
 
 while getopts "p:gmafh" options; do
