@@ -11,7 +11,7 @@ Usage
 ```
 Usage: ./showpartitions [-p partition] [-g] [-m] [-a] [-h]
 where:
-	-p partition: Print only jobs in partition <partition-list>
+	-p partition: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
