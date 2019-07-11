@@ -10,12 +10,13 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-p partition] [-g] [-m] [-a] [-h]
+Usage: $0 [-p partition] [-g] [-m] [-a] [-f] [-h]
 where:
 	-p partition: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
+	-f: Show all partitions from the federation if a member of one.
 	-h: Print this help information
 
 Notes about the columns:
@@ -27,21 +28,25 @@ EOF
 
 # Printing of GRES is disabled by default
 export printgres=0
+# Printing of GRES is disabled by default
+export federation=""
 # By default sinfo does not show hidden and unavailable partitions
 export all_partitions=""
 # Print both min and max values
 export minmax=0
 
-while getopts "p:gamh" options; do
+while getopts "p:gmafh" options; do
 	case $options in
 		p ) 	export partitionlist="-p $OPTARG"
 			echo Print only jobs in partition $OPTARG
 			;;
 		g ) 	export printgres=1
 			;;
+		m ) 	export minmax=1
+			;;
 		a ) 	export all_partitions="-all"
 			;;
-		m ) 	export minmax=1
+		f ) 	export federation="--federation"
 			;;
 		h|? ) usage
 			exit 1;;
@@ -58,21 +63,23 @@ then
 	exit 1
 fi
 
-export SYSTEMNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
-echo Partition statistics for cluster $SYSTEMNAME at `date`
+export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
+echo Partition statistics for cluster $mycluster at `date`
 
 # sinfo output header:
 # PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES
 # sinfo --noheader $partitionlist -o "%R %a %D %C %m %l %L %s %T %G" | awk '
-sinfo --noheader --exact $partitionlist $all_partitions -o "%P %a %D %C %m %l %L %s %T %G" | awk '
+sinfo --noheader --exact $federation $partitionlist $all_partitions -o "%P %a %D %C %m %l %L %s %T %G %V" | awk '
 BEGIN {
 	# Environment variables
 	printgres	= ENVIRON["printgres"]
 	minmax		= ENVIRON["minmax"]
 	partitionlist	= ENVIRON["partitionlist"]
+	mycluster	= ENVIRON["mycluster"]
+	federation	= ENVIRON["federation"]
 
 	# Get the list of all pending jobs (JobID Partition CPUs Reason)
-	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " partitionlist
+	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " federation partitionlist
 	while ((JOBLIST | getline) > 0) {
 		p = $2
 		numcpus = $3
@@ -161,20 +168,32 @@ BEGIN {
 		else
 			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 	}
+	if ($11 != "N/A") {	# Cluster name in a federation
+		clustername[p] = $11
+	} else
+		clustername[p] = mycluster
 } END {
 	# Partition column output format string:
 	# The format assumes <100k cores and <100k nodes (5 digits), but this can be adjusted 
-	columnfmt= "%*s %5s %5d %5d %5d %5d %5d %5d %5.5s %5.5s %10s %5.5s %8s"
-	# Print a header
+	columnfmt = "%*s %5s %5d %5d %5d %5d %5d %5d %5.5s %5.5s %10s %5.5s %8s"
+
+	# Column header lines
         header1 = "PARTITION     #CORES      #NODES   #CORES_PEND   JOB_NODES MAXJOBTIME CORES     NODE"
         header2 = "NAME STATE  FREE TOTAL  FREE TOTAL RESRC OTHER   MIN   MAX  DAY-HR:MN /NODE   MEM/GB"
+	# Prepend some spaces for partition name length
+	header1 = sprintf("%*.*s %s\n", maxlength-5, maxlength-5, " ", header1)
+	header2 = sprintf("%*.*s %s\n", maxlength-5, maxlength-5, " ", header2)
+
+	if (federation != "") {
+		header1 = " CLUSTER " header1
+		header2 = "    NAME " header2
+	}
 	if (printgres > 0) {	# Append GRES header
 		header1 = header1 "    GRES      "
 		header2 = header2 " (NODES:STATE)"
 	}
-	# Prepend some spaces for partition name length
-	printf("%*.*s %s\n", maxlength-5, maxlength-5, " ", header1)
-	printf("%*.*s %s\n", maxlength-5, maxlength-5, " ", header2)
+	printf("%s", header1)
+	printf("%s", header2)
 
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
@@ -200,6 +219,9 @@ BEGIN {
 			else
 				cores = mincores[p] "-" maxcores[p]
 		}
+
+		if (federation != "")
+			printf("%8.8s ", clustername[p])
 		printf(columnfmt, maxlength, pname, state[p],
 			freecores[p], totalcores[p], freenodes[p], nodes[p],
 			pending_resources[p], pending_other[p], minnodes[p], maxnodes[p],
