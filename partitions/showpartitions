@@ -67,7 +67,7 @@ export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
 echo Partition statistics for cluster $mycluster at `date`
 
 # sinfo output header:
-# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES
+# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES CLUSTER
 # sinfo --noheader $partitionlist -o "%R %a %D %C %m %l %L %s %T %G" | awk '
 sinfo --noheader --exact $federation $partitionlist $all_partitions -o "%P %a %D %C %m %l %L %s %T %G %V" | awk '
 BEGIN {
@@ -181,19 +181,20 @@ BEGIN {
         header1 = "PARTITION     #CORES      #NODES   #CORES_PEND   JOB_NODES MAXJOBTIME CORES     NODE"
         header2 = "NAME STATE  FREE TOTAL  FREE TOTAL RESRC OTHER   MIN   MAX  DAY-HR:MN /NODE   MEM/GB"
 	# Prepend some spaces for partition name length
-	header1 = sprintf("%*.*s %s\n", maxlength-5, maxlength-5, " ", header1)
-	header2 = sprintf("%*.*s %s\n", maxlength-5, maxlength-5, " ", header2)
+	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
+	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
 
-	if (federation != "") {
+	if (federation != "") {		# Prepend cluster name header
 		header1 = " CLUSTER " header1
 		header2 = "    NAME " header2
 	}
-	if (printgres > 0) {	# Append GRES header
+	if (printgres > 0) {		# Append GRES header
 		header1 = header1 "    GRES      "
 		header2 = header2 " (NODES:STATE)"
 	}
-	printf("%s", header1)
-	printf("%s", header2)
+	# Print the header lines
+	printf("%s\n", header1)
+	printf("%s\n", header2)
 
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
@@ -220,13 +221,13 @@ BEGIN {
 				cores = mincores[p] "-" maxcores[p]
 		}
 
-		if (federation != "")
+		if (federation != "")	# Print the cluster name
 			printf("%8.8s ", clustername[p])
 		printf(columnfmt, maxlength, pname, state[p],
 			freecores[p], totalcores[p], freenodes[p], nodes[p],
 			pending_resources[p], pending_other[p], minnodes[p], maxnodes[p],
 			timelimit[p], cores, memsize)
-		if (printgres == 1)
+		if (printgres == 1)	# Print the GRES information
 			print " " gres[p]
 		else
 			print ""
