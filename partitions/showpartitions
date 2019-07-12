@@ -82,15 +82,19 @@ BEGIN {
 	# Get the list of all pending jobs (JobID Partition CPUs Reason)
 	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " federation partitionlist
 	while ((JOBLIST | getline) > 0) {
-		p = $2
+		split($2, partitions, ",") # Partitions (may be a comma-separated list)
 		numcpus = $3
 		reason = $4
-		if (reason == "(Resources)" || reason == "(Priority)")
-			pending_resources[p] += numcpus
-		else
-			pending_other[p] += numcpus
+		for (i in partitions) {
+			p = partitions[i]
+			if (reason == "(Resources)" || reason == "(Priority)")
+				pending_resources[p] += numcpus
+			else
+				pending_other[p] += numcpus
+		}
 	}
 	close (JOBLIST)
+	delete partitions
 }
 {
 	# Process output of sinfo
