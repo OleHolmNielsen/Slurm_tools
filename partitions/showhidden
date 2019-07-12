@@ -9,11 +9,12 @@
 # Identify any hidden partitions (see slurm.conf man-page)
 export hidden_partitions="`diff <(sinfo --hide -o %P) <(sinfo --all -o %P) | awk '$1==">" {printf("%s,", $2)}'`"
 
-echo Slurm hidden partitions
+echo "Slurm hidden partitions: $hidden_partitions"
 sinfo -p "$hidden_partitions" $@
 
 # Identify any root-only partitions (see slurm.conf man-page)
 export root_partitions="`sinfo --all --noheader -o "%P %r" | grep yes | awk '{printf("%s,", $2)}'`"
 
-echo Slurm root-only partitions
+echo
+echo "Slurm root-only partitions: $root_partitions"
 sinfo -p "$root_partitions" $@
