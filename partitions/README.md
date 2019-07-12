@@ -39,12 +39,13 @@ xeon40_768    up      0    480     0    12   7280      0     1 infin    2-02:00 
 
 ```
 
-The *Idle* cores and nodes are those with a Slurm status of *Idle*.
-The *#Cores_pend* (cores pending) in the *Resorc* column correspond to
-*Pending* jobs with a *Reason* flag of *Resources* or *Priority*,
-whereas *Other* are pending for other reasons.
+The ```Idle``` cores and nodes are those with a Slurm status of *Idle*.
 
-Some Slurm flags shown in the *Partition* columns are:
+The ```#Cores_pend``` (cores pending) in the ```Resorc``` column correspond to
+*Pending* jobs with a Slurm job *Reason* flag of *Resources* or *Priority*,
+whereas ```Other``` are pending for other reasons.
+
+Some Slurm flags shown in the ```Partition``` columns are:
 
 1. A \* after the partition ```name``` identifies the default Slurm partition.
 2. A @ after the partition ```state``` means that some nodes are pending a reboot.
