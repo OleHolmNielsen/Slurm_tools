@@ -147,18 +147,22 @@ BEGIN {
 			maxmemory[p] = mem
 	}
 
+	# Time limits
 	gsub(":00$", "", $6)	# Strip time limit seconds :00
 	timelimit[p] = $6
 	gsub(":00$", "", $7)	# Strip time limit seconds :00
 	defaulttime[p] = $7
+	# Job sizes
 	split($8, jobsize, "-")	# Job size min-max nodes
 	minnodes[p] = jobsize[1]
 	maxnodes[p] = jobsize[2]
+	# Node states
 	nodestate = $9		# Node state
 	n = sub("@", "", nodestate)
 	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
 	if (nodestate == "idle")
 		freenodes[p] += $3
+	# GRES (Generic Resources)
 	if ($10 != "(null)") {	# Node GRES
 		if (nodestate == "idle")
 			gpustate = ":free"
@@ -172,6 +176,7 @@ BEGIN {
 		else
 			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 	}
+	# Federations (from Slurm 18.08)
 	if ($11 == "N/A") {		# Not a federation of clusters
 		clustername[p] = mycluster	# Default cluster name
 	} else
@@ -196,7 +201,7 @@ BEGIN {
 	}
 	if (printgres > 0) {		# Append GRES header
 		header1 = header1 "    GRES      "
-		header2 = header2 " (Nodes:state)"
+		header2 = header2 " (#Nodes:state)"
 	}
 	# Print the header lines
 	printf("%s\n", header1)
