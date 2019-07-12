@@ -126,7 +126,7 @@ BEGIN {
 	if (hidden[p] > 0)
 		len++		# Add 1 character to length
 	if (def > 0 || root_only[p] > 0 || hidden[p] > 0)
-		len++		# Add room for a space
+		len++		# Add room for a :
 	if (len > maxlength) maxlength = len	# Calculate maximum string length
 	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
 	state[p] = $2		# Partition state: up or down
@@ -237,7 +237,7 @@ BEGIN {
 		pname = p	# Partition name
 		# Append partition flags
 		if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
-			pname = pname " "	# Append a space
+			pname = pname ":"	# Append a : before the flags
 		if (defaultpartition[p] > 0)
 			pname = pname "*"	# Append * for the default partition
 		if (root_only[p] > 0)
