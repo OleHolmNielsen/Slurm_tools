@@ -78,6 +78,7 @@ BEGIN {
 	partitionlist	= ENVIRON["partitionlist"]
 	mycluster	= ENVIRON["mycluster"]
 	federation	= ENVIRON["federation"]
+	clusternamelength = 7	# Minimum length of cluster name column
 
 	# Get the list of all pending jobs (JobID Partition CPUs Reason)
 	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " federation partitionlist
@@ -173,10 +174,10 @@ BEGIN {
 		else
 			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 	}
-	if ($11 != "N/A") {	# Cluster name in a federation
-		clustername[p] = $11
+	if ($11 == "N/A") {		# Not a federation of clusters
+		clustername[p] = mycluster	# Default cluster name
 	} else
-		clustername[p] = mycluster
+		clustername[p] = $11	# Cluster name in a federation
 	n = length(clustername[p])
 	if (n > clusternamelength) clusternamelength = n	# Max clustername string length
 } END {
