@@ -99,12 +99,18 @@ BEGIN {
 }
 {
 	# Partitions
-	n = sub("*", "", $1)	# Strip trailing * for default partition
+	def = sub("*", "", $1)	# Strip trailing * for default partition
 	p = $1			# Partition name
 	partition[p] = p	# Partition name
-	if (n > 0) defaultpartition[p] = 1	# The default partition
-	n = length(p)		# Length of partition name string
-	if (n > maxlength) maxlength = n	# Calculate maximum string length
+	len = length(p)		# Length of partition name string
+	if (def > 0) {		# The default partition
+		defaultpartition[p] = 1
+		len++			# Add 1 character to length
+	}
+	root_only[p] = $11	# Only user root may initiate jobs, "yes" or "no"
+	if (root_only[p] == "yes")
+		len++		# Add 1 character to length
+	if (len > maxlength) maxlength = len	# Calculate maximum string length
 	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
 	state[p] = $2		# Partition state: up or down
 	nodes[p] += $3		# Number of nodes in partition
@@ -176,8 +182,6 @@ BEGIN {
 		else
 			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 	}
-	# Root-only partitions
-	root_only[p] = $11	# Only user root may initiate jobs, "yes" or "no"
 	# Federations (from Slurm 18.08)
 	if ($12 == "N/A") {		# Not a federation of clusters
 		clustername[p] = mycluster	# Default cluster name
