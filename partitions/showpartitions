@@ -97,16 +97,16 @@ BEGIN {
 	delete jobpartitions
 }
 {
-	# Process output of sinfo
+	# Partitions
 	n = sub("*", "", $1)	# Strip trailing * for default partition
 	p = $1			# Partition name
 	partition[p] = p	# Partition name
 	if (n > 0) defaultpartition[p] = 1	# The default partition
 	n = length(p)		# Length of partition name string
 	if (n > maxlength) maxlength = n	# Calculate maximum string length
-	part_order[p] = NR	# Slurm ordering (index) of partitions
-	state[p] = $2		# State: up or down
-	nodes[p] += $3		# Number of nodes
+	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
+	state[p] = $2		# Partition state: up or down
+	nodes[p] += $3		# Number of nodes in partition
 
 	# CPU cores
 	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
@@ -177,6 +177,8 @@ BEGIN {
 		clustername[p] = $11
 	} else
 		clustername[p] = mycluster
+	n = length(clustername[p])
+	if (n > clusternamelength) clusternamelength = n	# Max clustername string length
 } END {
 	# Partition column output format string:
 	# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
@@ -185,13 +187,13 @@ BEGIN {
 	# Column header lines
         header1 = "Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node"
         header2 = "Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
-	# Prepend some spaces for partition name length
+	# Prepend some spaces for partition name length (shift by 5 characters)
 	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
 	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
 
-	if (federation != "") {		# Prepend cluster name header (8 characters)
-		header1 = "Cluster  " header1
-		header2 = "   Name  " header2
+	if (federation != "") {		# Prepend cluster name header
+		header1 = sprintf("%*.*s %s", clusternamelength, clusternamelength, "Cluster", header1)
+		header2 = sprintf("%*.*s %s", clusternamelength, clusternamelength, "Name", header2)
 	}
 	if (printgres > 0) {		# Append GRES header
 		header1 = header1 "    GRES      "
@@ -226,8 +228,8 @@ BEGIN {
 				cores = mincores[p] "-" maxcores[p]
 		}
 
-		if (federation != "")	# Print the cluster name (8 characters max)
-			printf("%8.8s ", clustername[p])
+		if (federation != "")	# Print the cluster name
+			printf("%*.*s ", clusternamelength, clusternamelength, clustername[p])
 		printf(columnfmt, maxlength, pname, state[p],
 			freecores[p], totalcores[p], freenodes[p], nodes[p],
 			pending_resources[p], pending_other[p], minnodes[p], maxnodes[p],
