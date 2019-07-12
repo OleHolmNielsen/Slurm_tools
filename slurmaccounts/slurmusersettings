@@ -1,8 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Manage Slurm user fairshare, QOS and limits:
 # Create, update or delete Slurm user accounts from the passwd file.
 # Update the fairshare, QOS and limits configurations.
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Run commands remotely if your Slurm host does not have gawk version 4:
 # Execute commands on a remote host by password-less SSH:

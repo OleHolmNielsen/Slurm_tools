@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Do a "ps" process status on a node-list, but exclude system processes
 # Usage: psnode node-list
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 if test $# -ne 1
 then

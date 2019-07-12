@@ -1,8 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Stop or start job scheduling in ALL Slurm partitions
 # See https://slurm.schedmd.com/faq.html#stop_sched
 # This is used when jobs must be prevented from starting durign a maintenance window.
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Command usage:
 USAGE="Usage: $0 down|up"

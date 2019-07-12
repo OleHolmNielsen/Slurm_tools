@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Notify about or Kill a badly behaving job and send information mail to the user.
 # Author: Ole Holm Nielsen, Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 ### CONFIGURE these lines:
 # Mail to the system managers

@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Prints a Slurm cluster status with 1 line per node/partition and job info
 # Author: Ole.H.Nielsen@fysik.dtu.dk
-# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/pestat
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 my_version="pestat Github version"
 
 #####################################################################################

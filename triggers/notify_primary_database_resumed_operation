@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Slurm trigger script for Slurm primary_database_resumed_operation
-#
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
 # MUST be executed by the slurm user, consistent with:
 # scontrol show config | grep SlurmUser
 

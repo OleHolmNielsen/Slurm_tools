@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # This script lists users whose UNIX group has no corresponding Slurm account.
 # The Slurm account list is queried and a list of UNIX group versus account is produced.
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 echo Listing users whose UNIX group has no corresponding Slurm account
 echo

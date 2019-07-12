@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Read Slurm user accounts with sacctmgr and create a user_settings.conf config file
 # to be copied to the /etc/slurm/ directory.
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Syntax of the user_settings.conf config file is:
 # [DEFAULT|UNIX_group|username]:[Type]:value

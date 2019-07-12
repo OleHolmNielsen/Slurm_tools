@@ -1,10 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-#
 # Generate monthly accounting statistics from Slurm.
 # Specific accounts and start/end dates may be specified.
-# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmreportmonth
-#
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # CONFIGURE THIS for your local environment:
 # People who will receive the report (default: Off)

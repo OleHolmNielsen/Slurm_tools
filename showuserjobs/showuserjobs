@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Slurm batch queue:
 # Show the current batch jobs status broken down into userids.
