@@ -233,11 +233,11 @@ BEGIN {
 	for (p in part_order) {
 		pname = p	# Partition name
 		if (defaultpartition[p] > 0)
-			pname = pname "*"	# Append * for the default partition
+			pname = pname " *"	# Append * for the default partition
 		if (root_only[p] == "yes")
-			pname = pname "R"	# Append R for root-only partitions
+			pname = pname " R"	# Append R for root-only partitions
 		if (hidden[p] > 0)
-			pname = pname "H"	# Append H for hidden partitions
+			pname = pname " H"	# Append H for hidden partitions
 		# Truncate long partition names and replace last character by a +
 		if (length(pname) > maxlength)
 			pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
