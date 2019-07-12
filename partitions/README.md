@@ -49,6 +49,7 @@ Some Slurm flags shown in the ```Partition``` columns are:
 
 1. A \* after the partition ```name``` identifies the default Slurm partition.
 2. A @ after the partition ```state``` means that some nodes are pending a reboot.
+3. An R after the partition ```name``` identifies a root-only Slurm partition.
 
 History
 -------

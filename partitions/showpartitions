@@ -26,8 +26,8 @@ EOF
 }
 
 # sinfo output options:
-# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES
-export sinfo_options="%P %a %D %C %m %l %L %s %T %G"
+# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES ROOT
+export sinfo_options="%P %a %D %C %m %l %L %s %T %G %r"
 # Printing of GRES is disabled by default
 export printgres=0
 # Printing of federation clusters is disabled by default
@@ -176,11 +176,13 @@ BEGIN {
 		else
 			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 	}
+	# Root-only partitions
+	root_only[p] = $11	# Only user root may initiate jobs, "yes" or "no"
 	# Federations (from Slurm 18.08)
-	if ($11 == "N/A") {		# Not a federation of clusters
+	if ($12 == "N/A") {		# Not a federation of clusters
 		clustername[p] = mycluster	# Default cluster name
 	} else
-		clustername[p] = $11	# Cluster name in a federation
+		clustername[p] = $12	# Cluster name in a federation
 	n = length(clustername[p])
 	if (n > clusternamelength) clusternamelength = n	# Max clustername string length
 } END {
@@ -214,6 +216,8 @@ BEGIN {
 		pname = p	# Partition name
 		if (defaultpartition[p] > 0)
 			pname = pname "*"	# Append * for the default partition
+		if (root_only[p] == "yes")
+			pname = pname "R"	# Append R for root-only partitions
 		# Truncate long partition names and replace last character by a +
 		if (length(pname) > maxlength)
 			pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
