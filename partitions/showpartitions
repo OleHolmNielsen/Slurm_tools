@@ -22,6 +22,8 @@ where:
 Notes about the columns:
 1. A * after the partition name identifies the default Slurm partition.
 2. A @ after the partition state means that some nodes are pending a reboot.
+3. An R after the partition ```name``` identifies a root-only Slurm partition.
+4. An H after the partition ```name``` identifies a hidden Slurm partition.
 EOF
 }
 
@@ -70,15 +72,25 @@ fi
 export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
 echo "Partition statistics for cluster $mycluster at `date`"
 
+# First identify any hidden partitions (see slurm.conf man-page)
+export hidden_partitions="`diff <(sinfo --hide -o %P) <(sinfo --all -o %P) | awk '$1==">" {printf("%s ", $2)}'`"
+
 sinfo --noheader --exact $federation $partitionlist $all_partitions -o "$sinfo_options" | awk '
 BEGIN {
 	# Environment variables
 	printgres	= ENVIRON["printgres"]
 	minmax		= ENVIRON["minmax"]
 	partitionlist	= ENVIRON["partitionlist"]
+	hidden_partitions = ENVIRON["hidden_partitions"]
 	mycluster	= ENVIRON["mycluster"]
 	federation	= ENVIRON["federation"]
 	clusternamelength = 7	# Minimum length of cluster name column
+
+	# Identify hidden partitions
+	if (split(hidden_partitions, array, " ") > 0)
+		for (i in array)
+			hidden[array[i]] = 1
+	delete array
 
 	# Get the list of all pending jobs (JobID Partition CPUs Reason)
 	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " federation partitionlist
@@ -109,6 +121,8 @@ BEGIN {
 	}
 	root_only[p] = $11	# Only user root may initiate jobs, "yes" or "no"
 	if (root_only[p] == "yes")
+		len++		# Add 1 character to length
+	if (hidden[p] > 0)
 		len++		# Add 1 character to length
 	if (len > maxlength) maxlength = len	# Calculate maximum string length
 	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
@@ -222,6 +236,8 @@ BEGIN {
 			pname = pname "*"	# Append * for the default partition
 		if (root_only[p] == "yes")
 			pname = pname "R"	# Append R for root-only partitions
+		if (hidden[p] > 0)
+			pname = pname "H"	# Append H for hidden partitions
 		# Truncate long partition names and replace last character by a +
 		if (length(pname) > maxlength)
 			pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
