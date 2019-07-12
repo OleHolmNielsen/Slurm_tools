@@ -72,7 +72,7 @@ fi
 export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
 echo "Partition statistics for cluster $mycluster at `date`"
 
-# First identify any hidden partitions (see slurm.conf man-page)
+# Identify any hidden partitions (see slurm.conf man-page)
 export hidden_partitions="`diff <(sinfo --hide -o %P) <(sinfo --all -o %P) | awk '$1==">" {printf("%s ", $2)}'`"
 
 sinfo --noheader --exact $federation $partitionlist $all_partitions -o "$sinfo_options" | awk '
@@ -125,7 +125,7 @@ BEGIN {
 	}
 	if (hidden[p] > 0)
 		len++		# Add 1 character to length
-	if (def > 0 || root_only[p] > 0 || hidden[p] > 0)
+	if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
 		len++		# Add room for a :
 	if (len > maxlength) maxlength = len	# Calculate maximum string length
 	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
