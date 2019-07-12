@@ -82,11 +82,11 @@ BEGIN {
 	# Get the list of all pending jobs (JobID Partition CPUs Reason)
 	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " federation partitionlist
 	while ((JOBLIST | getline) > 0) {
-		split($2, partitions, ",") # Partitions (may be a comma-separated list)
+		split($2, jobpartitions, ",") # Job partitions (may be a comma-separated list)
 		numcpus = $3
 		reason = $4
-		for (i in partitions) {
-			p = partitions[i]
+		for (i in jobpartitions) {
+			p = jobpartitions[i]
 			if (reason == "(Resources)" || reason == "(Priority)")
 				pending_resources[p] += numcpus
 			else
@@ -94,7 +94,7 @@ BEGIN {
 		}
 	}
 	close (JOBLIST)
-	delete partitions
+	delete jobpartitions
 }
 {
 	# Process output of sinfo
@@ -179,23 +179,23 @@ BEGIN {
 		clustername[p] = mycluster
 } END {
 	# Partition column output format string:
-	# The format assumes <100k cores and <100k nodes (5 digits), but this can be adjusted 
-	columnfmt = "%*s %5s %5d %5d %5d %5d %5d %5d %5.5s %5.5s %10s %5.5s %8s"
+	# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
+	columnfmt = "%*s %5s %6d %6d %5d %5d %6d %6d %5.5s %5.5s %10s %5.5s %8s"
 
 	# Column header lines
-        header1 = "PARTITION     #CORES      #NODES   #CORES_PEND   JOB_NODES MAXJOBTIME CORES     NODE"
-        header2 = "NAME STATE  FREE TOTAL  FREE TOTAL RESRC OTHER   MIN   MAX  DAY-HR:MN /NODE   MEM/GB"
+        header1 = "Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node"
+        header2 = "Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
 	# Prepend some spaces for partition name length
 	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
 	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
 
 	if (federation != "") {		# Prepend cluster name header (8 characters)
-		header1 = " CLUSTER " header1
-		header2 = "    NAME " header2
+		header1 = "Cluster  " header1
+		header2 = "   Name  " header2
 	}
 	if (printgres > 0) {		# Append GRES header
 		header1 = header1 "    GRES      "
-		header2 = header2 " (NODES:STATE)"
+		header2 = header2 " (Nodes:state)"
 	}
 	# Print the header lines
 	printf("%s\n", header1)
