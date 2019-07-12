@@ -1,15 +1,33 @@
-The Slurm tool "showpartitions"
--------------------------------
+The Slurm partition tools
+-------------------------
 
-Print a Slurm cluster partition status overview with 1 line per partition.
+Tools for displaying Slurm partition information.
 
 Author: Ole Holm Nielsen <Ole.H.Nielsen \at/ fysik.dtu.dk>
+
+The Slurm tool "showhidden"
+-------------------------------
+
+Print a Slurm cluster partition status for hidden and root-only partitions.
+This information is not easily accessible using the ```sinfo``` command.
 
 Usage
 -----
 
 ```
-Usage: ./showpartitions [-p partition-list] [-g] [-m] [-a] [-f] [-h]
+Usage: showhidden
+```
+
+The Slurm tool "showpartitions"
+-------------------------------
+
+Print a Slurm cluster partition status overview with 1 line per partition.
+
+Usage
+-----
+
+```
+Usage: showpartitions [-p partition-list] [-g] [-m] [-a] [-f] [-h]
 where:
 	-p partition: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
