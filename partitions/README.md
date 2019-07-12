@@ -15,8 +15,9 @@ Usage
 -----
 
 ```
-Usage: showhidden
+Usage: showhidden [sinfo-options]
 ```
+The [sinfo-options] are passed to the sinfo command.
 
 The Slurm tool "showpartitions"
 -------------------------------
