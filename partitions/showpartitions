@@ -119,11 +119,14 @@ BEGIN {
 		defaultpartition[p] = 1
 		len++			# Add 1 character to length
 	}
-	root_only[p] = $11	# Only user root may initiate jobs, "yes" or "no"
-	if (root_only[p] == "yes")
+	if ($11 == "yes") {	# Only user root may initiate jobs, "yes" or "no"
+		root_only[p] = 1
 		len++		# Add 1 character to length
+	}
 	if (hidden[p] > 0)
 		len++		# Add 1 character to length
+	if (def > 0 || root_only[p] > 0 || hidden[p] > 0)
+		len++		# Add room for a space
 	if (len > maxlength) maxlength = len	# Calculate maximum string length
 	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
 	state[p] = $2		# Partition state: up or down
@@ -233,11 +236,11 @@ BEGIN {
 	for (p in part_order) {
 		pname = p	# Partition name
 		# Append partition flags
-		if (defaultpartition[p] > 0 || root_only[p] == "yes" || hidden[p] > 0)
+		if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
 			pname = pname " "	# Append a space
 		if (defaultpartition[p] > 0)
 			pname = pname "*"	# Append * for the default partition
-		if (root_only[p] == "yes")
+		if (root_only[p] > 0)
 			pname = pname "R"	# Append R for root-only partitions
 		if (hidden[p] > 0)
 			pname = pname "H"	# Append H for hidden partitions
