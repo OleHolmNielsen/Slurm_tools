@@ -20,10 +20,10 @@ where:
 	-h: Print this help information
 
 Notes about the columns:
-1. A * after the partition name identifies the default Slurm partition.
-2. A @ after the partition state means that some nodes are pending a reboot.
-3. An R after the partition ```name``` identifies a root-only Slurm partition.
-4. An H after the partition ```name``` identifies a hidden Slurm partition.
+1. An * after the partition name identifies the default Slurm partition.
+2. An @ after the partition state means that some nodes are pending a reboot.
+3. An R after the partition name identifies a root-only Slurm partition.
+4. An H after the partition name identifies a hidden Slurm partition.
 EOF
 }
 
@@ -212,8 +212,8 @@ BEGIN {
 	columnfmt = "%*s %5s %6d %6d %5d %5d %6d %6d %5.5s %5.5s %10s %5.5s %8s"
 
 	# Column header lines
-        header1 = "Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node"
-        header2 = "Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
+	header1 = "Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node"
+	header2 = "Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
 	# Prepend some spaces for partition name length (shift by 5 characters)
 	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
 	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
