@@ -24,18 +24,18 @@ Example output:
 
 ```
 $ showpartitions 
-Partition statistics for cluster niflheim at Thu Jul 11 11:45:29 CEST 2019
-      PARTITION      #CORES      #NODES  #CORES_PEND   JOB_NODES MAXJOBTIME CORES     NODE
-      NAME STATE  FREE TOTAL  FREE TOTAL RESRC OTHER   MIN   MAX  DAY-HR:MN /NODE   MEM/GB
-    xeon8*    up    66  1664     7   208  2690  1217     1 infin    7-00:00     8      23+
-  xeon8_48    up    16   176     2    22     0     0     1 infin    7-00:00     8      47 
-    xeon16    up    16  2528     1   158  5024   224     1 infin    7-00:00    16      64+
-xeon16_128    up    16  1312     1    82     0     0     1 infin    7-00:00    16     128+
-xeon16_256    up    16   416     1    26     0     0     1 infin    7-00:00    16     256 
-    xeon24    up     0  4608     0   192 18072 15936     1 infin    2-02:00    24     256+
-xeon24_512    up     0   288     0    12   144  1344     1 infin    2-02:00    24     512 
-    xeon40   up@     0  7680     0   192 16360   560     1 infin    2-02:00    40     384+
-xeon40_768   up@     0   480     0    12   200 13440     1 infin    2-02:00    40     768 
+Partition statistics for cluster niflheim at Fri Jul 12 08:39:22 CEST 2019
+      Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node
+      Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)
+    xeon8*    up     34   1664     3   208   2626   3950     1 infin    7-00:00     8      23+
+  xeon8_48    up      0    176     0    22      0      0     1 infin    7-00:00     8      47 
+    xeon16    up     96   2528     6   158   4896   1376     1 infin    7-00:00    16      64+
+xeon16_128    up     64   1312     4    82      0      0     1 infin    7-00:00    16     128+
+xeon16_256    up      0    416     0    26      0      0     1 infin    7-00:00    16     256 
+    xeon24    up     48   4608     2   192  17208  15576     1 infin    2-02:00    24     256+
+xeon24_512    up     48    288     2    12    192   1344     1 infin    2-02:00    24     512 
+    xeon40   up@    120   7680     3   192  12960   1560     1 infin    2-02:00    40     384+
+xeon40_768    up      0    480     0    12   7280      0     1 infin    2-02:00    40     768 
 
 ```
 
