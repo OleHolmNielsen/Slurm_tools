@@ -24,19 +24,18 @@ Example output:
 
 ```
 $ showpartitions 
-Partition statistics for cluster niflheim at Fri Jul 12 08:39:22 CEST 2019
+Partition statistics for cluster niflheim at Fri Jul 12 13:21:28 CEST 2019
       Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node
       Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)
-    xeon8*    up     34   1664     3   208   2626   3950     1 infin    7-00:00     8      23+
-  xeon8_48    up      0    176     0    22      0      0     1 infin    7-00:00     8      47 
-    xeon16    up     96   2528     6   158   4896   1376     1 infin    7-00:00    16      64+
-xeon16_128    up     64   1312     4    82      0      0     1 infin    7-00:00    16     128+
+   xeon8:*    up    274   1664    33   208      0   3836     1 infin    7-00:00     8      23+
+  xeon8_48    up      8    176     1    22      0      0     1 infin    7-00:00     8      47 
+    xeon16    up     48   2528     3   158   4560   1520     1 infin    7-00:00    16      64+
+xeon16_128    up      0   1312     0    82      0      0     1 infin    7-00:00    16     128+
 xeon16_256    up      0    416     0    26      0      0     1 infin    7-00:00    16     256 
-    xeon24    up     48   4608     2   192  17208  15576     1 infin    2-02:00    24     256+
-xeon24_512    up     48    288     2    12    192   1344     1 infin    2-02:00    24     512 
-    xeon40   up@    120   7680     3   192  12960   1560     1 infin    2-02:00    40     384+
-xeon40_768    up      0    480     0    12   7280      0     1 infin    2-02:00    40     768 
-
+    xeon24    up     24   4608     1   192  17328  15240     1 infin    2-02:00    24     256+
+xeon24_512    up      0    288     0    12    312   1344     1 infin    2-02:00    24     512 
+    xeon40   up@     40   7680     1   192  13600    960     1 infin    2-02:00    40     384+
+xeon40_768    up      0    480     0    12   6240      0     1 infin    2-02:00    40     768 
 ```
 
 The ```Idle``` cores and nodes are those with a Slurm status of *Idle*.
