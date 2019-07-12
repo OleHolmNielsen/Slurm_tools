@@ -119,9 +119,8 @@ BEGIN {
 	else if (cpn < corespernode[p])	# Select the lowest count of cores per node
 		corespernode[p] = cpn
 	if (minmax > 0) {
-		if (mincores[p] == 0)		# Save min and max core count
-			mincores[p] = cpn
-		else if (cpn < mincores[p])
+		# Save min and max core count
+		if (mincores[p] == 0 || cpn < mincores[p])
 			mincores[p] = cpn
 		if (cpn > maxcores[p])
 			maxcores[p] = cpn
@@ -141,9 +140,8 @@ BEGIN {
 	if (mem > memory[p])
 		memoryplus[p] = "+"	# Some memory is larger than the minimum size
 	if (minmax > 0) {
-		if (minmemory[p] == 0)		# Save min and max memory sizes
-			minmemory[p] = mem
-		else if (mem < minmemory[p])
+		# Save min and max memory sizes
+		if (minmemory[p] == 0 || mem < minmemory[p])
 			minmemory[p] = mem
 		if (mem > maxmemory[p])
 			maxmemory[p] = mem
