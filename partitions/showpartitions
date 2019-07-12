@@ -111,11 +111,11 @@ BEGIN {
 }
 {
 	# Partitions
-	def = sub("*", "", $1)	# Strip trailing * for default partition
+	isdefault = sub("*", "", $1)	# Strip trailing * for default partition
 	p = $1			# Partition name
 	partition[p] = p	# Partition name
 	len = length(p)		# Length of partition name string
-	if (def > 0) {		# The default partition
+	if (isdefault > 0) {		# The default partition
 		defaultpartition[p] = 1
 		len++			# Add 1 character to length
 	}
@@ -137,9 +137,7 @@ BEGIN {
 	freecores[p] += cpus[2]
 	totalcores[p] += cpus[4]
 	cpn = cpus[4] / $3
-	if (corespernode[p] == 0)
-		corespernode[p] = cpn
-	else if (cpn < corespernode[p])	# Select the lowest count of cores per node
+	if (corespernode[p] == 0 || cpn < corespernode[p])	# Select the lowest count of cores per node
 		corespernode[p] = cpn
 	if (minmax > 0) {
 		# Save min and max core count
@@ -252,6 +250,7 @@ BEGIN {
 			memsize = memory[p] memoryplus[p]
 			cores = corespernode[p]
 		} else {
+			# Display min-max values
 			if (minmemory[p] == maxmemory[p])
 				memsize = memory[p]
 			else
