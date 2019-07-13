@@ -11,7 +11,7 @@ tools have been developed for management and monitoring of our cluster:
 
 4. [showuserjobs](showuserjobs/) Print the current node status and batch jobs status broken down into userids.
 
-5. [showpartitions](showpartitions/) Print a Slurm cluster partition status overview with 1 line per partition.
+5. [showpartitions](partitions/) Print a Slurm cluster partition status overview with 1 line per partition, and other tools.
 
 6. [slurmibtopology](slurmibtopology/) Infiniband topology tool for Slurm.
 
