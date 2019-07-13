@@ -24,6 +24,9 @@ The Slurm tool "showpartitions"
 
 Print a Slurm cluster partition status overview with 1 line per partition.
 
+This is really useful for users who want to find out which partitions are lightly or heavily loaded,
+so that they can select a partition which will run their jobs sooner.
+
 Usage
 -----
 
