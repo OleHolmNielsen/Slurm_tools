@@ -210,8 +210,8 @@ BEGIN {
 	columnfmt = "%*s %5s %5d %5d %6d %6d %6d %6d %5.5s %5.5s %10s %5.5s %8s"
 
 	# Column header lines
-	header1 = "Partition      #Nodes       #Cores    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node"
-	header2 = "Name State  Idle Total   Idle  Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
+	header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
+	header2 = "Name State Total  Idle  Total   Idle Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
 	# Prepend some spaces for partition name length (shift by 5 characters)
 	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
 	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
@@ -263,8 +263,8 @@ BEGIN {
 
 		if (federation != "")	# Print the cluster name
 			printf("%*.*s ", clusternamelength, clusternamelength, clustername[p])
-		printf(columnfmt, maxlength, pname, state[p], freenodes[p], nodes[p],
-			freecores[p], totalcores[p], pending_resources[p], pending_other[p],
+		printf(columnfmt, maxlength, pname, state[p], nodes[p], freenodes[p],
+			totalcores[p], freecores[p], pending_resources[p], pending_other[p],
 			minnodes[p], maxnodes[p], timelimit[p], cores, memsize)
 		if (printgres == 1)	# Print the GRES information
 			print " " gres[p]
