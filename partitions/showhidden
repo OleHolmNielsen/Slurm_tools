@@ -11,7 +11,7 @@ export hidden_partitions="`diff <(sinfo --hide -o %P) <(sinfo --all -o %P) | awk
 
 if test -n "$hidden_partitions"
 then
-	echo "Slurm hidden partitions: $hidden_partitions"
+	echo "Slurm hidden partitions: $hidden_partitions" | sed 's/,/ /g'
 	sinfo -p "$hidden_partitions" $@
 fi
 
@@ -21,6 +21,6 @@ export root_partitions="`sinfo --all --noheader -o "%P %r" | grep yes | awk '{pr
 if test -n "$root_partitions"
 then
 	echo
-	echo "Slurm root-only partitions: $root_partitions"
+	echo "Slurm root-only partitions: $root_partitions" | sed 's/,/ /g'
 	sinfo -p "$root_partitions" $@
 fi
