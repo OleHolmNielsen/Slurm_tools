@@ -328,10 +328,12 @@ BEGIN {
 			groupnodehours += wallnodes[ug]/3600
 			grouphours += wallcpu[ug]/3600
 			groupwait += waittime[ug]
+			usercount++
 		}
 		# Print out total usage
+		totalusers = "Number of users: " usercount
 		printf(format, "TOTAL", "(All)", totaljobs, wallnodehours, 100,
-			nodesaverage, totalwaitaverage/3600, "")
+			nodesaverage, totalwaitaverage/3600, totalusers)
 		# Print out group usage
 		if (length(groupselect) > 0 && groupjobs > 0 && wallnodehours > 0 && grouphours > 0 && groupjobs > 0)
 			printf(format,
