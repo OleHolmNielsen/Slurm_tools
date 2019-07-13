@@ -47,7 +47,7 @@ Example output:
 ```
 $ showpartitions 
 Partition statistics for cluster niflheim at Sat Jul 13 11:51:44 CEST 2019
-      Partition     #Nodes     #CPU_cores  Cores_pending  Job_Nodes MaxJobTime Cores Mem/Node
+      Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node
       Name State Total  Idle  Total   Idle Resorc  Other   Min   Max  Day-hr:mn /node     (GB)
    xeon8:*    up   208     0   1664      2   3290   1399     1 infin    7-00:00     8      23+
   xeon8_48    up    22     0    176      0      0      0     1 infin    7-00:00     8      47
