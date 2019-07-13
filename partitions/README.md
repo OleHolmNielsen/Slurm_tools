@@ -46,18 +46,18 @@ Example output:
 
 ```
 $ showpartitions 
-Partition statistics for cluster niflheim at Fri Jul 12 13:21:28 CEST 2019
-      Partition      #Cores       #Nodes    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node
-      Name State   Idle  Total  Idle Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)
-   xeon8:*    up    274   1664    33   208      0   3836     1 infin    7-00:00     8      23+
-  xeon8_48    up      8    176     1    22      0      0     1 infin    7-00:00     8      47 
-    xeon16    up     48   2528     3   158   4560   1520     1 infin    7-00:00    16      64+
-xeon16_128    up      0   1312     0    82      0      0     1 infin    7-00:00    16     128+
-xeon16_256    up      0    416     0    26      0      0     1 infin    7-00:00    16     256 
-    xeon24    up     24   4608     1   192  17328  15240     1 infin    2-02:00    24     256+
-xeon24_512    up      0    288     0    12    312   1344     1 infin    2-02:00    24     512 
-    xeon40   up@     40   7680     1   192  13600    960     1 infin    2-02:00    40     384+
-xeon40_768    up      0    480     0    12   6240      0     1 infin    2-02:00    40     768 
+Partition statistics for cluster niflheim at Sat Jul 13 11:46:52 CEST 2019
+      Partition      #Nodes       #Cores    #Cores_pend    Job_Nodes MaxJobTime Cores Mem/Node
+      Name State  Idle Total   Idle  Total Resorc  Other   Min   Max  Day-hr:mn /node     (GB)
+   xeon8:*    up     0   208      2   1664   2890   1799     1 infin    7-00:00     8      23+
+  xeon8_48    up     0    22      0    176      0      0     1 infin    7-00:00     8      47
+    xeon16    up     4   158     64   2528      0   2240     1 infin    7-00:00    16      64+
+xeon16_128    up     1    82     16   1312      0      0     1 infin    7-00:00    16     128+
+xeon16_256    up     1    26     16    416      0      0     1 infin    7-00:00    16     256
+    xeon24    up     7   192    168   4608  15144  14112     1 infin    2-02:00    24     256+
+xeon24_512    up     2    12     48    288     96   1344     1 infin    2-02:00    24     512
+    xeon40   up@     1   192     40   7680   7560   1200     1 infin    2-02:00    40     384+
+xeon40_768    up     0    12      0    480   1440      0     1 infin    2-02:00    40     768
 ```
 
 The ```Idle``` cores and nodes are those with a Slurm status of *Idle*.
