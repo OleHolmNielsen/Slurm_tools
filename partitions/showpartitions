@@ -195,7 +195,7 @@ BEGIN {
 	n = sub("@", "", nodestate)
 	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
 	n = sub("$", "", nodestate)
-	if (n > 0) maintenance[p] = "$"		# Nodes in maintenance mode
+	if (n > 0) maintenance[p] = "\$"	# Nodes in maintenance mode
 	if (nodestate == "idle")
 		freenodes[p] += $3
 	# GRES (Generic Resources)
@@ -263,7 +263,7 @@ BEGIN {
 		if (length(pname) > maxlength)
 			pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
 		if (pending_reboot[p] != "") state[p] = state[p] "@"
-		if (maintenance[p] != "") state[p] = state[p] "$"
+		if (maintenance[p] != "") state[p] = state[p] "\$"
 		if (minmax == 0) {
 			memsize = memory[p] memoryplus[p]
 			cores = corespernode[p]
