@@ -5,22 +5,8 @@ Tools for displaying Slurm partition information.
 
 Author: Ole Holm Nielsen <Ole.H.Nielsen \at/ fysik.dtu.dk>
 
-The Slurm tool "showhidden"
--------------------------------
-
-Print a Slurm cluster partition status for hidden and root-only partitions.
-This information is not easily accessible using the ```sinfo``` command.
-
-Usage
------
-
-```
-Usage: showhidden [sinfo-options]
-```
-The [sinfo-options] are passed to the sinfo command.
-
-The Slurm tool "showpartitions"
--------------------------------
+The "showpartitions" tool
+-------------------------
 
 Print a Slurm cluster partition status overview with 1 line per partition.
 
@@ -78,3 +64,17 @@ History
 
 The showpartitions tool was inspired by the excellent tool ```spart```, see https://github.com/mercanca/spart,
 and has more or less the same functionality.
+
+The "showhidden" tool
+---------------------
+
+Print a Slurm cluster partition status for hidden and root-only partitions.
+This information is not easily accessible using the ```sinfo``` command.
+
+Usage
+-----
+
+```
+Usage: showhidden [sinfo-options]
+```
+The [sinfo-options] are passed to the sinfo command.
