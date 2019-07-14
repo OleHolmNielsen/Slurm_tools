@@ -77,4 +77,4 @@ Usage
 ```
 Usage: showhidden [sinfo-options]
 ```
-The [sinfo-options] are passed to the sinfo command.
+The ```[sinfo-options]``` are passed to the ```sinfo``` command.
