@@ -115,7 +115,7 @@ BEGIN {
 	# Define terminal colors for the output if requested
 	if (colors != 0) {
 		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-		RED="\033[1;4;31m"
+		RED="\033[1;31m"
 		GREEN="\033[1;32m"
 		MAGENTA="\033[1;35m"
 		NORMAL="\033[0m"
