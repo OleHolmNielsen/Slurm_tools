@@ -38,6 +38,8 @@ export federation=""
 export all_partitions=""
 # Print both min and max values (disabled by default)
 export minmax=0
+# Enable colors in output
+export colors=1
 
 while getopts "p:gmafh" options; do
 	case $options in
@@ -80,6 +82,7 @@ BEGIN {
 	# Environment variables
 	printgres	= ENVIRON["printgres"]
 	minmax		= ENVIRON["minmax"]
+	colors		= ENVIRON["colors"]
 	partitionlist	= ENVIRON["partitionlist"]
 	hidden_partitions = ENVIRON["hidden_partitions"]
 	mycluster	= ENVIRON["mycluster"]
@@ -108,6 +111,15 @@ BEGIN {
 	}
 	close (JOBLIST)
 	delete jobpartitions
+
+	# Define terminal colors for the output if requested
+	if (colors != 0) {
+		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+		RED="\033[1;4;31m"
+		GREEN="\033[1;32m"
+		MAGENTA="\033[1;35m"
+		NORMAL="\033[0m"
+	}
 }
 {
 	# Partitions
@@ -207,7 +219,7 @@ BEGIN {
 } END {
 	# Partition column output format string:
 	# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
-	columnfmt = "%*s %5s %5d %5d %6d %6d %6d %6d %5.5s %5.5s %10s %5.5s %8s"
+	columnfmt = "%*s %5s %5d %s%5d%s %6d %s%6d%s %6d %6d %5.5s %5.5s %10s %5.5s %8s"
 
 	# Column header lines
 	header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
@@ -265,8 +277,17 @@ BEGIN {
 
 		if (federation != "")	# Print the cluster name
 			printf("%*.*s ", clusternamelength, clusternamelength, clustername[p])
-		printf(columnfmt, maxlength, pname, state[p], nodes[p], freenodes[p],
-			totalcores[p], freecores[p], pending_resources[p], pending_other[p],
+		# Flag free nodes/cores in GREEN if nothing is pending
+		if (freenodes[p] > 0 && pending_resources[p] == 0)
+			colornodes = GREEN
+		else
+			colornodes = NORMAL
+		if (freecores[p] > 0 && pending_resources[p] == 0)
+			colorcores = GREEN
+		else
+			colorcores = NORMAL
+		printf(columnfmt, maxlength, pname, state[p], nodes[p], colornodes, freenodes[p], NORMAL,
+			totalcores[p], colorcores, freecores[p], NORMAL, pending_resources[p], pending_other[p],
 			minnodes[p], maxnodes[p], timelimit[p], cores, memsize)
 		if (printgres == 1)	# Print the GRES information
 			print " " gres[p]
