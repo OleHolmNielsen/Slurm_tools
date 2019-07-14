@@ -322,8 +322,8 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 
-	# Running jobs info: JobState JobId User group NodeList StartTime EndTime JobName GRES NumNodes
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j %P %b %D\" " selection
+	# Running jobs info: JobState JobId User group NodeList StartTime EndTime JobName Partition NumNodes
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j %P %D\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
@@ -336,8 +336,7 @@ BEGIN {
 		EndTime=$7
 		JobName=$8
 		Partition=$9
-		GRES=$10
-		NumNodes[JobId]=$11
+		NumNodes=$10
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
 		if (printgres == 1) JobInfo = JobInfo GRES " "
@@ -370,6 +369,7 @@ BEGIN {
 				multipartitions[n] = "+"
 			}
 			numjobs[n]++
+			if (NumNodes > 1) multinodejobs[n]++		# Increment for nodes running multi-node jobs (%D>1)
 			# If username has been selected and node "n" runs job belonging to username:
 			if (User == username) selecteduser[n] = User
 			if (Group == groupname) selectedgroup[n] = Group
@@ -473,8 +473,14 @@ BEGIN {
 			loadcolor=NORMAL
 			cpucolor=NORMAL
 		}
- 		# Flag unexpected number of jobs
-		if (numjobs[node] > allocated_cores) {	# Should be at least 1 task per job
+		# Check CPU core utilization
+		if (numjobs[node] > allocated_cores) {
+ 			# Flag unexpected number of jobs: Should be at least 1 task per job
+			jobflag="*"
+			jobcolor=RED
+			listnode++
+		} else if (state == "mix" && multinodejobs[node] > 0) {
+			# Flag multi-node jobs running on nodes in state==mixed (possibly incorrect node utilization)
 			jobflag="*"
 			jobcolor=RED
 			listnode++
