@@ -46,11 +46,13 @@ xeon24_512    up    12     2    288     48     96   1344     1 infin    2-02:00 
 xeon40_768    up    12     0    480      0   1440      0     1 infin    2-02:00    40     768
 ```
 
-The ```Idle``` cores and nodes are those with a Slurm status of *Idle*.
+The ```Idle``` cores and nodes are those with a Slurm status of *Idle*,
+and these are colored in Green if Cores_pending:Resorc is zero.
 
 The ```#Cores_pend``` (cores pending) in the ```Resorc``` column correspond to
 *Pending* jobs with a Slurm job *Reason* flag of *Resources* or *Priority*,
 whereas ```Other``` are pending for other reasons.
+Cores are colored in Red if Cores_pending:Resorc is greater than zero.
 
 Some Slurm flags shown in the ```Partition``` columns are:
 
