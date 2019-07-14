@@ -113,7 +113,7 @@ BEGIN {
 	delete jobpartitions
 
 	# Define terminal colors for the output if requested
-	if (colors != 0) {
+	if (colors > 0) {
 		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 		RED="\033[1;31m"
 		GREEN="\033[1;32m"
@@ -277,7 +277,7 @@ BEGIN {
 
 		if (federation != "")	# Print the cluster name
 			printf("%*.*s ", clusternamelength, clusternamelength, clustername[p])
-		# Flag free nodes/cores in GREEN if nothing is pending
+		# Flag free nodes and cores in GREEN if nothing is pending
 		if (freenodes[p] > 0 && pending_resources[p] == 0)
 			colornodes = GREEN
 		else
@@ -291,7 +291,8 @@ BEGIN {
 			colorpending = RED
 		else
 			colorpending = NORMAL
-		printf(columnfmt, maxlength, pname, state[p], nodes[p], colornodes, freenodes[p], NORMAL,
+		printf(columnfmt, maxlength, pname, state[p], nodes[p],
+			colornodes, freenodes[p], NORMAL,
 			totalcores[p], colorcores, freecores[p], NORMAL,
 			colorpending, pending_resources[p], NORMAL, pending_other[p],
 			minnodes[p], maxnodes[p], timelimit[p], cores, memsize)
