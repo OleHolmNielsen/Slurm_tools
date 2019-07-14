@@ -62,7 +62,7 @@ Some Slurm flags shown in the ```Partition``` columns are:
 History
 -------
 
-The showpartitions tool was inspired by the excellent tool ```spart```, see https://github.com/mercanca/spart,
+The ```showpartitions``` tool was inspired by the excellent tool ```spart```, see https://github.com/mercanca/spart,
 and has more or less the same functionality.
 
 The "showhidden" tool

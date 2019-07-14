@@ -10,9 +10,9 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-p partition] [-g] [-m] [-a] [-f] [-h]
+Usage: $0 [-p partition-list] [-g] [-m] [-a] [-f] [-h]
 where:
-	-p partition: Print only jobs in partition(s) <partition-list>
+	-p partition-list: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a: Display information about all partitions including hidden ones.
@@ -213,12 +213,14 @@ BEGIN {
 	header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
 	header2 = "Name State Total  Idle  Total   Idle Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
 	# Prepend some spaces for partition name length (shift by 5 characters)
-	header1 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header1)
-	header2 = sprintf("%*.*s %s", maxlength-5, maxlength-5, " ", header2)
+	n = maxlength - 5
+	header1 = sprintf("%*.*s %s", n, n, " ", header1)
+	header2 = sprintf("%*.*s %s", n, n, " ", header2)
 
 	if (federation != "") {		# Prepend cluster name header
-		header1 = sprintf("%*.*s %s", clusternamelength, clusternamelength, "Cluster", header1)
-		header2 = sprintf("%*.*s %s", clusternamelength, clusternamelength, "Name", header2)
+		n = clusternamelength
+		header1 = sprintf("%*.*s %s", n, n, "Cluster", header1)
+		header2 = sprintf("%*.*s %s", n, n, "Name", header2)
 	}
 	if (printgres > 0) {		# Append GRES header
 		header1 = header1 "    GRES      "
