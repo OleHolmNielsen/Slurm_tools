@@ -22,8 +22,9 @@ where:
 Notes about the columns:
 1. An * after the partition name identifies the default Slurm partition.
 2. An @ after the partition state means that some nodes are pending a reboot.
-3. An R after the partition name identifies a root-only Slurm partition.
-4. An H after the partition name identifies a hidden Slurm partition.
+3. An $ after the partition state means that some nodes are in maintenance mode.
+4. An R after the partition name identifies a root-only Slurm partition.
+5. An H after the partition name identifies a hidden Slurm partition.
 EOF
 }
 
@@ -193,6 +194,8 @@ BEGIN {
 	nodestate = $9		# Node state
 	n = sub("@", "", nodestate)
 	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
+	n = sub("$", "", nodestate)
+	if (n > 0) maintenance[p] = "$"		# Nodes in maintenance mode
 	if (nodestate == "idle")
 		freenodes[p] += $3
 	# GRES (Generic Resources)
@@ -260,6 +263,7 @@ BEGIN {
 		if (length(pname) > maxlength)
 			pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
 		if (pending_reboot[p] != "") state[p] = state[p] "@"
+		if (maintenance[p] != "") state[p] = state[p] "$"
 		if (minmax == 0) {
 			memsize = memory[p] memoryplus[p]
 			cores = corespernode[p]
