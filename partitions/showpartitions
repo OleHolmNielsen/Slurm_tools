@@ -219,7 +219,7 @@ BEGIN {
 } END {
 	# Partition column output format string:
 	# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
-	columnfmt = "%*s %5s %5d %s%5d%s %6d %s%6d%s %6d %6d %5.5s %5.5s %10s %5.5s %8s"
+	columnfmt = "%*s %5s %5d %s%5d%s %6d %s%6d%s %s%6d%s %6d %5.5s %5.5s %10s %5.5s %8s"
 
 	# Column header lines
 	header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
@@ -286,8 +286,14 @@ BEGIN {
 			colorcores = GREEN
 		else
 			colorcores = NORMAL
+		# Flag cores with pending_resources in RED
+		if (pending_resources[p] > 0)
+			colorpending = RED
+		else
+			colorpending = NORMAL
 		printf(columnfmt, maxlength, pname, state[p], nodes[p], colornodes, freenodes[p], NORMAL,
-			totalcores[p], colorcores, freecores[p], NORMAL, pending_resources[p], pending_other[p],
+			totalcores[p], colorcores, freecores[p], NORMAL,
+			colorpending, pending_resources[p], NORMAL, pending_other[p],
 			minnodes[p], maxnodes[p], timelimit[p], cores, memsize)
 		if (printgres == 1)	# Print the GRES information
 			print " " gres[p]
