@@ -303,7 +303,7 @@ BEGIN {
 	# Define terminal colors for the output if requested
 	if (colors != 0) {
 		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-		RED="\033[1;4;31m"
+		RED="\033[1;31m"
 		GREEN="\033[1;32m"
 		MAGENTA="\033[1;35m"
 		NORMAL="\033[0m"
@@ -407,7 +407,9 @@ BEGIN {
 		partition = $2
 	}
 	# CPU info: sinfo -o %C gives number of CPUs by state in the format "allocated/idle/other/total"
-	split($3,cpulist,"/")
+	split($3, cpulist, "/")
+	allocated_cores = cpulist[1]
+	total_cores = cpulist[4]
 	cpuload=$4
 	memory=$5
 	freemem=$6
@@ -445,15 +447,15 @@ BEGIN {
 			stateflag=" "
 			statecolor=NORMAL
 		}
-		# Flag unexpected CPU load average on allocated cores (=cpulist[1])
+		# Flag unexpected CPU load average on allocated cores
 		if (threadspercore == 1) {
 			# Single thread per core: Ideal load equals number of physical cores.
-			ideal_load_min = cpulist[1]
-			ideal_load_max = cpulist[1]
+			ideal_load_min = allocated_cores
+			ideal_load_max = allocated_cores
 		} else {
 			# Multiple threads per CPU core: Load of 1..threadspercore per physical core is OK.
-			ideal_load_min = cpulist[1] / threadspercore
-			ideal_load_max = cpulist[1]
+			ideal_load_min = allocated_cores / threadspercore
+			ideal_load_max = allocated_cores
 		}
 		# Calculate if cpuload is outside ideal load bounds, plus some deltas
 		if (cpuload > ideal_load_max + cpuload_delta1 || cpuload < ideal_load_min - cpuload_delta1) {
@@ -472,7 +474,7 @@ BEGIN {
 			cpucolor=NORMAL
 		}
  		# Flag unexpected number of jobs
-		if (numjobs[node] > cpulist[1]) {	# Should be at least 1 task per job
+		if (numjobs[node] > allocated_cores) {	# Should be at least 1 task per job
 			jobflag="*"
 			jobcolor=RED
 			listnode++
@@ -503,7 +505,7 @@ BEGIN {
 		if (uniquenodes > 0) nodewasprinted[node]++	# Count this node (node may be in multiple partitions)
 		printf("%*s %15s ", hostnamelength, node, partition)
 		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
-		printf("%s%3d%s %3d ", cpucolor, cpulist[1], NORMAL, cpulist[4])
+		printf("%s%3d%s %3d ", cpucolor, allocated_cores, NORMAL, total_cores)
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
 		printf("%s%8d %s%8d%1s%s ", memcolor, memory, freememcolor, freemem, memflag, NORMAL)
 		if (printgres == 1) printf("%s ", nodegres)
