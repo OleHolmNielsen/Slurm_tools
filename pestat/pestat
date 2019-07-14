@@ -402,6 +402,8 @@ BEGIN {
 	if (uniquenodes && node in partitions) {
 		# Add the multipartitions "+" character if jobs from more than 1 partition run on the node
 		partition = partitions[node] multipartitions[node]
+		if (index($2, "*") > 0)	# Add "*" to nodename in default partition
+			partition = partition "*"
 	} else {
 		# Fallback to node centric information from sinfo (also if uniquenodes is set from the option -2)
 		partition = $2
@@ -414,7 +416,6 @@ BEGIN {
 	memory=$5
 	freemem=$6
 	state=$7
-	gsub("*", "", state)	# Strip "*" from nodename in default partition
 	gsub("$", "", state)	# Strip "$" for state=maintenance
 	gsub("@", "", state)	# Strip "@" for pending reboot nodes
 	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
