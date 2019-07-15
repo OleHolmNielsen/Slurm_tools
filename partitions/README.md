@@ -1,5 +1,5 @@
-The Slurm partition tools
--------------------------
+Slurm partition tools
+---------------------
 
 Tools for displaying Slurm partition information.
 
@@ -36,12 +36,12 @@ Example output:
 
 
 The ```Idle``` cores and nodes are those with a Slurm status of *Idle*,
-and these are colored in Green if ```Cores_pending:Resorc``` is zero.
+and these are colored in ```Green``` if ```Cores_pending:Resorc``` is zero.
 
 The ```#Cores_pend``` (cores pending) in the ```Resorc``` column correspond to
 *Pending* jobs with a Slurm job *Reason* flag of *Resources* or *Priority*,
 whereas ```Other``` are pending for other reasons.
-Cores are colored in Red if ```Cores_pending:Resorc``` is greater than zero.
+Cores are colored in ```Red``` if ```Cores_pending:Resorc``` is greater than zero.
 
 Notice: Colored fields in the above output may possibly be a bit misleading in certain cases where some partitions are overlapping.
 
