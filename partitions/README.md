@@ -9,9 +9,11 @@ The "showpartitions" tool
 -------------------------
 
 Print a Slurm cluster partition status overview with 1 line per partition.
+Color coding helps locating under- or over-utilized partitions.
 
 This is really useful for users who want to find out which partitions are lightly or heavily loaded,
-so that they can select a partition which will run their jobs sooner.
+so that they can easily select a partition which will run their jobs sooner.
+System administrators can get a quick overview of the system load.
 
 Usage
 -----
@@ -41,7 +43,7 @@ The ```#Cores_pend``` (cores pending) in the ```Resorc``` column correspond to
 whereas ```Other``` are pending for other reasons.
 Cores are colored in Red if ```Cores_pending:Resorc``` is greater than zero.
 
-Colored fields in the above output may possible be a bit misleading in certain cases where some partitions are overlapping.
+Notice: Colored fields in the above output may possibly be a bit misleading in certain cases where some partitions are overlapping.
 
 Some Slurm flags shown in the ```Partition``` columns are:
 
