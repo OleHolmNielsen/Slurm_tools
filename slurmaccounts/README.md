@@ -14,6 +14,10 @@ In the present project we have chosen the users' UNIX groups as the bottom level
 
 In this setup, the user's primary UNIX group becomes the user's Slurm *Default account*.
 If the user has any secondary UNIX group memberships, the user is also added to the corresponding Slurm accounts (if they exist).
+To print all groups to which a username belongs:
+```
+id --name --groups <username>
+```
 
 There is a restrictions in these tools:
 One or more UNIX groups may map uniquely onto a Slurm account.
