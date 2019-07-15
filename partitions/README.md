@@ -41,6 +41,8 @@ The ```#Cores_pend``` (cores pending) in the ```Resorc``` column correspond to
 whereas ```Other``` are pending for other reasons.
 Cores are colored in Red if ```Cores_pending:Resorc``` is greater than zero.
 
+Colored fields in the above output may possible be a bit misleading in certain cases where some partitions are overlapping.
+
 Some Slurm flags shown in the ```Partition``` columns are:
 
 1. A \* after the partition ```name``` identifies the default Slurm partition.
