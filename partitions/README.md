@@ -30,21 +30,8 @@ where:
 
 Example output:
 
-```
-$ showpartitions 
-Partition statistics for cluster niflheim at Sat Jul 13 11:51:44 CEST 2019
-      Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node
-      Name State Total  Idle  Total   Idle Resorc  Other   Min   Max  Day-hr:mn /node     (GB)
-   xeon8:*    up   208     0   1664      2   3290   1399     1 infin    7-00:00     8      23+
-  xeon8_48    up    22     0    176      0      0      0     1 infin    7-00:00     8      47
-    xeon16    up   158     4   2528     64      0   2240     1 infin    7-00:00    16      64+
-xeon16_128    up    82     1   1312     16      0      0     1 infin    7-00:00    16     128+
-xeon16_256    up    26     1    416     16      0      0     1 infin    7-00:00    16     256
-    xeon24    up   192     7   4608    168  15144  14112     1 infin    2-02:00    24     256+
-xeon24_512    up    12     2    288     48     96   1344     1 infin    2-02:00    24     512
-    xeon40   up@   192     1   7680     40   7800    960     1 infin    2-02:00    40     384+
-xeon40_768    up    12     0    480      0   1440      0     1 infin    2-02:00    40     768
-```
+![showpartitions example](showpartitions-example.png)
+
 
 The ```Idle``` cores and nodes are those with a Slurm status of *Idle*,
 and these are colored in Green if ```Cores_pending:Resorc``` is zero.
