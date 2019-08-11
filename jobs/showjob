@@ -21,19 +21,25 @@ TMPFILE=/tmp/showjob.$$
 jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
-	jobstate=`squeue -ho "%T" -j $jobid`
-	jobuser=`squeue -ho "%u" -j $jobid`
-	jobaccount=`squeue -ho "%a" -j $jobid`
-	# Display job reason code (if other than "None")
 	reason=`squeue -ho "%r" -j $jobid`
+	# Display job reason code (if other than "None")
 	if test "$reason" != "None"
 	then
+		jobuser=`squeue -ho "%u" -j $jobid`
+		jobaccount=`squeue -ho "%a" -j $jobid`
+		jobstate=`squeue -ho "%T" -j $jobid`
 		echo Job $jobid of user $jobuser in account $jobaccount has a jobstate=$jobstate with reason=$reason
 		if test "$reason" == "AssocGrpCPURunMinutesLimit"
 		then
-			# Calculate user GrpCPURunMinutes
-			echo -n "User GrpTRESRunMins limit is:"
-			sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins
+			echo
+			echo Information about GrpCPURunMinutes:
+			GrpTRESRunMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}'`
+			if test -z "$GrpTRESRunMins"
+			then
+				# No user value, get parent account value
+				GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
+			fi
+			echo "User GrpTRESRunMins limit is: $GrpTRESRunMins"
 			echo -n "Current user TRESRunMins is:   "
 			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
 			NCPUS=`squeue -ho "%C" -j $jobid`
@@ -41,9 +47,15 @@ then
 			echo "This job requires TRESRunMins: cpu=$((NCPUS*timelimit))"
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
-			# Calculate user GrpCpuLimit
-			echo -n "User GrpTRES limit is:"
-			sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES
+			echo
+			echo Information about GrpCpuLimit:
+			GrpTRES=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES | awk '{print $1}'`
+			if test -z "$GrpTRES"
+			then
+				# No user value, get parent account value
+				GrpTRES=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRES | awk 'NR==1{print $1}'`
+			fi
+			echo "User GrpTRES limit is:     $GrpTRES"
 			echo -n "Current user TRES is:      "
 			# Count number of CPUs for running jobs
 			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
