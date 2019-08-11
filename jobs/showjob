@@ -34,12 +34,14 @@ then
 			echo
 			echo Information about GrpCPURunMinutes:
 			GrpTRESRunMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}'`
-			if test -z "$GrpTRESRunMins"
+			if test -n "$GrpTRESRunMins"
 			then
+				echo "User GrpTRESRunMins limit is: $GrpTRESRunMins"
+			else
 				# No user value, get parent account value
 				GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
+				echo "Account GrpTRESRunMins limit is: $GrpTRESRunMins"
 			fi
-			echo "User GrpTRESRunMins limit is: $GrpTRESRunMins"
 			echo -n "Current user TRESRunMins is:   "
 			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
 			NCPUS=`squeue -ho "%C" -j $jobid`
@@ -50,12 +52,14 @@ then
 			echo
 			echo Information about GrpCpuLimit:
 			GrpTRES=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES | awk '{print $1}'`
-			if test -z "$GrpTRES"
+			if test -n "$GrpTRES"
 			then
+				echo "User GrpTRES limit is:     $GrpTRES"
+			else
 				# No user value, get parent account value
 				GrpTRES=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRES | awk 'NR==1{print $1}'`
+				echo "Account GrpTRES limit is:  $GrpTRES"
 			fi
-			echo "User GrpTRES limit is:     $GrpTRES"
 			echo -n "Current user TRES is:      "
 			# Count number of CPUs for running jobs
 			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
