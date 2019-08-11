@@ -32,7 +32,7 @@ then
 		if test "$reason" == "AssocGrpCPURunMinutesLimit"
 		then
 			echo
-			echo Information about GrpCPURunMinutes:
+			echo Information about AssocGrpCPURunMinutesLimit:
 			GrpTRESRunMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}'`
 			if test -n "$GrpTRESRunMins"
 			then
@@ -50,7 +50,7 @@ then
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
 			echo
-			echo Information about GrpCpuLimit:
+			echo Information about AssocGrpCpuLimit:
 			GrpTRES=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES | awk '{print $1}'`
 			if test -n "$GrpTRES"
 			then
