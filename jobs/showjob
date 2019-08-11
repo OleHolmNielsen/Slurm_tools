@@ -21,6 +21,37 @@ TMPFILE=/tmp/showjob.$$
 jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
+	jobstate=`squeue -ho "%T" -j $jobid`
+	jobuser=`squeue -ho "%u" -j $jobid`
+	jobaccount=`squeue -ho "%a" -j $jobid`
+	# Display job reason code (if other than "None")
+	reason=`squeue -ho "%r" -j $jobid`
+	if test "$reason" != "None"
+	then
+		echo Job $jobid of user $jobuser in account $jobaccount has a jobstate=$jobstate with reason=$reason
+		if test "$reason" == "AssocGrpCPURunMinutesLimit"
+		then
+			# Calculate user GrpCPURunMinutes
+			echo -n "User GrpTRESRunMins limit is:"
+			sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins
+			echo -n "Current user TRESRunMins is:   "
+			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
+			NCPUS=`squeue -ho "%C" -j $jobid`
+			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{split($2,hms,":"); print $1*24*60 + hms[1]*60 + hms[2]}'`
+			echo "This job requires TRESRunMins: cpu=$((NCPUS*timelimit))"
+		elif test "$reason" == "AssocGrpCpuLimit"
+		then
+			# Calculate user GrpCpuLimit
+			echo -n "User GrpTRES limit is:"
+			sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES
+			echo -n "Current user TRES is:      "
+			# Count number of CPUs for running jobs
+			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
+			NCPUS=`squeue -ho "%C" -j $jobid`
+			echo "This job requires TRES:    cpu=$NCPUS"
+		fi
+		echo
+	fi
 	# Job found in the queue
 	echo "Queued job information:"
 	scontrol show job $jobid | tee $TMPFILE
