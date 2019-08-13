@@ -78,6 +78,18 @@ then
 				GrpTRESMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESMins | awk 'NR==1{print $1}'`
 				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			fi
+			GrpTRESMins=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
+			if test -n "$GrpTRESMins"
+			then
+				echo "User GrpTRESMins value is:     $GrpTRESMins"
+			else
+				# No user value, get parent account value
+				GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
+				echo "Account GrpTRESMins value is:  $GrpTRESMins"
+			fi
+			NCPUS=`squeue -ho "%C" -j $jobid`
+			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{split($2,hms,":"); print $1*24*60 + hms[1]*60 + hms[2]}'`
+			echo "This job requires TRESMins:    cpu=$((NCPUS*timelimit))"
 		fi
 		echo
 	fi
