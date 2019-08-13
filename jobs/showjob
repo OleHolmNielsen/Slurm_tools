@@ -65,6 +65,19 @@ then
 			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
 			NCPUS=`squeue -ho "%C" -j $jobid`
 			echo "This job requires TRES:    cpu=$NCPUS"
+		elif test "$reason" == "AssocGrpCPUMinutesLimit"
+		then
+			echo
+			echo Information about AssocGrpCPUMinutesLimit:
+			GrpTRESMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESMins | awk '{print $1}'`
+			if test -n "$GrpTRESMins"
+			then
+				echo "User GrpTRESMins limit is:     $GrpTRESMins"
+			else
+				# No user value, get parent account value
+				GrpTRESMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESMins | awk 'NR==1{print $1}'`
+				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
+			fi
 		fi
 		echo
 	fi
