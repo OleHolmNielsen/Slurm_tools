@@ -36,7 +36,7 @@ then
 			GrpTRESRunMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}'`
 			if test -n "$GrpTRESRunMins"
 			then
-				echo "User GrpTRESRunMins limit is: $GrpTRESRunMins"
+				echo "User GrpTRESRunMins limit is:  $GrpTRESRunMins"
 			else
 				# No user value, get parent account value
 				GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
@@ -45,7 +45,7 @@ then
 			echo -n "Current user TRESRunMins is:   "
 			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
 			NCPUS=`squeue -ho "%C" -j $jobid`
-			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{split($2,hms,":"); print $1*24*60 + hms[1]*60 + hms[2]}'`
+			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{if (NF==1){hms=$1}else{days=$1;hms=$2}; split(hms,a,":"); print days*24*60+a[1]*60+a[2]}'`
 			echo "This job requires TRESRunMins: cpu=$((NCPUS*timelimit))"
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
@@ -88,7 +88,7 @@ then
 				echo "Account GrpTRESMins value is:  $GrpTRESMins"
 			fi
 			NCPUS=`squeue -ho "%C" -j $jobid`
-			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{split($2,hms,":"); print $1*24*60 + hms[1]*60 + hms[2]}'`
+			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{if (NF==1){hms=$1}else{days=$1;hms=$2}; split(hms,a,":"); print days*24*60+a[1]*60+a[2]}'`
 			echo "This job requires TRESMins:    cpu=$((NCPUS*timelimit))"
 		fi
 		echo
