@@ -72,7 +72,7 @@ if (NR==1) {
 	split($0,header,"|")
 } else {
 	split($0,assoc,"|")
-	if (length(assoc[3]) == 0) next	# Skip non-user accounts
+	# if (length(assoc[3]) == 0) next	# Skip non-user accounts
 	if (length(assoc[4]) == 0) assoc[4] = "(any)"
 	printf("\nAssociation: User=%s Account=%s Cluster=%s Partition=%s\n",
 		assoc[3], assoc[2], assoc[1], assoc[4])
