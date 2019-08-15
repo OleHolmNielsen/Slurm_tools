@@ -14,25 +14,6 @@ jobid=$1
 TMPFILE=/tmp/showjob.$$
 
 ###########################################################################
-# Print time limit $1 as a number of minutes
-function limit_minutes()
-{
-	echo $1 | awk -F- '
-	{
-		if (NF == 1)
-			# If timelimit has 0 days there is only the hour:minute:second field
-			hms = $1
-		else {
-			days = $1
-			hms = $2
-		}
-		split(hms,a,":")	# Extract hour:minute:second
-		# Print number of minutes
-		print days*24*60 + a[1]*60 + a[2]
-	}'
-}
-
-###########################################################################
 #
 # Get Slurm queue information
 #
@@ -42,16 +23,33 @@ jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
 	# Print basic job information
-	jobuser=`squeue -ho "%u" -j $jobid`
-	jobaccount=`squeue -ho "%a" -j $jobid`
-	jobstate=`squeue -ho "%T" -j $jobid`
-	reason=`squeue -ho "%r" -j $jobid`
-	NCPUS=`squeue -ho "%C" -j $jobid`
-	timelimit=`squeue -ho "%l" -j $jobid`
-	minutes=`limit_minutes $timelimit`
-	echo "Job $jobid was submitted by user $jobuser in account $jobaccount"
+	#
+	# Get required job information from a single squeue command:
+	eval `squeue -ho "%u %a %T %C %l %r %V" -j $jobid | awk '{
+		print "jobuser=" $1
+		print "jobaccount=" $2
+		print "jobstate=" $3
+		print "NCPUS=" $4
+		print "timelimit=" $5
+		print "reason=" $6
+		print "submittime=" $7
+	}'`
+	# Get time limit as a number of minutes
+	minutes=`echo $timelimit | awk -F- '
+	{
+		if (NF == 1)
+			# If timelimit has 0 days there is only the hour:minute:second field
+			hms = $1
+		else {
+			days = $1
+			hms = $2
+		}
+		split(hms,a,":")	# Split hour:minute:second
+		print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
+	}'`
+	echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
+	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss)"
 	echo "The job has state=$jobstate with reason=$reason"
-	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit"
 	echo
 
 	# Display job reason code (if other than "None")
@@ -104,11 +102,11 @@ then
 			GrpTRESMins=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
 			if test -n "$GrpTRESMins"
 			then
-				echo "User GrpTRESMins value is:     $GrpTRESMins"
+				echo "User GrpTRESMins limit is:     $GrpTRESMins"
 			else
 				# No user value, get parent account value
 				GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
-				echo "Account GrpTRESMins value is:  $GrpTRESMins"
+				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			fi
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 		fi
