@@ -4,7 +4,14 @@
 # Both queue information and accounting information is printed.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-if test $# -ne 1
+# Check number of arguments
+if test $# -ne 1 
+then
+	echo "Usage: showjob <jobid>"
+	exit 1
+fi
+# Check that jobid is a number
+if ! [[ ${1} =~ ^[0-9]+$ ]]
 then
 	echo "Usage: showjob <jobid>"
 	exit 1
@@ -25,7 +32,7 @@ then
 	# Print basic job information
 	#
 	# Get required job information from a single squeue command:
-	eval `squeue -ho "%u %a %T %C %l %r %V" -j $jobid | awk '{
+	eval `squeue -ho "%u %a %T %C %l %r %V %E" -j $jobid | awk '{
 		print "jobuser=" $1
 		print "jobaccount=" $2
 		print "jobstate=" $3
@@ -33,6 +40,7 @@ then
 		print "timelimit=" $5
 		print "reason=" $6
 		print "submittime=" $7
+		print "dependency=" $8
 	}'`
 	# Get time limit as a number of minutes
 	minutes=`echo $timelimit | awk -F- '
@@ -109,6 +117,9 @@ then
 				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			fi
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
+		elif test "$reason" == "Dependency"
+		then
+			echo "Dependency information: $dependency"
 		fi
 		echo
 	fi
