@@ -11,27 +11,54 @@ then
 fi
 
 jobid=$1
+TMPFILE=/tmp/showjob.$$
 
 ###########################################################################
-# Get queue information
+# Print time limit $1 as a number of minutes
+function limit_minutes()
+{
+	echo $1 | awk -F- '
+	{
+		if (NF == 1)
+			# If timelimit has 0 days there is only the hour:minute:second field
+			hms = $1
+		else {
+			days = $1
+			hms = $2
+		}
+		split(hms,a,":")	# Extract hour:minute:second
+		# Print number of minutes
+		print days*24*60 + a[1]*60 + a[2]
+	}'
+}
 
-TMPFILE=/tmp/showjob.$$
+###########################################################################
+#
+# Get Slurm queue information
+#
 
 # Check if job is in the queue
 jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
 if test $? -eq 0
 then
+	# Print basic job information
+	jobuser=`squeue -ho "%u" -j $jobid`
+	jobaccount=`squeue -ho "%a" -j $jobid`
+	jobstate=`squeue -ho "%T" -j $jobid`
 	reason=`squeue -ho "%r" -j $jobid`
+	NCPUS=`squeue -ho "%C" -j $jobid`
+	timelimit=`squeue -ho "%l" -j $jobid`
+	minutes=`limit_minutes $timelimit`
+	echo "Job $jobid was submitted by user $jobuser in account $jobaccount"
+	echo "The job has state=$jobstate with reason=$reason"
+	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit"
+	echo
+
 	# Display job reason code (if other than "None")
 	if test "$reason" != "None"
 	then
-		jobuser=`squeue -ho "%u" -j $jobid`
-		jobaccount=`squeue -ho "%a" -j $jobid`
-		jobstate=`squeue -ho "%T" -j $jobid`
-		echo Job $jobid of user $jobuser in account $jobaccount has a jobstate=$jobstate with reason=$reason
 		if test "$reason" == "AssocGrpCPURunMinutesLimit"
 		then
-			echo
 			echo Information about AssocGrpCPURunMinutesLimit:
 			GrpTRESRunMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}'`
 			if test -n "$GrpTRESRunMins"
@@ -44,12 +71,9 @@ then
 			fi
 			echo -n "Current user TRESRunMins is:   "
 			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
-			NCPUS=`squeue -ho "%C" -j $jobid`
-			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{if (NF==1){hms=$1}else{days=$1;hms=$2}; split(hms,a,":"); print days*24*60+a[1]*60+a[2]}'`
-			echo "This job requires TRESRunMins: cpu=$((NCPUS*timelimit))"
+			echo "This job requires TRESRunMins: cpu=$((NCPUS*minutes))"
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
-			echo
 			echo Information about AssocGrpCpuLimit:
 			GrpTRES=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES | awk '{print $1}'`
 			if test -n "$GrpTRES"
@@ -67,7 +91,6 @@ then
 			echo "This job requires TRES:    cpu=$NCPUS"
 		elif test "$reason" == "AssocGrpCPUMinutesLimit"
 		then
-			echo
 			echo Information about AssocGrpCPUMinutesLimit:
 			GrpTRESMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESMins | awk '{print $1}'`
 			if test -n "$GrpTRESMins"
@@ -87,9 +110,7 @@ then
 				GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
 				echo "Account GrpTRESMins value is:  $GrpTRESMins"
 			fi
-			NCPUS=`squeue -ho "%C" -j $jobid`
-			timelimit=`squeue -ho "%l" -j $jobid | awk -F- '{if (NF==1){hms=$1}else{days=$1;hms=$2}; split(hms,a,":"); print days*24*60+a[1]*60+a[2]}'`
-			echo "This job requires TRESMins:    cpu=$((NCPUS*timelimit))"
+			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 		fi
 		echo
 	fi
