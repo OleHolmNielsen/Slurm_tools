@@ -15,6 +15,7 @@ function usage()
 Usage: $0 [-u username | -a | -h ]
 where:
         -u username: Print only user <username> 
+        -A accountname: Print only account <accountname>
         -a Print all users
         -h Print help information
 EOF
@@ -25,9 +26,11 @@ EOF
 # Parse command options
 #
 
-while getopts "u:ah" options; do
+while getopts "u:A:ah" options; do
 case $options in
 	u ) SELECT="user=$OPTARG"	# Select this user
+	    ;;
+	A ) SELECT="account=$OPTARG"	# Select this account
 	    ;;
 	a ) SELECT=""	# All users
 	    ;;
