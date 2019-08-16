@@ -76,6 +76,8 @@ then
 				GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
 				echo "Account GrpTRESRunMins limit is: $GrpTRESRunMins"
 			fi
+			echo -n "Current account TRESRunMins is:   "
+			sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
 			echo -n "Current user TRESRunMins is:   "
 			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
 			echo "This job requires TRESRunMins: cpu=$((NCPUS*minutes))"
