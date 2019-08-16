@@ -71,12 +71,11 @@ then
 			if test -n "$GrpTRESRunMins"
 			then
 				echo "User GrpTRESRunMins limit is:  $GrpTRESRunMins"
-			else
-				# No user value, get parent account value
-				GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
-				echo "Account GrpTRESRunMins limit is: $GrpTRESRunMins"
 			fi
-			echo -n "Current account TRESRunMins is:   "
+			# Get parent account value
+			GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
+			echo "Account GrpTRESRunMins limit is: $GrpTRESRunMins"
+			echo -n "Current account TRESRunMins is:  "
 			sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
 			echo -n "Current user TRESRunMins is:   "
 			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
@@ -114,11 +113,10 @@ then
 			if test -n "$GrpTRESMins"
 			then
 				echo "User GrpTRESMins limit is:     $GrpTRESMins"
-			else
-				# No user value, get parent account value
-				GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
-				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			fi
+			# Get parent account value
+			GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
+			echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 		elif test "$reason" == "Dependency"
 		then
