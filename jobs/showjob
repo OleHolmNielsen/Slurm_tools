@@ -41,7 +41,7 @@ then
 		print "timelimit=" $5
 		print "reason=" $6
 		print "submittime=" $7	# Note: Time %V may modified by SLURM_TIME_FORMAT
-		print "dependency=" $8	# Note: %E may be a null string and should be last
+		print "dependency=" $8	# Note: Dependency %E may be a null string and must be last
 	}'`
 	# Get time limit as a number of minutes
 	minutes=`echo $timelimit | awk -F- '
@@ -57,7 +57,7 @@ then
 		print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
 	}'`
 	echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
-	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss)"
+	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) $minutes min."
 	echo "The job has state=$jobstate with reason=$reason"
 	echo
 
