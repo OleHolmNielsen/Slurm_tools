@@ -24,7 +24,7 @@ where:
 EOF
 }
 
-# Set the maximum length of user and account names (must be 11 or more to fit *_TOTAL strings)
+# Set the maximum length of user and account names (a minimum of 11 to fit the *_TOTAL strings)
 export maxlength=11
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
@@ -140,6 +140,16 @@ if (( NUMJOBS > maxjobpercent*MAXJOBCOUNT/100 ))
 then
 	echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf."
 fi
+
+# Calculate the maximum length of usernames and account names for proper formatting below
+maxlength=`squeue $partition --noheader -o "%u %a" | awk '
+BEGIN { maxlength=ENVIRON["maxlength"] }
+{
+	lu = length($1)
+	la = length($2)
+	if (lu > maxlength) maxlength = lu
+	if (la > maxlength) maxlength = la
+} END { print maxlength }'`
 
 # Print a header
 echo | awk '
