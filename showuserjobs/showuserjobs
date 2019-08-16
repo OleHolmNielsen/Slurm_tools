@@ -24,7 +24,7 @@ where:
 EOF
 }
 
-# Set the maximum length of usernames (must be 11 or more to fit *_TOTAL strings)
+# Set the maximum length of user and account names (must be 11 or more to fit *_TOTAL strings)
 export maxlength=11
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
@@ -131,7 +131,7 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 #
 # Print a job summary
 #
-export NUMJOBS=`squeue  -h -o "%i" | wc -l`
+export NUMJOBS=`squeue -h -o "%i" | wc -l`
 export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
 echo
 echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions."
@@ -150,26 +150,27 @@ BEGIN {
 	line="============================="
 	print " "
 	if (reason_print==0) {
-		fmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s  %s\n"
+	# Output line format string (insert maxlength)
+	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
+		maxlength, maxlength, maxlength, maxlength)
+		# fmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s  %s\n"
 		if (comma_separated==1) fmt="%*.*s,%s,%s,%s,%s,%s,%s\n"
-		printf (fmt, maxlength, maxlength, "Username/", "", "Running", "", "Idle", "", "")
-		printf (fmt, maxlength, maxlength, "Totals", "Account",
-			"Jobs", "CPUs", "Jobs", "CPUs", "Further info")
-		printf (fmt, maxlength, maxlength, line,
-			line, line, line, line,
-			line, line)
+		printf (fmt, "Username/", "", "Running", "", "Idle", "", "")
+		printf (fmt, "Totals", "Account", "Jobs", "CPUs", "Jobs", "CPUs", "Further info")
+		printf (fmt, line, line, line, line, line, line, line)
 	} else {
 		# Additional columns for job reasons
-		reasonfmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %s\n"
+		# reasonfmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %s\n"
+		reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
+			maxlength, maxlength, maxlength, maxlength)
 		if (comma_separated==1) reasonfmt="%*.*s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
-		printf (reasonfmt, maxlength, maxlength, "Username/", "", "Running", "", "Idle", "",
+		printf (reasonfmt, "Username/", "", "Running", "", "Idle", "",
 			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "", "")
-		printf (reasonfmt, maxlength, maxlength, "Totals", "Account", 
+		printf (reasonfmt, "Totals", "Account", 
 			"Jobs", "CPUs", "Jobs", "CPUs",
 			"Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs",
 			"Further info")
-		printf (reasonfmt, maxlength, maxlength, line,
-			line, line, line, line,
+		printf (reasonfmt, line, line, line, line, line,
 			line, line, line, line, line, line, line, line,
 			line, line)
 	}
@@ -177,7 +178,8 @@ BEGIN {
 
 # The squeue -o format selects fields we are interested in:
 # Userid Account Jobstatus Nodecount CPUcount Partition Reason
-squeue $partition --noheader -o "%.8u %.8a %.10T %.6D %.6C %P %r" | awk '
+squeue_fmt="%u %a %.10T %.6D %.6C %P %r"
+squeue $partition --noheader -o "$squeue_fmt" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]
@@ -256,11 +258,16 @@ BEGIN {
 	
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
-	# Output line format string
-	fmt = "%-*.*s %-8s %6d %6d   %6d %6d  %s\n"
+	# Output line format string (insert maxlength)
+	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
+		maxlength, maxlength, maxlength, maxlength)
+	print "fmt=" fmt
+	# fmt = "%-*.*s %-8s %6d %6d   %6d %6d  %s\n"
 	if (comma_separated==1) fmt = "%*.*s,%s,%d,%d,%d,%d,%s\n"
 	# Additional columns for job reasons
-	reasonfmt = "%-*.*s %-8s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %s\n"
+	# reasonfmt = "%-*.*s %-8s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %s\n"
+	reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d  %%s\n",
+		maxlength, maxlength, maxlength, maxlength)
 	if (comma_separated==1) reasonfmt = "%*.*s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
 
 	for (u in userlist) {
@@ -271,11 +278,11 @@ BEGIN {
 			totalusers++
 			if (account_totals_only==0) {
 				if (reason_print == 0)
-					printf(fmt, maxlength, maxlength,
+					printf(fmt, 
 					userid, account, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
 					fullname[userid])
 				else
-					printf(reasonfmt, maxlength, maxlength,
+					printf(reasonfmt, 
 					userid, account, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
 					Priority[u][a], Priority_procs[u][a], Dependency[u][a], Dependency_procs[u][a],
 					CpuLimit[u][a], CpuLimit_procs[u][a], Held[u][a], Held_procs[u][a],
@@ -307,11 +314,11 @@ BEGIN {
 	for (acct in accounts) {
 		accountinfo = sprintf(accountfmt, account_runprocs[acct]+account_idleprocs[acct], accountusers[acct])
 		if (reason_print == 0)
-			printf(fmt, maxlength, maxlength,
+			printf(fmt, 
 			"ACCT_TOTAL", acct, account_running[acct], account_runprocs[acct], account_idle[acct], account_idleprocs[acct],
 			accountinfo)
 		else
-			printf(reasonfmt, maxlength, maxlength,
+			printf(reasonfmt, 
 			"ACCT_TOTAL", acct, account_running[acct], account_runprocs[acct], account_idle[acct], account_idleprocs[acct],
 			account_Priority[acct], account_Priority_procs[acct], account_Dependency[acct], account_Dependency_procs[acct],
 			account_CpuLimit[acct], account_CpuLimit_procs[acct], account_Held[acct], account_Held_procs[acct],
@@ -321,11 +328,11 @@ BEGIN {
 
 	accountinfo = sprintf(accountfmt, totalrunprocs+totalidleprocs, totalusers)
 	if (reason_print == 0)
-		printf(fmt, maxlength, maxlength,
+		printf(fmt, 
 		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
 		accountinfo)
 	else
-		printf(reasonfmt, maxlength, maxlength,
+		printf(reasonfmt, 
 		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
 		totalPriority, totalPriority_procs, totalDependency, totalDependency_procs,
 		totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
