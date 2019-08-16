@@ -261,7 +261,6 @@ BEGIN {
 	# Output line format string (insert maxlength)
 	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
 		maxlength, maxlength, maxlength, maxlength)
-	print "fmt=" fmt
 	# fmt = "%-*.*s %-8s %6d %6d   %6d %6d  %s\n"
 	if (comma_separated==1) fmt = "%*.*s,%s,%d,%d,%d,%d,%s\n"
 	# Additional columns for job reasons
