@@ -144,8 +144,8 @@ fi
 # Calculate the maximum length of all usernames and account names for proper formatting below
 eval `sacctmgr -snrp show user format="User,Account" | awk -F'|' '
 BEGIN {
-	maxlu=ENVIRON["maxlength"]
-	maxla=maxlu
+	maxlu = ENVIRON["maxlength"]
+	maxla = maxlu
 }
 {
 	lu = length($1)
@@ -231,7 +231,6 @@ BEGIN {
 	nprocs=$5
 	partition=$6
 	reason=$7
-	# if (userselect > 0 && uname !~ username[userid]) next	# Select specified username only
 	if (userselect > 0 && uname !~ userid) next	# Select specified username only
 	userlist[userid][account] = userid
 	accountlist[userid][account] = account
@@ -277,10 +276,8 @@ BEGIN {
 	# Output line format string
 	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
 		maxlu, maxlu, maxla, maxla)
-	# fmt = "%-*.*s %-8s %6d %6d   %6d %6d  %s\n"
 	if (comma_separated==1) fmt = "%*.*s,%s,%d,%d,%d,%d,%s\n"
 	# Additional columns for job reasons
-	# reasonfmt = "%-*.*s %-8s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %s\n"
 	reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d  %%s\n",
 		maxlu, maxlu, maxla, maxla)
 	if (comma_separated==1) reasonfmt = "%*.*s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
