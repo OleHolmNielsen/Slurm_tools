@@ -141,28 +141,35 @@ then
 	echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf."
 fi
 
-# Calculate the maximum length of usernames and account names for proper formatting below
-maxlength=`sacctmgr -snrp show user format="User,Account" | awk -F'|' '
-BEGIN { maxlength=ENVIRON["maxlength"] }
+# Calculate the maximum length of all usernames and account names for proper formatting below
+eval `sacctmgr -snrp show user format="User,Account" | awk -F'|' '
+BEGIN {
+	maxlu=ENVIRON["maxlength"]
+	maxla=ENVIRON["maxlength"]
+}
 {
 	lu = length($1)
 	la = length($2)
-	if (lu > maxlength) maxlength = lu
-	if (la > maxlength) maxlength = la
-} END { print maxlength }'`
+	if (lu > maxlu) maxlu = lu
+	if (la > maxla) maxla = la
+} END {
+	print "export maxlu=" maxlu
+	print "export maxla=" maxlu
+}'`
 
 # Print a header
 echo | awk '
 BEGIN {
-	maxlength=ENVIRON["maxlength"]
+	maxlu=ENVIRON["maxlu"]
+	maxla=ENVIRON["maxla"]
 	comma_separated=ENVIRON["comma_separated"]
 	reason_print=ENVIRON["reason_print"]
 	line="============================="
 	print " "
 	if (reason_print==0) {
-	# Output line format string (insert maxlength)
+	# Output line format string
 	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
-		maxlength, maxlength, maxlength, maxlength)
+		maxlu, maxlu, maxla, maxla)
 		# fmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s  %s\n"
 		if (comma_separated==1) fmt="%*.*s,%s,%s,%s,%s,%s,%s\n"
 		printf (fmt, "Username/", "", "Running", "", "Idle", "", "")
@@ -172,7 +179,7 @@ BEGIN {
 		# Additional columns for job reasons
 		# reasonfmt="%-*.*s %-8.8s %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s   %6.6s %6.6s  %s\n"
 		reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
-			maxlength, maxlength, maxlength, maxlength)
+			maxlu, maxlu, maxla, maxla)
 		if (comma_separated==1) reasonfmt="%*.*s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
 		printf (reasonfmt, "Username/", "", "Running", "", "Idle", "",
 			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "", "")
@@ -193,7 +200,8 @@ squeue $partition --noheader -o "$squeue_fmt" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]
-	maxlength=ENVIRON["maxlength"]
+	maxlu=ENVIRON["maxlu"]
+	maxla=ENVIRON["maxla"]
 	comma_separated=ENVIRON["comma_separated"]
 	account_totals_only=ENVIRON["account_totals_only"]
 	reason_print=ENVIRON["reason_print"]
@@ -268,15 +276,15 @@ BEGIN {
 	
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
-	# Output line format string (insert maxlength)
+	# Output line format string
 	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
-		maxlength, maxlength, maxlength, maxlength)
+		maxlu, maxlu, maxla, maxla)
 	# fmt = "%-*.*s %-8s %6d %6d   %6d %6d  %s\n"
 	if (comma_separated==1) fmt = "%*.*s,%s,%d,%d,%d,%d,%s\n"
 	# Additional columns for job reasons
 	# reasonfmt = "%-*.*s %-8s %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d   %6d %6d  %s\n"
 	reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d  %%s\n",
-		maxlength, maxlength, maxlength, maxlength)
+		maxlu, maxlu, maxla, maxla)
 	if (comma_separated==1) reasonfmt = "%*.*s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
 
 	for (u in userlist) {
