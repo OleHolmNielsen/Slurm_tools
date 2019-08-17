@@ -142,7 +142,7 @@ then
 fi
 
 # Calculate the maximum length of usernames and account names for proper formatting below
-maxlength=`squeue $partition --noheader -o "%u %a" | awk '
+maxlength=`sacctmgr -snr show user format="User,Account" | awk '
 BEGIN { maxlength=ENVIRON["maxlength"] }
 {
 	lu = length($1)
