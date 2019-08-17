@@ -142,7 +142,7 @@ then
 fi
 
 # Calculate the maximum length of usernames and account names for proper formatting below
-maxlength=`sacctmgr -snr show user format="User,Account" | awk '
+maxlength=`sacctmgr -snrp show user format="User,Account" | awk -F'|' '
 BEGIN { maxlength=ENVIRON["maxlength"] }
 {
 	lu = length($1)
