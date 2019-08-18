@@ -21,7 +21,7 @@ id --name --groups <username>
 
 There is a restrictions in these tools:
 One or more UNIX groups may map uniquely onto a Slurm account.
-However, we do not support Slurm setups where a UNIX group has been mapped onto multiple, distinct Slurm accounts.
+However, we do not support Slurm setups where one UNIX group has been mapped onto multiple, distinct Slurm accounts.
 
 The tools read the UNIX user database using the commands ```getent passwd``` and ```getent group```.
 If these commands list the complete user database relevant for Slurm, you should be ready to start.
