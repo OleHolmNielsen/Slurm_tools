@@ -25,7 +25,8 @@ EOF
 }
 
 # Set the maximum length of user and account names (a minimum of 11 to fit the *_TOTAL strings)
-export maxlength=11
+export maxlu=11
+export maxla=7
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
 
@@ -144,14 +145,12 @@ fi
 # Calculate the maximum length of all usernames and account names for proper formatting below
 eval `sacctmgr -snrp show user format="User,Account" | awk -F'|' '
 BEGIN {
-	maxlu = ENVIRON["maxlength"]
-	maxla = maxlu
+	maxlu = ENVIRON["maxlu"]
+	maxla = ENVIRON["maxla"]
 }
 {
-	lu = length($1)
-	la = length($2)
-	if (lu > maxlu) maxlu = lu
-	if (la > maxla) maxla = la
+	if (length($1) > maxlu) maxlu = length($1)
+	if (length($2) > maxla) maxla = length($2)
 } END {
 	print "export maxlu=" maxlu
 	print "export maxla=" maxla
