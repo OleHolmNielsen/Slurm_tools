@@ -93,7 +93,7 @@ then
 			echo "Total account TRESRunMins including this job would be cpu=$tresa"
 			if test $tresa -gt $AccountLimit
 			then
-				echo "Account GrpTRESRunMins limit cpu=$AccountLimit would be exceeded."
+				echo "The account GrpTRESRunMins limit cpu=$AccountLimit would be exceeded."
 			fi
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
@@ -115,23 +115,24 @@ then
 		elif test "$reason" == "AssocGrpCPUMinutesLimit"
 		then
 			echo Information about AssocGrpCPUMinutesLimit:
-			GrpTRESMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESMins | awk '{print $1}'`
-			if test -n "$GrpTRESMins"
+			UserLimit=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESMins | awk '{print $1}'`
+			if test -n "$UserLimit"
 			then
-				echo "User GrpTRESMins limit is:     $GrpTRESMins"
+				echo "User GrpTRESMins limit is:     $UserLimit"
 			else
 				# No user value, get parent account value
-				GrpTRESMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESMins | awk 'NR==1{print $1}'`
-				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
+				AccountLimit=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESMins | awk 'NR==1{print $1}'`
+				echo "Account GrpTRESMins limit is:  $AccountLimit"
 			fi
-			GrpTRESMins=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
-			if test -n "$GrpTRESMins"
+			# It seems that sshare prints the limit rather than the current usage
+			UserValue=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($9,array,","); print array[1]}' | sed /cpu=/s///`
+			if test -n "$UserValue"
 			then
-				echo "User GrpTRESMins limit is:     $GrpTRESMins"
+				echo "User GrpTRESMins limit is:     cpu=$UserValue (sshare)"
 			fi
 			# Get parent account value
-			GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
-			echo "Account GrpTRESMins limit is:  $GrpTRESMins"
+			AccountValue=`sshare -hlp -A $jobaccount | awk -F'|' '{split($9,array,","); print array[1]}' | sed /cpu=/s///`
+			echo "Account GrpTRESMins limit is:  cpu=$AccountValue (sshare)"
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 		elif test "$reason" == "Dependency"
 		then
