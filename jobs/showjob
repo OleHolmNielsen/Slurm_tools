@@ -67,19 +67,34 @@ then
 		if test "$reason" == "AssocGrpCPURunMinutesLimit"
 		then
 			echo Information about AssocGrpCPURunMinutesLimit:
-			GrpTRESRunMins=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}'`
-			if test -n "$GrpTRESRunMins"
+			UserLimit=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}' | sed /cpu=/s///`
+			if test -n "$UserLimit"
 			then
-				echo "User GrpTRESRunMins limit is:  $GrpTRESRunMins"
+				echo "User GrpTRESRunMins limit is:  cpu=$UserLimit"
+			else
+				UserLimit=0	# No explicit user limit
 			fi
 			# Get parent account value
-			GrpTRESRunMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}'`
-			echo "Account GrpTRESRunMins limit is: $GrpTRESRunMins"
-			echo -n "Current account TRESRunMins is:  "
-			sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
-			echo -n "Current user TRESRunMins is:   "
-			sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}'
-			echo "This job requires TRESRunMins: cpu=$((NCPUS*minutes))"
+			AccountLimit=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}' | sed /cpu=/s///`
+			echo "Account GrpTRESRunMins limit is: cpu=$AccountLimit"
+			AccountValue=`sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
+			echo "Current account TRESRunMins is:  cpu=$AccountValue"
+			UserValue=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
+			echo "Current user TRESRunMins is:     cpu=$UserValue"
+			JobValue=$((NCPUS*minutes))
+			echo "This job requires TRESRunMins:   cpu=$JobValue"
+			tresu=$((UserLimit+JobValue))
+			tresa=$((AccountLimit+JobValue))
+			if test $UserLimit -gt 0 -a $tresu -gt $UserValue
+			then
+				echo "Total user TRESRunMins including this job would be cpu=$tresu"
+				echo "User GrpTRESRunMins limit would be exceeded: cpu=$UserLimit"
+			fi
+			echo "Total account TRESRunMins including this job would be cpu=$tresa"
+			if test $tresa -gt $AccountLimit
+			then
+				echo "Account GrpTRESRunMins limit cpu=$AccountLimit would be exceeded."
+			fi
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
 			echo Information about AssocGrpCpuLimit:
