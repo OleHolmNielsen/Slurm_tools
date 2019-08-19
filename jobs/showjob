@@ -57,7 +57,7 @@ then
 		print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
 	}'`
 	echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
-	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) $minutes min."
+	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
 	echo "The job has state=$jobstate with reason=$reason"
 	echo
 
@@ -109,13 +109,13 @@ then
 				GrpTRESMins=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESMins | awk 'NR==1{print $1}'`
 				echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			fi
-			GrpTRESMins=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
+			GrpTRESMins=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
 			if test -n "$GrpTRESMins"
 			then
 				echo "User GrpTRESMins limit is:     $GrpTRESMins"
 			fi
 			# Get parent account value
-			GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($10,array,","); print array[1]}'`
+			GrpTRESMins=`sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
 			echo "Account GrpTRESMins limit is:  $GrpTRESMins"
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 		elif test "$reason" == "Dependency"
