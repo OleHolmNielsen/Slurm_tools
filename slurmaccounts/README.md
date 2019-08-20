@@ -212,12 +212,20 @@ The output should be copied to the file ```/etc/slurm/user_settings.conf```.
 showuserlimits tool
 -------------------
 
-This tool prints out the Slurm associations limits for a user.
+This tool prints out the Slurm associations limits and current usage values for a user.
+
+By default the current user in its default account is printed including
+every available limit and current value from the Slurm database.
+Specific limits (such as GrpTRESRunMins) and even sub-limits (such as cpu) may be selected if desired.
 
 Usage:
 
 ```
-showuserlimits			# Current user
-showuserlimits -u <userid>
-showuserlimits -a		# All users
+Usage: showuserlimits [-u username [-A account] [-l limit [-s sub-limit]] | -h ]
+where:
+        -u username: Print only user <username> 
+        -A accountname: Print only account <accountname>
+        -l Print selected limits only
+        -s Print selected sub-limits only
+        -h Print help information
 ```

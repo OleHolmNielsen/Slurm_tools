@@ -3,40 +3,42 @@
 # Show Slurm user limits
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-# Select this user by default:
-SELECT="user=$USER"
-
 #
 # Command usage:
 #
 function usage()
 {
         cat <<EOF
-Usage: $0 [-u username | -a | -h ]
+Usage: $0 [-u username [-A account] [-l limit [-s sub-limit]] | -h ]
 where:
         -u username: Print only user <username> 
         -A accountname: Print only account <accountname>
-        -a Print all users
+        -l Print selected limits only
+        -s Print selected sub-limits only
         -h Print help information
 EOF
 }
 
+# Default: Select this user and its default account:
+username="$USER"
+account=`sacctmgr -nrp show user $USER | awk -F'|' '{print $2}'`
 
 #
 # Parse command options
 #
-
-while getopts "u:A:ah" options; do
-case $options in
-	u ) SELECT="user=$OPTARG"	# Select this user
-	    ;;
-	A ) SELECT="account=$OPTARG"	# Select this account
-	    ;;
-	a ) SELECT=""	# All users
-	    ;;
-	h|*|? ) usage
-	    exit 1;;
-esac
+while getopts "u:A:l:s:h" options; do
+	case $options in
+		u ) username=$OPTARG	# Select user
+	    	;;
+		A ) account=$OPTARG	# Select account
+	    	;;
+		l ) export limits=$OPTARG	# Select limits to display
+	    	;;
+		s ) export sublimits=$OPTARG	# Select sublimits to display
+	    	;;
+		h|*|? ) usage
+	    	exit 1;;
+	esac
 done
 
 # Test for extraneous command line arguments
@@ -47,37 +49,69 @@ then
 	exit 1
 fi
 
-echo
-echo Slurm associations limits:
-
-# Get the Slurm version
-SLURM_VERSION="`sacctmgr --version | awk '{print $2}'`"
-# Version comparison, https://apple.stackexchange.com/questions/83939/compare-multi-digit-version-numbers-in-bash/
-function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d", $1,$2,$3); }'; }
-
-# sacctmgr show associations format (non-default) adding GrpJobsAccrue,MaxJobsAccrue
-# Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
-# See "man acctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
-assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins"
-# Add parameters from newer Slurm versions
-if test $(version $SLURM_VERSION) -ge $(version 18.08)
-then
-        assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
-        echo "### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt"
-fi
-
-sacctmgr -rp show associations $SELECT format=$assocfmt | awk '-F|' '
+# Get Current Association Manager state Association Records
+scontrol -o show assoc_mgr users=$username account=$account flags=assoc | awk '
+BEGIN {
+	limits = ENVIRON["limits"]
+	sublimits = ENVIRON["sublimits"]
+}
+function split_parenthesis (string, array) {
+	# Split strings of the form aaa(bbb)
+	n = split(string,array,"(")
+	if (n <= 1) return 0	# No ( found
+	if (array[1] == "N") array[1] = "None"		# Value N means None
+	gsub(")","",array[2])	# Remove trailing )
+	return 1
+}
 {
-if (NR==1) {
-	split($0,header,"|")
-} else {
-	split($0,assoc,"|")
-	# if (length(assoc[3]) == 0) next	# Skip non-user accounts
-	if (length(assoc[4]) == 0) assoc[4] = "(any)"
-	printf("\nAssociation: User=%s Account=%s Cluster=%s Partition=%s\n",
-		assoc[3], assoc[2], assoc[1], assoc[4])
-	for (i=5; i<length(assoc); i++)
-		if (length(assoc[i]) > 0)
-			printf("%20s: %s\n", header[i], assoc[i])
+	# Read ClusterName lines
+	split($1,a,"=")
+	if (a[1] != "ClusterName") next
+	# Guess at parent/user association records
+	if (NR == 3)
+		print "Association (Parent account):"
+	else if (NR == 4)
+		print "Association (User):"
+	else
+		print "Association:"
+
+	# Loop over association records
+	for (i=1; i<=NF; i++) {	
+		n = split($i,a,"=")
+		rec = a[1]
+		printok = 0
+		if (limits=="" || limits==rec) printok = 1
+		if (rec=="ClusterName" || rec=="Account" || rec=="UserName" || rec=="Partition") printok = 1
+		if (printok) printf("\t%13s = ", rec)		# Record
+		if (n >= 2) {
+			v = a[2]
+			if (rec=="UserName" && v == "")		# Empty UserName
+				v = "None(Parent account)"
+			if (n == 2) {
+				m = split_parenthesis(v, array)
+				if (m == 0) {
+					if (printok) printf("\t%s", v)	# Value
+				} else {
+					if (printok) printf("\t%s, current value or id = %s", array[1], array[2])	# Values
+				}
+			} else if (n >= 3) {	# Extra value fields
+				if (printok) printf("\n")
+				gsub(rec "=","",$i)		# Remove leading rec= from string
+				m = split($i,b,",")		# Comma-separated sub-fields
+				for (j=1; j<=m; j++) {
+					split(b[j],c,"=")	# Sub value=field
+					# Value c[2] sub-field consists of Limit(Value) pairs
+					split_parenthesis(c[2], array)
+					if (sublimits == "") {
+						if (printok)
+							printf("\t\t%8s:\tLimit = %s, current value = %s\n", c[1], array[1], array[2])
+					} else {
+						if (printok && c[1] == sublimits)
+							printf("\t\t%8s:\tLimit = %s, current value = %s\n", c[1], array[1], array[2])
+					}
+				}
+			}
+		}
+		if (printok) printf("\n")
 	}
 }'
