@@ -19,9 +19,8 @@ where:
 EOF
 }
 
-# Default: Select this user and its default account:
+# Default: Current user
 username="$USER"
-account=`sacctmgr -nrp show user $USER | awk -F'|' '{print $2}'`
 
 #
 # Parse command options
@@ -40,6 +39,12 @@ while getopts "u:A:l:s:h" options; do
 	    	exit 1;;
 	esac
 done
+
+# Default account if none was specified
+if test -z "$account"
+then
+	account=`sacctmgr -nrp show user $username | awk -F'|' '{print $2}'`
+fi
 
 # Test for extraneous command line arguments
 if test $# -gt $(($OPTIND-1))
