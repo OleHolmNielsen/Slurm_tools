@@ -9,11 +9,12 @@
 function usage()
 {
         cat <<EOF
-Usage: $0 [-u username [-A account] [-l limit [-s sub-limit]] | -h ]
+Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-l limit [-s sub-limit]] | -h ]
 where:
         -u username: Print only user <username> 
         -A accountname: Print only account <accountname>
         -p partition: Print only Slurm partition <partition>
+        -M cluster: Print only cluster=<cluster>
         -l Print selected limits only
         -s Print selected sub-limits only
         -h Print help information
@@ -26,13 +27,15 @@ username="$USER"
 #
 # Parse command options
 #
-while getopts "u:A:p:l:s:h" options; do
+while getopts "u:A:p:M:l:s:h" options; do
 	case $options in
 		u ) username=$OPTARG	# Select user
 	    	;;
 		A ) account=$OPTARG	# Select account
 	    	;;
 		p ) export partition=$OPTARG	# Select partition
+	    	;;
+		M ) export cluster=$OPTARG	# Select cluster
 	    	;;
 		l ) export limits=$OPTARG	# Select limits to display
 	    	;;
@@ -60,12 +63,13 @@ fi
 # Get Current Association Manager state Association Records
 scontrol -o show assoc_mgr users=$username account=$account flags=assoc | awk '
 BEGIN {
-	partition = ENVIRON["partition"]
-	limits = ENVIRON["limits"]
-	sublimits = ENVIRON["sublimits"]
+	partition	= ENVIRON["partition"]
+	cluster		= ENVIRON["cluster"]
+	limits		= ENVIRON["limits"]
+	sublimits	= ENVIRON["sublimits"]
 }
 function split_parenthesis (string, array) {
-	# Split strings of the form aaa(bbb)
+	# Split strings of the form aaa(bbb) and return array
 	n = split(string,array,"(")
 	if (n <= 1) return 0	# No ( found
 	if (array[1] == "N") array[1] = "None"		# Value N means None
@@ -75,58 +79,64 @@ function split_parenthesis (string, array) {
 {
 	# Read ClusterName lines
 	split($1,a,"=")
-	if (a[1] != "ClusterName") next
-	# Guess at parent/user association records
-	if (NR == 3)
+	# Skip non-Association records
+	if (a[1] != "ClusterName")	# ClusterName is field no. 1
+		next
+	# Selected cluster: Get the ClusterName record and skip if irrelevant
+	if (cluster != "") {
+		if (a[2] != "" && a[2] != cluster)
+			next
+	}
+
+	# Selected partition: Get the Partition record and skip if irrelevant
+	if (partition != "") {
+		split($4,a,"=")	# Partition is field no. 4
+		if (a[2] != "" && a[2] != partition)
+			next
+	}
+
+	# Determine parent/user association records
+	split($3,a,"=")	# UserName is field no. 3
+	if (a[2] == "")	# Empty UserName field
 		print "Association (Parent account):"
-	else if (NR == 4)
-		print "Association (User):"
 	else
-		print "Association:"
+		print "Association (User):"
 
 	# Loop over association records
 	for (i=1; i<=NF; i++) {	
-		n = split($i,a,"=")
+		numrec = split($i,a,"=")
 		rec = a[1]
+		value = a[2]
 		printok = 0
-		if (limits=="" || limits==rec) printok = 1
-		if (rec=="ClusterName" || rec=="Account" || rec=="UserName" || rec=="Partition") printok = 1
-		if (n >= 2) {
-			v = a[2]
-			if (rec=="UserName" && v == "")		# Empty UserName
-				v = "None(Parent account)"
-			else if (rec=="Partition") {		# Handle partition selection
-				if (v == "")			# Empty partition = any partition
-					v = "None(Any partition)"
-				else if (v != partition)
-					next	# partition not selected, skip to next record 
-			}
-			if (printok) printf("\t%13s = ", rec)		# Record
-			if (n == 2) {
-				m = split_parenthesis(v, array)
-				if (m == 0) {
-					if (printok) printf("\t%s", v)	# Value
-				} else {
-					if (printok) printf("\t%s, current value or id = %s", array[1], array[2])	# Values
-				}
-			} else if (n >= 3) {	# Extra value fields
-				if (printok) printf("\n")
+		if (limits=="" || rec==limits)
+			printok = 1
+		if (rec=="ClusterName" || rec=="Account" || rec=="UserName" || rec=="Partition")
+			printok = 1
+		if (printok && numrec >= 2) {			# Print further fields
+			if (rec=="UserName" && value == "")		# Empty UserName
+				value = "None(Parent account)"
+			else if (rec=="Partition" && value == "")
+				value = "None(Any partition)"	# Empty partition = any partition
+			printf("\t%14s = ", rec)		# Print record
+			if (numrec == 2) {
+				m = split_parenthesis(value, array)
+				if (m == 0)
+					printf("\t%s", value)	# Value
+				else
+					printf("\t%s, current value or id = %s", array[1], array[2])	# Values
+			} else if (numrec >= 3) {			# Extra value fields
+				printf("\n")
 				gsub(rec "=","",$i)		# Remove leading rec= from string
 				m = split($i,b,",")		# Comma-separated sub-fields
 				for (j=1; j<=m; j++) {
 					split(b[j],c,"=")	# Sub value=field
 					# Value c[2] sub-field consists of Limit(Value) pairs
 					split_parenthesis(c[2], array)
-					if (sublimits == "") {
-						if (printok)
-							printf("\t\t%8s:\tLimit = %s, current value = %s\n", c[1], array[1], array[2])
-					} else {
-						if (printok && c[1] == sublimits)
-							printf("\t\t%8s:\tLimit = %s, current value = %s\n", c[1], array[1], array[2])
-					}
+					if (sublimits == "" || c[1] == sublimits)
+						printf("\t\t%8s:\tLimit = %s, current value = %s\n", c[1], array[1], array[2])
 				}
 			}
+			printf("\n")
 		}
-		if (printok) printf("\n")
 	}
 }'
