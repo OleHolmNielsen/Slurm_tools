@@ -32,7 +32,7 @@ while getopts "u:A:p:l:s:h" options; do
 	    	;;
 		A ) account=$OPTARG	# Select account
 	    	;;
-		p ) partition=$OPTARG	# Select partition
+		p ) export partition=$OPTARG	# Select partition
 	    	;;
 		l ) export limits=$OPTARG	# Select limits to display
 	    	;;
@@ -60,6 +60,7 @@ fi
 # Get Current Association Manager state Association Records
 scontrol -o show assoc_mgr users=$username account=$account flags=assoc | awk '
 BEGIN {
+	partition = ENVIRON["partition"]
 	limits = ENVIRON["limits"]
 	sublimits = ENVIRON["sublimits"]
 }
@@ -90,13 +91,17 @@ function split_parenthesis (string, array) {
 		printok = 0
 		if (limits=="" || limits==rec) printok = 1
 		if (rec=="ClusterName" || rec=="Account" || rec=="UserName" || rec=="Partition") printok = 1
-		if (printok) printf("\t%13s = ", rec)		# Record
 		if (n >= 2) {
 			v = a[2]
 			if (rec=="UserName" && v == "")		# Empty UserName
 				v = "None(Parent account)"
-			if (rec=="Partition" && v == "")	# Empty Partition
-				v = "None(Any partition)"
+			else if (rec=="Partition") {		# Handle partition selection
+				if (v == "")			# Empty partition = any partition
+					v = "None(Any partition)"
+				else if (v != partition)
+					next	# partition not selected, skip to next record 
+			}
+			if (printok) printf("\t%13s = ", rec)		# Record
 			if (n == 2) {
 				m = split_parenthesis(v, array)
 				if (m == 0) {
