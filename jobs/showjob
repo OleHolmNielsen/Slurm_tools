@@ -40,15 +40,16 @@ then
 	# Print basic job information
 	#
 	# Get required job information from a single squeue command:
-	eval `squeue -ho "%u %a %T %C %l %r %V %E" -j $jobid | awk '{
+	eval `squeue -ho "%u %a %P %T %C %l %r %V %E" -j $jobid | awk '{
 		print "jobuser=" $1
 		print "jobaccount=" $2
-		print "jobstate=" $3
-		print "NCPUS=" $4
-		print "timelimit=" $5
-		print "reason=" $6
-		print "submittime=" $7	# Note: Time %V may modified by SLURM_TIME_FORMAT
-		print "dependency=" $8	# Note: Dependency %E may be a null string and must be last
+		print "partition=" $3
+		print "jobstate=" $4
+		print "NCPUS=" $5
+		print "timelimit=" $6
+		print "reason=" $7
+		print "submittime=" $8	# Note: Time %V may modified by SLURM_TIME_FORMAT
+		print "dependency=" $9	# Note: Dependency %E may be a null string and must be last
 	}'`
 	# Get time limit as a number of minutes
 	minutes=`echo $timelimit | awk -F- '
@@ -78,7 +79,7 @@ then
 			echo "This job requires TRESRunMins:   cpu=$JobValue"
 			echo
 			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -l GrpTRESRunMins -s cpu
+			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
 			echo Information about AssocGrpCpuLimit:
@@ -89,14 +90,14 @@ then
 			echo "This job requires TRES:    cpu=$NCPUS"
 			echo
 			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -l GrpTRES -s cpu
+			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
 		elif test "$reason" == "AssocGrpCPUMinutesLimit"
 		then
 			echo Information about AssocGrpCPUMinutesLimit:
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 			echo
 			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -l GrpTRESMins -s cpu
+			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
 		elif test "$reason" == "Dependency"
 		then
 			echo "Dependency information: $dependency"
