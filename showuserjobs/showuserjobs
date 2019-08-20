@@ -25,8 +25,8 @@ EOF
 }
 
 # Set the maximum length of user and account names (a minimum of 11 to fit the *_TOTAL strings)
-export maxlu=11
-export maxla=7
+export maxlu=11		# Usernames
+export maxla=7		# Account names
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
 
