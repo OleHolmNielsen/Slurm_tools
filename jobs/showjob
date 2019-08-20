@@ -20,6 +20,13 @@ fi
 
 jobid=$1
 TMPFILE=/tmp/showjob.$$
+# Check the showuserlimits command
+showuserlimits=`which showuserlimits`
+if test -z "$showuserlimits"
+then
+	echo Did not find the showuserlimits command, please install it.
+	showuserlimits="echo showuserlimits"
+fi
 
 ###########################################################################
 #
@@ -67,73 +74,29 @@ then
 		if test "$reason" == "AssocGrpCPURunMinutesLimit"
 		then
 			echo Information about AssocGrpCPURunMinutesLimit:
-			UserLimit=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESRunMins | awk '{print $1}' | sed /cpu=/s///`
-			if test -n "$UserLimit"
-			then
-				echo "User GrpTRESRunMins limit is:  cpu=$UserLimit"
-			else
-				UserLimit=0	# No explicit user limit
-			fi
-			# Get parent account value
-			AccountLimit=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESRunMins | awk 'NR==1{print $1}' | sed /cpu=/s///`
-			echo "Account GrpTRESRunMins limit is: cpu=$AccountLimit"
-			AccountValue=`sshare -hlp -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
-			echo "Current account TRESRunMins is:  cpu=$AccountValue"
-			UserValue=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($11,array,","); print array[1]}' | sed /cpu=/s///`
-			echo "Current user TRESRunMins is:     cpu=$UserValue"
 			JobValue=$((NCPUS*minutes))
 			echo "This job requires TRESRunMins:   cpu=$JobValue"
-			tresu=$((UserLimit+JobValue))
-			tresa=$((AccountLimit+JobValue))
-			if test $UserLimit -gt 0 -a $tresu -gt $UserValue
-			then
-				echo "Total user TRESRunMins including this job would be cpu=$tresu"
-				echo "User GrpTRESRunMins limit would be exceeded: cpu=$UserLimit"
-			fi
-			echo "Total account TRESRunMins including this job would be cpu=$tresa"
-			if test $tresa -gt $AccountLimit
-			then
-				echo "The account GrpTRESRunMins limit cpu=$AccountLimit would be exceeded."
-			fi
+			echo
+			echo Information about Account and User limits:
+			$showuserlimits -u $jobuser -A $jobaccount -l GrpTRESRunMins -s cpu
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
 			echo Information about AssocGrpCpuLimit:
-			GrpTRES=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRES | awk '{print $1}'`
-			if test -n "$GrpTRES"
-			then
-				echo "User GrpTRES limit is:     $GrpTRES"
-			else
-				# No user value, get parent account value
-				GrpTRES=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRES | awk 'NR==1{print $1}'`
-				echo "Account GrpTRES limit is:  $GrpTRES"
-			fi
 			echo -n "Current user TRES is:      "
 			# Count number of CPUs for running jobs
 			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
 			NCPUS=`squeue -ho "%C" -j $jobid`
 			echo "This job requires TRES:    cpu=$NCPUS"
+			echo
+			echo Information about Account and User limits:
+			$showuserlimits -u $jobuser -A $jobaccount -l GrpTRES -s cpu
 		elif test "$reason" == "AssocGrpCPUMinutesLimit"
 		then
 			echo Information about AssocGrpCPUMinutesLimit:
-			UserLimit=`sacctmgr -snr show user $jobuser accounts=$jobaccount format=GrpTRESMins | awk '{print $1}'`
-			if test -n "$UserLimit"
-			then
-				echo "User GrpTRESMins limit is:     $UserLimit"
-			else
-				# No user value, get parent account value
-				AccountLimit=`sacctmgr -snr show association accounts=$jobaccount format=GrpTRESMins | awk 'NR==1{print $1}'`
-				echo "Account GrpTRESMins limit is:  $AccountLimit"
-			fi
-			# It seems that sshare prints the limit rather than the current usage
-			UserValue=`sshare -hUlp -u $jobuser -A $jobaccount | awk -F'|' '{split($9,array,","); print array[1]}' | sed /cpu=/s///`
-			if test -n "$UserValue"
-			then
-				echo "User GrpTRESMins limit is:     cpu=$UserValue (sshare)"
-			fi
-			# Get parent account value
-			AccountValue=`sshare -hlp -A $jobaccount | awk -F'|' '{split($9,array,","); print array[1]}' | sed /cpu=/s///`
-			echo "Account GrpTRESMins limit is:  cpu=$AccountValue (sshare)"
 			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
+			echo
+			echo Information about Account and User limits:
+			$showuserlimits -u $jobuser -A $jobaccount -l GrpTRESMins -s cpu
 		elif test "$reason" == "Dependency"
 		then
 			echo "Dependency information: $dependency"
