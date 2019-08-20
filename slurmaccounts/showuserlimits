@@ -13,6 +13,7 @@ Usage: $0 [-u username [-A account] [-l limit [-s sub-limit]] | -h ]
 where:
         -u username: Print only user <username> 
         -A accountname: Print only account <accountname>
+        -p partition: Print only Slurm partition <partition>
         -l Print selected limits only
         -s Print selected sub-limits only
         -h Print help information
@@ -25,11 +26,13 @@ username="$USER"
 #
 # Parse command options
 #
-while getopts "u:A:l:s:h" options; do
+while getopts "u:A:p:l:s:h" options; do
 	case $options in
 		u ) username=$OPTARG	# Select user
 	    	;;
 		A ) account=$OPTARG	# Select account
+	    	;;
+		p ) partition=$OPTARG	# Select partition
 	    	;;
 		l ) export limits=$OPTARG	# Select limits to display
 	    	;;
@@ -92,6 +95,8 @@ function split_parenthesis (string, array) {
 			v = a[2]
 			if (rec=="UserName" && v == "")		# Empty UserName
 				v = "None(Parent account)"
+			if (rec=="Partition" && v == "")	# Empty Partition
+				v = "None(Any partition)"
 			if (n == 2) {
 				m = split_parenthesis(v, array)
 				if (m == 0) {
