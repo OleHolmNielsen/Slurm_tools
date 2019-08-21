@@ -20,6 +20,8 @@ showuserlimits tool
 -------------------
 
 This tool prints out the Slurm associations limits and current usage values for a user.
+Data is extracted from the Slurm database using the ```scontrol show assoc_mgr``` command,
+for which there exists almost no documentation.
 
 By default the current user in its default account is printed including
 every available limit and current value from the Slurm database.
