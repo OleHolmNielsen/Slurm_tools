@@ -9,7 +9,7 @@
 function usage()
 {
         cat <<EOF
-Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-l limit [-s sub-limit]] | -h ]
+Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-l limit] [-s sub-limit] | -h ]
 where:
         -u username: Print only user <username> 
         -A accountname: Print only account <accountname>
@@ -130,7 +130,7 @@ function split_parenthesis (string, array) {
 				if (m == 0)
 					printf("\t%s", value)	# Value
 				else
-					printf("\t%s, current value or id = %s", array[1], array[2])	# Values
+					printf("\t%s, current value = %s", array[1], array[2])	# Values
 			} else if (numrec >= 3) {			# Extra value fields
 				printf("\n")
 				gsub(rec "=","",$i)		# Remove leading rec= from string
