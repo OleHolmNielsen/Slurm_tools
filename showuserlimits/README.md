@@ -22,11 +22,11 @@ showuserlimits tool
 
 This tool prints out the Slurm associations limits and current usage values for a user.
 Data is extracted from the Slurm database using the ```scontrol show assoc_mgr``` command,
-for which there exists almost no documentation.
+for which there exists almost no documentation or examples.
 
 By default the current user in its default account is printed including
 every available limit and current value from the Slurm database.
-Specific limits (such as GrpTRESRunMins) and even sub-limits (such as cpu) may be selected if desired.
+Specific limits (such as ```GrpTRESRunMins```) and even sub-limits (such as ```cpu```) may be selected if desired.
 
 Usage:
 
@@ -63,7 +63,7 @@ Association (User):
                      cpu:       Limit = 7000000, current value = 2800752
 ```
 
-If the user uses multiple associations with partitions or clusters, 
+If the user has multiple associations with different partitions or clusters, 
 it is useful to narrow down the listings to a particular partition or cluster,
 for example:
 

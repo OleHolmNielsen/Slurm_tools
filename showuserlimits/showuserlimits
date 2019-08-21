@@ -94,7 +94,8 @@ then
 fi
 
 # Get Current Association Manager state Association Records
-scontrol -o show assoc_mgr users=$username account=$account flags=assoc | awk '
+# Valid assoc_mgr flags are 'Assoc, QOS, and/or Users'
+scontrol -o show assoc_mgr users=$username account=$account flags=Assoc | awk '
 BEGIN {
 	partition	= ENVIRON["partition"]
 	cluster		= ENVIRON["cluster"]
