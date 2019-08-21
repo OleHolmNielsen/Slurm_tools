@@ -66,6 +66,23 @@ else
 	account=`sacctmgr -nrp show user $username | awk -F'|' '{print $2}'`
 fi
 
+# Check the partition name
+if test -n "$partition"
+then
+	if ! scontrol -o show partition $partition >/dev/null
+	then
+		echo ERROR: Partition $partition does not exist in Slurm
+		exit 1
+	fi
+fi
+
+# Check the cluster name
+if test -n "$cluster" -a -z "`sacctmgr -nrp show cluster $cluster`"
+then
+	echo ERROR: Cluster $cluster does not exist in the Slurm database
+	exit 1
+fi
+
 # Test for extraneous command line arguments
 if test $# -gt $(($OPTIND-1))
 then
