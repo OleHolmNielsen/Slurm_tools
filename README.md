@@ -11,17 +11,19 @@ tools have been developed for management and monitoring of our cluster:
 
 4. [showuserjobs](showuserjobs/) Print the current node status and batch jobs status broken down into userids.
 
-5. [showpartitions](partitions/) Print a Slurm cluster partition status overview with 1 line per partition, and other tools.
+5. [showuserlimits](showuserlimits/) Printing Slurm resource user limits and usage.
 
-6. [slurmibtopology](slurmibtopology/) Infiniband topology tool for Slurm.
+6. [showpartitions](partitions/) Print a Slurm cluster partition status overview with 1 line per partition, and other tools.
 
-7. Slurm [triggers](triggers/) scripts.
+7. [slurmibtopology](slurmibtopology/) Infiniband topology tool for Slurm.
 
-8. Scripts for managing [nodes](nodes/).
+8. Slurm [triggers](triggers/) scripts.
 
-9. Scripts for managing [jobs](jobs/).
+9. Scripts for managing [nodes](nodes/).
 
-10. Scripts for managing [Slurm accounts and users](slurmaccounts/).
+10. Scripts for managing [jobs](jobs/).
+
+11. Scripts for managing [Slurm accounts and users](slurmaccounts/).
 
 Slurm deployment HOWTO
 ----------------------
