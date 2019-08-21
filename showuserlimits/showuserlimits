@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Show Slurm user limits
+# Show Slurm user limits and current values
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 #
@@ -36,6 +36,7 @@ while getopts "u:A:p:M:l:s:h" options; do
 		p ) export partition=$OPTARG	# Select partition
 	    	;;
 		M ) export cluster=$OPTARG	# Select cluster
+		    clusterarg="-M $OPTARG"
 	    	;;
 		l ) export limits=$OPTARG	# Select limits to display
 	    	;;
@@ -66,21 +67,22 @@ else
 	account=`sacctmgr -nrp show user $username | awk -F'|' '{print $2}'`
 fi
 
-# Check the partition name
-if test -n "$partition"
-then
-	if ! scontrol -o show partition $partition >/dev/null
-	then
-		echo ERROR: Partition $partition does not exist in Slurm
-		exit 1
-	fi
-fi
-
 # Check the cluster name
-if test -n "$cluster" -a -z "`sacctmgr -nrp show cluster $cluster`"
+if test -n "$cluster" -a -z "`sacctmgr -nrP show cluster $cluster format=cluster`"
 then
 	echo ERROR: Cluster $cluster does not exist in the Slurm database
 	exit 1
+fi
+
+# Check the partition name
+if test -n "$partition"
+then
+	# User $clusterarg to select a different cluster
+	if ! scontrol -o $clusterarg show partition $partition >/dev/null
+	then
+		echo ERROR: Partition $partition does not exist in cluster $cluster
+		exit 1
+	fi
 fi
 
 # Test for extraneous command line arguments
