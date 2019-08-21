@@ -66,6 +66,13 @@ BEGIN {
 	partition	= ENVIRON["partition"]
 	cluster		= ENVIRON["cluster"]
 	limits		= ENVIRON["limits"]
+	# Add some aliases for limits:
+	if (limits == "AssocGrpCPURunMinutesLimit")
+		limits = "GrpTRESRunMins"
+	else if (limits == "AssocGrpCpuLimit")
+		limits = "GrpTRESMins"
+	else if (limits == "AssocGrpCpuLimit")
+		limits = "GrpTRES"
 	sublimits	= ENVIRON["sublimits"]
 }
 function split_parenthesis (string, array) {
