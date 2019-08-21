@@ -31,12 +31,12 @@ Specific limits (such as GrpTRESRunMins) and even sub-limits (such as cpu) may b
 Usage:
 
 ```
-Usage: ./showuserlimits [-u username [-A account] [-p partition] [-M cluster] [-l limit] [-s sub-limit] | -h ]
+Usage: showuserlimits [-u username [-A account] [-p partition] [-M cluster] [-l limit] [-s sub-limit] | -h ]
 where:
-        -u username: Print only user <username> 
+        -u username: Print user <username> (Default is current user)
         -A accountname: Print only account <accountname>
         -p partition: Print only Slurm partition <partition>
-        -M cluster: Print only cluster=<cluster>
+        -M cluster: Print only cluster <cluster>
         -l Print selected limits only
         -s Print selected sub-limits only
         -h Print help information
