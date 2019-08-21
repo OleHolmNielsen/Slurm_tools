@@ -221,11 +221,30 @@ Specific limits (such as GrpTRESRunMins) and even sub-limits (such as cpu) may b
 Usage:
 
 ```
-Usage: showuserlimits [-u username [-A account] [-l limit [-s sub-limit]] | -h ]
+Usage: ./showuserlimits [-u username [-A account] [-p partition] [-M cluster] [-l limit [-s sub-limit]] | -h ]
 where:
         -u username: Print only user <username> 
         -A accountname: Print only account <accountname>
+        -p partition: Print only Slurm partition <partition>
+        -M cluster: Print only cluster=<cluster>
         -l Print selected limits only
         -s Print selected sub-limits only
         -h Print help information
+```
+
+A typical use case is to inquire about a certain limit, for example,
+```GrpTRESRunMins``` and possibly sub-limits such as the ```cpu``` field:
+
+```
+showuserlimits -u username -l GrpTRESRunMins
+showuserlimits -u username -l GrpTRESRunMins -s cpu
+```
+
+If the user uses multiple associations with partitions or clusters, 
+it is useful to narrow down the listings to a particular partition or cluster,
+for example:
+
+```
+showuserlimits -u username -l GrpTRESRunMins -p xeon24
+showuserlimits -u username -l GrpTRESRunMins -s cpu -p xeon24
 ```
