@@ -1,5 +1,5 @@
-Printing Slurm user limits and usage
-====================================
+Printing Slurm Resource user limits and usage
+=============================================
 
 It is very useful to view Slurm a user's resource limits and current usage.
 For example, jobs may be blocked because some resource limit gets exceeded,
