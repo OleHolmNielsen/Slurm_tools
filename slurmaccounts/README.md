@@ -240,6 +240,19 @@ showuserlimits -u username -l GrpTRESRunMins
 showuserlimits -u username -l GrpTRESRunMins -s cpu
 ```
 
+The output may look like this example:
+
+```
+$ showuserlimits -u xxx -l GrpTRESRunMins -s cpu
+Association (User):
+	   ClusterName = 	niflheim
+	       Account = 	camdvip
+	      UserName = 	xxx, current value or id = 1777
+	     Partition = 	None, current value or id = Any partition
+	GrpTRESRunMins = 
+		     cpu:	Limit = 1000000, current value = 0
+```
+
 If the user uses multiple associations with partitions or clusters, 
 it is useful to narrow down the listings to a particular partition or cluster,
 for example:
