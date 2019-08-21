@@ -57,10 +57,10 @@ $ showuserlimits -u xxx -l GrpTRESRunMins -s cpu
 Association (User):
            ClusterName =        niflheim
                Account =        camdvip
-              UserName =        xxx, current value or id = 1777
+              UserName =        xxx, current value or id = 17777
              Partition =        None, current value or id = Any partition
         GrpTRESRunMins = 
-                     cpu:       Limit = 1000000, current value = 0
+                     cpu:       Limit = 7000000, current value = 2800752
 ```
 
 If the user uses multiple associations with partitions or clusters, 
