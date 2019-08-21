@@ -5,7 +5,7 @@ It is very useful to view Slurm a user's resource limits and current usage.
 For example, jobs may be blocked because some resource limit gets exceeded,
 and it is important to analyze why this occurs.
 
-Several Slurm commands such as ```sshare``` and ```sacctmgr``` can print user limits,
+Several Slurm commands such as ```sshare``` and ```sacctmgr``` can print a number of user limits,
 and to a lesser extent the user's current usage, however, their capabilities are very limited.
 
 The ```showuserlimits``` tool fills this need by inquiring the Slurm database 
@@ -14,7 +14,8 @@ The amount of information in the database is quite extensive,
 so the ```showuserlimits``` tool allows filtering the data 
 and print only the desired information.
 
-The ```showuserlimits``` tool is used by the ```showjob``` command also available from the present project.
+The ```showuserlimits``` tool is used by the ```showjob``` command available
+from the scripts for managing [jobs](../jobs/).
 
 showuserlimits tool
 -------------------
