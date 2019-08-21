@@ -46,9 +46,23 @@ while getopts "u:A:p:M:l:s:h" options; do
 	esac
 done
 
-# Default account if none was specified
-if test -z "$account"
+# Check the username
+if ! getent passwd $username > /dev/null
 then
+	echo ERROR: User $username does not exist in the passwd database
+	exit 1
+fi
+
+# Check the account
+if test -n "$account"
+then
+	if test -z "`sacctmgr -nrp show account $account`"
+	then
+		echo ERROR: Account $account does not exist in the Slurm database
+		exit 1
+	fi
+else
+	# Default account if none was specified
 	account=`sacctmgr -nrp show user $username | awk -F'|' '{print $2}'`
 fi
 
