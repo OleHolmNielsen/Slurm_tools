@@ -74,15 +74,22 @@ then
 	then
 		if test "$reason" == "AssocGrpCPURunMinutesLimit"
 		then
-			echo Information about AssocGrpCPURunMinutesLimit:
+			echo Information about $reason:
 			JobValue=$((NCPUS*minutes))
 			echo "This job requires TRESRunMins:   cpu=$JobValue"
 			echo
 			echo Information about Account and User limits:
 			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
+		elif test "$reason" == "AssocGrpCPUMinutesLimit"
+		then
+			echo Information about $reason:
+			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
+			echo
+			echo Information about Account and User limits:
+			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
 		elif test "$reason" == "AssocGrpCpuLimit"
 		then
-			echo Information about AssocGrpCpuLimit:
+			echo Information about $reason:
 			echo -n "Current user TRES is:      "
 			# Count number of CPUs for running jobs
 			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
@@ -91,22 +98,21 @@ then
 			echo
 			echo Information about Account and User limits:
 			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
-		elif test "$reason" == "AssocGrpCPUMinutesLimit"
-		then
-			echo Information about AssocGrpCPUMinutesLimit:
-			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
-			echo
-			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
 		elif test "$reason" == "AssocGrpGRES"
 		then
-			echo Information about AssocGrpGRES:
+			echo Information about $reason:
 			gres=`squeue -ho "%b" -j $jobid`
 			grestype=`echo $gres | awk -F: '{print $1}'`
 			echo "This job requires GRES: $gres"
 			echo
 			echo Information about Account and User limits:
 			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s $grestype
+		elif test "$reason" == "AssocMaxJobsLimit"
+		then
+			echo Information about $reason:
+			echo User $jobuser number of running jobs is: `squeue -ho "%A" -u $jobuser -t running | wc -l`
+			echo Information about Account and User limits:
+			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
 		elif test "$reason" == "Dependency"
 		then
 			echo "Dependency information: $dependency"
