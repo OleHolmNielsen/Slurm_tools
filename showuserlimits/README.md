@@ -9,7 +9,9 @@ Several Slurm commands such as ```sshare``` and ```sacctmgr``` can print a numbe
 and to a lesser extent the user's current usage, however, their capabilities are very limited.
 
 The complete list of group limits (```GrpTRESMins, GrpTRESRunMins```, etc.)
-are documented in the ```sacctmgr``` manual page https://slurm.schedmd.com/sacctmgr.html#lbAI
+are documented in the ```sacctmgr``` manual page https://slurm.schedmd.com/sacctmgr.html#lbAI.
+The ```TRES``` (*Trackable RESources*) is a resource that can be tracked for usage or used to enforce limits against,
+and is documented in the page https://slurm.schedmd.com/tres.html.
 
 The ```showuserlimits``` tool fills this need by inquiring the Slurm database 
 about all available user and association limits and current usages.
