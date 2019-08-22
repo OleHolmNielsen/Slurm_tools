@@ -110,6 +110,9 @@ BEGIN {
 	else if (limits == "AssocGrpGRES")
 		limits = "GrpTRES"
 	sublimits	= ENVIRON["sublimits"]
+	# Add some aliases for sublimits:
+	if (sublimits == "gpu")
+		sublimits = "gres/gpu"
 }
 function split_parenthesis (string, array) {
 	# Split strings of the form aaa(bbb) and return array
