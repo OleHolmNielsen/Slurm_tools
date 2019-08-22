@@ -98,6 +98,13 @@ then
 			echo
 			echo Information about Account and User limits:
 			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
+		elif test "$reason" == "AssocGrpGRES"
+		then
+			echo Information about AssocGrpGRES:
+			echo "This job requires GRES:    `squeue -ho "%b" -j $jobid`
+			echo
+			echo Information about Account and User limits:
+			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES
 		elif test "$reason" == "Dependency"
 		then
 			echo "Dependency information: $dependency"
