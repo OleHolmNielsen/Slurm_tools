@@ -17,10 +17,10 @@ and print only the desired information.
 The ```showuserlimits``` tool is used by the ```showjob``` command available
 from the scripts for managing [jobs](../jobs/).
 
-The complete list of group limits (```GrpTRESMins, GrpTRESRunMins```, etc.)
+The complete list of group limits (```GrpTRESMins```, ```GrpTRESRunMins```, etc.)
 are documented in the ```sacctmgr``` manual page https://slurm.schedmd.com/sacctmgr.html#lbAI.
 The ```TRES``` (*Trackable RESources*) are resources that can be tracked for usage or used to enforce limits against,
-and is documented in the page https://slurm.schedmd.com/tres.html.
+and are documented in the page https://slurm.schedmd.com/tres.html.
 
 showuserlimits tool
 -------------------
