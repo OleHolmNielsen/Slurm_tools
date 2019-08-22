@@ -107,6 +107,8 @@ BEGIN {
 		limits = "GrpTRESMins"
 	else if (limits == "AssocGrpCpuLimit")
 		limits = "GrpTRES"
+	else if (limits == "AssocGrpGRES")
+		limits = "GrpTRES"
 	sublimits	= ENVIRON["sublimits"]
 }
 function split_parenthesis (string, array) {
