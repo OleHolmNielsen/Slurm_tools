@@ -154,23 +154,23 @@ function split_parenthesis (string, array) {
 		rec = a[1]
 		value = a[2]
 		printok = 0
-		if (limits=="" || rec==limits)
+		if (limits == "" || rec == limits)
 			printok = 1
 		# Always print these lines
-		if (rec=="ClusterName" || rec=="Account" || rec=="UserName" || rec=="Partition")
+		if (rec == "ClusterName" || rec == "Account" || rec == "UserName" || rec == "Partition")
 			printok = 1
 		if (printok && numrec >= 2) {			# Print further fields
-			if (rec=="UserName" && value == "")		# Empty UserName
+			if (rec == "UserName" && value == "")	# Empty UserName
 				value = "None(Parent account)"
-			else if (rec=="Partition" && value == "")
+			else if (rec == "Partition" && value == "")
 				value = "None(Any partition)"	# Empty partition = any partition
 			printf("\t%14s = ", rec)		# Print record
 			if (numrec == 2) {
 				m = split_parenthesis(value, array)
 				if (m == 0)
 					printf("\t%s", value)	# Value
-				else if (rec=="UserName" && array[1] != "None")
-					printf("\t%s, UID=%s", array[1], array[2])	# UserName
+				else if (rec == "UserName" && array[1] != "None")
+					printf("\t%s, UID=%s", array[1], array[2])	# UserName and UID
 				else
 					printf("\t%s, current value = %s", array[1], array[2])	# Values
 			} else if (numrec >= 3) {			# Extra value fields
@@ -178,8 +178,8 @@ function split_parenthesis (string, array) {
 				gsub(rec "=","",$i)		# Remove leading rec= from string
 				m = split($i,b,",")		# Comma-separated sub-fields
 				for (j=1; j<=m; j++) {
-					split(b[j],c,"=")	# Sub value=field
-					# Value c[2] sub-field consists of Limit(Value) pairs
+					split(b[j],c,"=")	# Sub-limit value=field
+					# Value c[2] sub-field consists of "Limit(Value)" pairs
 					split_parenthesis(c[2], array)
 					if (sublimits == "" || c[1] == sublimits)
 						printf("\t\t%8s:\tLimit = %s, current value = %s\n",
