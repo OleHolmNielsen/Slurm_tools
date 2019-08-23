@@ -58,14 +58,22 @@ showuserlimits -u username -l GrpTRESRunMins -s cpu
 The output may look like this example:
 
 ```
-$ showuserlimits -u xxx -l GrpTRESRunMins -s cpu
+$ showuserlimits -u xxx -l AssocGrpCPURunMinutesLimit -s cpu
+Association (Parent account):
+	   ClusterName = 	niflheim
+	       Account = 	camdvip
+	      UserName = 	None, current value = Parent account
+	     Partition = 	None, current value = Any partition
+	GrpTRESRunMins = 
+		     cpu:	Limit = None, current value = 11384718
+
 Association (User):
-           ClusterName =        niflheim
-               Account =        camdvip
-              UserName =        xxx, current value or id = 17777
-             Partition =        None, current value or id = Any partition
-        GrpTRESRunMins = 
-                     cpu:       Limit = 7000000, current value = 2800752
+	   ClusterName = 	niflheim
+	       Account = 	camdvip
+	      UserName = 	xxx, UID=222176
+	     Partition = 	None, current value = Any partition
+	GrpTRESRunMins = 
+		     cpu:	Limit = 4000000, current value = 3987608
 ```
 
 If the user has multiple associations with different partitions or clusters, 
