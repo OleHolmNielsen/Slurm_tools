@@ -179,11 +179,14 @@ function split_parenthesis (string, array) {
 				m = split($i,b,",")		# Comma-separated sub-fields
 				for (j=1; j<=m; j++) {
 					split(b[j],c,"=")	# Sub-limit value=field
-					# Value c[2] sub-field consists of "Limit(Value)" pairs
-					split_parenthesis(c[2], array)
-					if (sublimits == "" || c[1] == sublimits)
-						printf("\t\t%8s:\tLimit = %s, current value = %s\n",
-							c[1], array[1], array[2])
+					if (sublimits == "" || c[1] == sublimits) {
+						# Value c[2] sub-field consists of "Limit(Value)" pairs
+						if (split_parenthesis(c[2], array))
+							printf("\t\t%8s:\tLimit = %s, current value = %s\n",
+								c[1], array[1], array[2])
+						else	# Just in case c[2] might not consist of "Limit(Value)"
+							printf("\t\t%8s:\tLimit(Value) = %s\n", c[1], c[2])
+					}
 				}
 			}
 			printf("\n")
