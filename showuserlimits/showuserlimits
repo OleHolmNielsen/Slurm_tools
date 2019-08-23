@@ -156,6 +156,7 @@ function split_parenthesis (string, array) {
 		printok = 0
 		if (limits=="" || rec==limits)
 			printok = 1
+		# Always print these lines
 		if (rec=="ClusterName" || rec=="Account" || rec=="UserName" || rec=="Partition")
 			printok = 1
 		if (printok && numrec >= 2) {			# Print further fields
@@ -168,6 +169,8 @@ function split_parenthesis (string, array) {
 				m = split_parenthesis(value, array)
 				if (m == 0)
 					printf("\t%s", value)	# Value
+				else if (rec=="UserName" && array[1] != "None")
+					printf("\t%s, UID=%s", array[1], array[2])	# UserName
 				else
 					printf("\t%s, current value = %s", array[1], array[2])	# Values
 			} else if (numrec >= 3) {			# Extra value fields
@@ -179,7 +182,8 @@ function split_parenthesis (string, array) {
 					# Value c[2] sub-field consists of Limit(Value) pairs
 					split_parenthesis(c[2], array)
 					if (sublimits == "" || c[1] == sublimits)
-						printf("\t\t%8s:\tLimit = %s, current value = %s\n", c[1], array[1], array[2])
+						printf("\t\t%8s:\tLimit = %s, current value = %s\n",
+							c[1], array[1], array[2])
 				}
 			}
 			printf("\n")
