@@ -33,9 +33,9 @@ fi
 # Get Slurm queue information
 #
 
-# Check if job is in the queue
+# Check if job is in the queue and squeue displays job information
 jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
-if test $? -eq 0
+if test $? -eq 0 -a -n "$jobfound"
 then
 	# Print basic job information
 	#
