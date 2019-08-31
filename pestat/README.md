@@ -1,7 +1,7 @@
 The Slurm tool "pestat" (Processor Element status)
 --------------------------------------------------
 
-Prints a Slurm cluster nodes status with 1 line per node and job info.
+Print Slurm nodes status with 1 line per node including job info.
 
 Author: Ole Holm Nielsen <Ole.H.Nielsen \at/ fysik.dtu.dk>
 

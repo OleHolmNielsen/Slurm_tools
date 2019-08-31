@@ -3,7 +3,7 @@
 These [Slurm](https://slurm.schedmd.com/overview.html)
 tools have been developed for management and monitoring of our cluster:
 
-1. [pestat](pestat/) Prints a Slurm cluster nodes status with 1 line per node and job info.
+1. [pestat](pestat/) Print Slurm nodes status with 1 line per node including job info.
 
 2. [slurmreportmonth](slurmreportmonth/) Generate monthly accounting statistics from Slurm using the sreport command.
 
@@ -11,7 +11,7 @@ tools have been developed for management and monitoring of our cluster:
 
 4. [showuserjobs](showuserjobs/) Print the current node status and batch jobs status broken down into userids.
 
-5. [showuserlimits](showuserlimits/) Printing Slurm resource user limits and usage.
+5. [showuserlimits](showuserlimits/) Print Slurm resource user limits and usage.
 
 6. [showpartitions](partitions/) Print a Slurm cluster partition status overview with 1 line per partition, and other tools.
 
