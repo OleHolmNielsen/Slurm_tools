@@ -5,9 +5,6 @@ Print the current node status and batch jobs status broken down into userids.
 
 Can also display per-user or per-account status.  A partition may be selected.
 
-The maximum username length may be changed in the script:
-* export maxlength=11
-
 Usage
 -----
 
