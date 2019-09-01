@@ -55,6 +55,11 @@ while getopts "u:a:p:ACrh" options; do
 			echo Print comma separated lines for Excel
 			;;
 		p ) 	export partition="-p $OPTARG"
+			if test -z "`sinfo -ho %P $partition`"
+			then
+				echo "ERROR: Partition $OPTARG does not exist on this cluster"
+				exit 1
+			fi
 			echo Print only jobs in partition $OPTARG
 			;;
 		r ) 	export reason_print=1
