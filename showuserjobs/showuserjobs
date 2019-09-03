@@ -30,6 +30,10 @@ export maxla=7		# Account names
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
 
+# Temporary file for headers
+TMPFILE=/tmp/showuserjobs.$$
+rm -f $TMPFILE
+
 #
 # Process command arguments
 #
@@ -42,17 +46,16 @@ export account=""
 while getopts "u:a:p:ACrh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
-			echo Select only user $username
+			echo Select only user $username >> $TMPFILE
 			;;
 		a ) 	export account=$OPTARG
-			echo Select only users in account $account
+			echo Select only users in account $account >> $TMPFILE
 			;;
 		A ) 	export account_totals_only=1
-			echo Select only ACCT_TOTAL lines
+			echo Select only ACCT_TOTAL lines >> $TMPFILE
 			;;
 		C ) 	export comma_separated=1
 			export SORT_SEP="-t ,"
-			echo Print comma separated lines for Excel
 			;;
 		p ) 	export partition="-p $OPTARG"
 			if test -z "`sinfo -ho %P $partition`"
@@ -60,14 +63,14 @@ while getopts "u:a:p:ACrh" options; do
 				echo "ERROR: Partition $OPTARG does not exist on this cluster"
 				exit 1
 			fi
-			echo Print only jobs in partition $OPTARG
+			echo Print only jobs in partition $OPTARG >> $TMPFILE
 			;;
 		r ) 	export reason_print=1
-			echo "Print additional job Reason columns (see 'man squeue'):"
-			echo "    Priority:   Waiting for resources or higher priority jobs"
-			echo "    Dependency: Waiting for a dependent job to complete"
-			echo "    CpuLimit:   AssocGrpCpuLimit, AssocGrpCPURunMinutesLimit"
-			echo "    Held:       JobHeldUser, JobHeldAdmin"
+			echo "Print additional job Reason columns (see 'man squeue'):" >> $TMPFILE
+			echo "    Priority:   Waiting for resources or higher priority jobs" >> $TMPFILE
+			echo "    Dependency: Waiting for a dependent job to complete" >> $TMPFILE
+			echo "    CpuLimit:   AssocGrpCpuLimit, AssocGrpCPURunMinutesLimit" >> $TMPFILE
+			echo "    Held:       JobHeldUser, JobHeldAdmin" >> $TMPFILE
 			;;
 		h|? ) usage
 			exit 1;;
@@ -93,9 +96,8 @@ then
 	exit 1
 fi
 
-export SYSTEMNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
-
-echo Batch job status for cluster $SYSTEMNAME at `date`
+SYSTEMNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
+echo Batch job status for cluster $SYSTEMNAME at `date` >> $TMPFILE
 
 #
 # Print a nodes state summary
@@ -132,19 +134,19 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 		printf(format, s, nodecount[s],  cpucount[s])
 	}
 	printf(format, "Total", total_node, total_cpus)
-}'
+}' >> $TMPFILE
 
 #
 # Print a job summary
 #
 export NUMJOBS=`squeue -h -o "%i" | wc -l`
 export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
-echo
-echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions."
+echo >> $TMPFILE
+echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions." >> $TMPFILE
 # Check if NUMJOBS exceeds 80% of the maximum:
 if (( NUMJOBS > maxjobpercent*MAXJOBCOUNT/100 ))
 then
-	echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf."
+	echo "*** WARNING: *** The number of jobs is getting close to the MaxJobCount limit in slurm.conf." >> $TMPFILE
 fi
 
 # Calculate the maximum length of all usernames and account names for proper formatting below
@@ -162,6 +164,12 @@ BEGIN {
 }'`
 
 # Print a header
+if test $comma_separated -ne 1
+then
+	cat $TMPFILE
+	rm -f $TMPFILE
+fi
+
 echo | awk '
 BEGIN {
 	maxlu=ENVIRON["maxlu"]
@@ -169,7 +177,8 @@ BEGIN {
 	comma_separated=ENVIRON["comma_separated"]
 	reason_print=ENVIRON["reason_print"]
 	line="============================="
-	print " "
+	if (comma_separated!=1)
+		print " "
 	if (reason_print==0) {
 		# Output line format string
 		if (comma_separated==1)
@@ -179,7 +188,8 @@ BEGIN {
 				maxlu, maxlu, maxla, maxla)
 		printf (fmt, "Username/", "", "Running", "", "Idle", "", "")
 		printf (fmt, "Totals", "Account", "Jobs", "CPUs", "Jobs", "CPUs", "Further info")
-		printf (fmt, line, line, line, line, line, line, line)
+		if (comma_separated!=1)
+			printf (fmt, line, line, line, line, line, line, line)
 	} else {
 		# Additional columns for job reasons
 		if (comma_separated==1)
@@ -193,9 +203,10 @@ BEGIN {
 			"Jobs", "CPUs", "Jobs", "CPUs",
 			"Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs",
 			"Further info")
-		printf (reasonfmt, line, line, line, line, line,
-			line, line, line, line, line, line, line, line,
-			line, line)
+		if (comma_separated!=1)
+			printf (reasonfmt, line, line, line, line, line,
+				line, line, line, line, line, line, line, line,
+				line, line)
 	}
 }'
 
