@@ -12,7 +12,7 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-u username] [-a account] [-p partition] [-A] [-h]
+Usage: $0 [-u username] [-a account] [-p partition] [-A] [-C] [-h]
 where:
         -u username: Print only user <username>
         -a account: Print only jobs in Slurm account <account>
@@ -172,17 +172,21 @@ BEGIN {
 	print " "
 	if (reason_print==0) {
 		# Output line format string
-		fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
-			maxlu, maxlu, maxla, maxla)
-		if (comma_separated==1) fmt="%*.*s,%s,%s,%s,%s,%s,%s\n"
+		if (comma_separated==1)
+			fmt="%s,%s,%s,%s,%s,%s,%s\n"
+		else
+			fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
+				maxlu, maxlu, maxla, maxla)
 		printf (fmt, "Username/", "", "Running", "", "Idle", "", "")
 		printf (fmt, "Totals", "Account", "Jobs", "CPUs", "Jobs", "CPUs", "Further info")
 		printf (fmt, line, line, line, line, line, line, line)
 	} else {
 		# Additional columns for job reasons
-		reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
-			maxlu, maxlu, maxla, maxla)
-		if (comma_separated==1) reasonfmt="%*.*s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
+		if (comma_separated==1)
+			reasonfmt="%*.*s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
+		else
+			reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
+				maxlu, maxlu, maxla, maxla)
 		printf (reasonfmt, "Username/", "", "Running", "", "Idle", "",
 			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "", "")
 		printf (reasonfmt, "Totals", "Account", 
@@ -278,13 +282,17 @@ BEGIN {
 } END {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	# Output line format string
-	fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
-		maxlu, maxlu, maxla, maxla)
-	if (comma_separated==1) fmt = "%*.*s,%s,%d,%d,%d,%d,%s\n"
+	if (comma_separated==1)
+		fmt = "%s,%s,%d,%d,%d,%d,%s\n"
+	else
+		fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
+			maxlu, maxlu, maxla, maxla)
 	# Additional columns for job reasons
-	reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d  %%s\n",
-		maxlu, maxlu, maxla, maxla)
-	if (comma_separated==1) reasonfmt = "%*.*s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
+	if (comma_separated==1)
+		reasonfmt = "%*.*s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
+	else
+		reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d  %%s\n",
+			maxlu, maxlu, maxla, maxla)
 
 	for (u in userlist) {
 		for (a in userlist[u]) {
