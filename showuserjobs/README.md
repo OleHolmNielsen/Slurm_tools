@@ -9,7 +9,7 @@ Usage
 -----
 
 ```
-Usage: ./showuserjobs [-u username] [-a account] [-p partition] [-A] [-h]
+Usage: showuserjobs [-u username] [-a account] [-p partition] [-A] [-C] [-h]
 where:
         -u username: Print only user <username>
         -a account: Print only jobs in Slurm account <account>
