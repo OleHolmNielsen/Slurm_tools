@@ -338,6 +338,7 @@ BEGIN {
 		Partition=$8
 		NumNodes=$9
 		JobName=$10
+		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
 		if (printgres == 1) JobInfo = JobInfo GRES " "
