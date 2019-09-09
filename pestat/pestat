@@ -322,8 +322,9 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 
-	# Running jobs info: JobState JobId User group NodeList StartTime EndTime JobName Partition NumNodes
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %j %P %D\" " selection
+	# Running jobs info: JobState JobId User group NodeList StartTime EndTime Partition NumNodes JobName
+	# Place JobName last, just in case it is a null string
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %P %D %j\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
@@ -334,9 +335,9 @@ BEGIN {
 		NodeList=$5
 		StartTime=$6
 		EndTime=$7
-		JobName=$8
-		Partition=$9
-		NumNodes=$10
+		Partition=$8
+		NumNodes=$9
+		JobName=$10
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
 		if (printgres == 1) JobInfo = JobInfo GRES " "
