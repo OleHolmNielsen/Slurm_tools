@@ -10,8 +10,7 @@
 # and https://clustershell.readthedocs.io/en/latest/intro.html
 
 # Possibly configure these variables:
-SINFO=/usr/bin/sinfo
-SCONTROL=/usr/bin/scontrol
+SCONTROL="/usr/bin/scontrol"
 CLUSH="/usr/bin/clush"
 PS="/bin/ps"
 PSFLAGS="-o pid,state,user,start,nlwp,cputime,%cpu,rssize,command --columns 100"
@@ -51,6 +50,22 @@ if test "$?" != "0"
 then
 	echo Error inquiring about job $JOBID 
 	exit 1
+fi
+
+# Check for job array
+if test -n "`cat $JOBSTATUS | grep ArrayJobId`"
+then
+	ArrayJobId=`cat $JOBSTATUS | grep ArrayJobId | head -1 | awk '{print $2}' | sed /ArrayJobId=/s///`
+	ArrayTaskId=`cat $JOBSTATUS | grep ArrayJobId | head -1 | awk '{print $3}' | sed /ArrayTaskId=/s///`
+	if test "$JOBID" = "$ArrayJobId"
+	then
+		JOBID="${JOBID}_${ArrayTaskId}"
+		echo Select JOBID=$JOBID
+		# Call this command again with the modified JOBID
+		$0 $JOBID
+		exit 0
+	fi
+	echo "This job $JOBID is a job array: Head job $ArrayJobId task number $ArrayTaskId"
 fi
 
 # Check the job state
