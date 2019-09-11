@@ -45,17 +45,8 @@ while getopts "k" options; do
 	esac
 done
 
-# Test for extraneous command line arguments
-if test $# -gt $(($OPTIND-1))
-then
-	echo ERROR: Too many command line arguments: $*
-	echo $USAGE
-	exit 1
-fi
-
-
 # Get the jobid as the arguments
-JOBLIST=$*
+JOBLIST="$*"
 if test -z "$JOBLIST"
 then
 	echo $USAGE
@@ -74,6 +65,7 @@ reason06="Your job is not using all of the CPU cores that you have requested."
 reason07="Your job is not laid out correctly for xeon8 multi-CPU nodes - you MUST use the xeon8 partition correctly."
 reason08="Your job is not laid out correctly for xeon16 multi-CPU nodes - you MUST use the xeon16 partition correctly."
 reason09="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly."
+reason99="Your job is not laid out correctly for xeon40 multi-CPU nodes - you MUST use the xeon40 partition correctly."
 reason10="Your job is unfortunately running on a node that has a hardware or electrical error."
 reason11="Error in the input file caused job to fail."
 reason12="Job failed - please examine the output file."
@@ -99,6 +91,7 @@ do
 	echo "  7. $reason07"
 	echo "  8. $reason08"
 	echo "  9. $reason09"
+	echo " 99. $reason99"
 	echo " 10. $reason10"
 	echo " 11. $reason11"
 	echo " 12. $reason12"
@@ -121,6 +114,7 @@ do
 		7) action_reason=$reason07;;
 		8) action_reason=$reason08;;
 		9) action_reason=$reason09;;
+	       99) action_reason=$reason99;;
 	       10) action_reason=$reason10;;
 	       11) action_reason=$reason11;;
 	       12) action_reason=$reason12;;
