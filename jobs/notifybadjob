@@ -30,10 +30,10 @@ action='Notify about'
 killjob=0
 # Temporary files
 MESSAGE=/tmp/jobstatus.$$ 
-QSTATMSGS=/tmp/qstatmsgs.$$ 
-QSTATERRS=/tmp/qstaterrs.$$ 
+JOBMSGS=/tmp/jobmsgs.$$ 
+JOBERRS=/tmp/joberrs.$$ 
 # Catch signals
-trap "rm -f $MESSAGE $QSTATMSGS $QSTATERRS; exit 2" 1 2 3 14 15 19
+trap "rm -f $MESSAGE $JOBMSGS $JOBERRS; exit 2" 1 2 3 14 15 19
 
 # Process command arguments
 while getopts "k" options; do
@@ -159,12 +159,12 @@ else
 fi
 
 echo -n Get job information...
-scontrol show job $JOB >$QSTATMSGS 2>$QSTATERRS
-# Check for errors from qstat
-if test -s $QSTATERRS
+scontrol show job $JOB >$JOBMSGS 2>$JOBERRS
+# Check for errors from job status
+if test -s $JOBERRS
 then
 	echo
-	cat $QSTATERRS
+	cat $JOBERRS
 	exit 1
 fi
 
@@ -176,11 +176,11 @@ then
 	exit 1
 fi
 
-# USERMAIL=`grep Job_Owner $QSTATMSGS | awk '{print $3}'`
+# USERMAIL=`grep Job_Owner $JOBMSGS | awk '{print $3}'`
 USERMAIL=$USERID
 FULLNAME=`getent passwd | grep "^$USERID:" | awk -F: '{print $5}'`
 # Maybe the user wants to notify this address also
-# NOTIFYMAIL=`grep Mail_Users $QSTATMSGS | awk '{print $3}'`
+# NOTIFYMAIL=`grep Mail_Users $JOBMSGS | awk '{print $3}'`
 NOTIFYMAIL=""
 
 cat <<EOF
@@ -213,11 +213,11 @@ Slurm batch system information about job id $JOB:
 
 EOF
 
-# Copy the qstat info from Torque
-cat $QSTATMSGS >> $MESSAGE
+# Copy the job status info from Slurm
+cat $JOBMSGS >> $MESSAGE
 
 # Is the job still in a queued state ?
-JOBSTATE=`grep JobState= $QSTATMSGS | awk '{print $1}'`
+JOBSTATE=`grep JobState= $JOBMSGS | awk '{print $1}'`
 echo NOTE: This job has a state of $JOBSTATE
 if test "$JOBSTATE" = "JobState=PENDING"
 then
@@ -272,13 +272,13 @@ EOF
 fi
 
 # Amount of job wallclock time 
-#WALLTIME=`grep resources_used.walltime $QSTATMSGS | awk '{print $3}'`
+#WALLTIME=`grep resources_used.walltime $JOBMSGS | awk '{print $3}'`
 #if test -z "$WALLTIME"
 #then
 #	WALLTIME="Walltime:unknown"
 #fi
 # List of nodes used
-NODELIST=`grep NodeList= $QSTATMSGS | awk -F= '{print $2}'`
+NODELIST=`grep NodeList= $JOBMSGS | awk -F= '{print $2}'`
 if test -z "$NODELIST"
 then
 	NODELIST="Nodes:unknown"
@@ -286,7 +286,7 @@ fi
 
 # Working directory
 echo -n Listing files...
-WORKDIR=`grep WorkDir= $QSTATMSGS | awk -F= '{print $2}'`
+WORKDIR=`grep WorkDir= $JOBMSGS | awk -F= '{print $2}'`
 if test -z "$WORKDIR"
 then
 	WORKDIR="WORKDIR:unknown"
@@ -360,4 +360,4 @@ echo Sending mail to user=$USERMAIL full name: $FULLNAME
 done
 
 # Clean up
-rm -f $MESSAGE $QSTATMSGS $QSTATERRS
+rm -f $MESSAGE $JOBMSGS $JOBERRS
