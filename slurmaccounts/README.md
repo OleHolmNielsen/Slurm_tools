@@ -19,9 +19,12 @@ To print all groups to which a username belongs:
 id --name --groups <username>
 ```
 
-There is a restrictions in these tools:
-One or more UNIX groups may map uniquely onto a Slurm account.
+There are restrictions in these tools:
+
+* One or more UNIX groups may map uniquely onto a Slurm account.
 However, we do not support Slurm setups where one UNIX group has been mapped onto multiple, distinct Slurm accounts.
+
+* We do not support per-user UNIX groups where each username's primary UNIX group is the same as the username (groupname=username).
 
 The tools read the UNIX user database using the commands ```getent passwd``` and ```getent group```.
 If these commands list the complete user database relevant for Slurm, you should be ready to start.
