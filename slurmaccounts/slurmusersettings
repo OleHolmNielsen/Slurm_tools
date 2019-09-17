@@ -12,7 +12,7 @@
 ### CONFIGURE these settings for your cluster
 
 # Skip users with UID < MINUID
-export MINUID=100
+export MINUID=512
 
 # Skip users with locked password by setting skip_locked=1
 # See https://unix.stackexchange.com/questions/109314/two-ways-to-lock-a-password-but-only-one-to-unlock
@@ -307,6 +307,11 @@ $3 >= MINUID {
 	password	= $2
 	GID		= $4
 	g = unixgroup[GID]	# UNIX group
+	# Ignore users with per-user group: groupname==username
+	if (g == u) {
+		print "### Ignoring users with per-user group: User=" u " group=" g
+		next
+	}
 	if (group2account[g] == "")
 		acct = g
 	else if (group2account[g] == "NOACCOUNT")
@@ -360,8 +365,12 @@ $3 >= MINUID {
 		COMMAND = COMMAND " defaultaccount=" acct
 		# Add already existing user to his/her new account
 		if (useraccount[u] != "") {
-			print "### Existing user " u " account " useraccount[u] " add to account " acct
-			print sacctmgr " -i add user " u " account=" acct
+			if (isarray(setting[acct]) && isarray(setting[acct][config])) {
+				print "### Existing user " u " account " useraccount[u] " add to account " acct
+				print sacctmgr " -i add user " u " account=" acct
+			}
+		} else {
+			 print "### WARNING; Account " acct " does not exist"
 		}
 	}
 
