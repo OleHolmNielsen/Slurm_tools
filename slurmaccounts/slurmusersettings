@@ -310,6 +310,7 @@ $3 >= MINUID {
 	# Ignore users with per-user group: groupname==username
 	if (g == u) {
 		print "### Ignoring users with per-user group: User=" u " group=" g
+		userinformation[u] = "Ignore users with per-user group"
 		next
 	}
 	if (group2account[g] == "")
