@@ -12,7 +12,7 @@
 ### CONFIGURE these settings for your cluster
 
 # Skip users with UID < MINUID
-export MINUID=512
+export MINUID=1000
 
 # Skip users with locked password by setting skip_locked=1
 # See https://unix.stackexchange.com/questions/109314/two-ways-to-lock-a-password-but-only-one-to-unlock
@@ -310,7 +310,7 @@ $3 >= MINUID {
 	# Ignore users with per-user group: groupname==username
 	if (g == u) {
 		print "### Ignoring users with per-user group: User=" u " group=" g
-		userinformation[u] = "Ignore users with per-user group"
+		userinformation[u] = "IGNORE"
 		next
 	}
 	if (group2account[g] == "")
@@ -425,6 +425,7 @@ END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
 		if (userinformation[u] == u) continue
+		if (userinformation[u] == "IGNORE") continue
 		if (userinformation[u] == "") userinformation[u] = "No password entry"
 		printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
 		# First delete non-default accounts for this user
