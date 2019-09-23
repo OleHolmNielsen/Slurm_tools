@@ -47,6 +47,12 @@ Furthermore, a number of user settings can be defined in the configuration file:
 When Slurm accounts are added, removed or modified in the configuration files, or UNIX users are changed in the system passwd/group files,
 rerun the tools to pick up the changes to the Slurm database.
 
+Presentations
+-------------
+
+The work in this project was presented at the *Slurm User Group* (SLUG) meeting in Salt Lake City on September 18, 2019 
+and the slides are in ![this PDF file](Slurm_account_synchronization.pdf).
+
 Getting started
 ---------------
 
