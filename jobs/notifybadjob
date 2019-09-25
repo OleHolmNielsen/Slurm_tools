@@ -19,8 +19,9 @@ USAGE="Usage: $0 '[-k]' job-id"
 # Name of this cluster
 CLUSTERNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
 
-# Location of locally developed commands needed
+# Location of our Slurm tools (see https://github.com/OleHolmNielsen/Slurm_tools/tree/master/)
 PSJOB=/usr/local/bin/psjob
+PESTAT=/usr/local/bin/pestat
 # Mail program
 MAIL=/usr/bin/mailx
 # Syslog logfile
@@ -224,8 +225,7 @@ fi
 if test "$JOBQUEUED" = 0
 then
 	# Memory and CPU usage
-	# cat <<EOF >> $MESSAGE
-	cat <<EOF >> /dev/null
+	cat <<EOF >> $MESSAGE
 
 RAM-memory usage and CPU-load usage of your job on the job nodes.
 -----------------------------------------------------------------
@@ -236,11 +236,10 @@ Please look at these usage numbers to determine why the job was behaving badly
   node state  load    pmem ncpu   mem   resi usrs tasks  jobids/users 
 EOF
 
-	# Print job memory and CPU usage by pestat (local command)
+	# Print job memory and CPU usage by pestat
 	# echo -n RAM and CPU usage...
-	# $PESTAT | grep $JOB >> $MESSAGE
-	# cat <<EOF >> $MESSAGE
-	cat <<EOF >> /dev/null
+	$PESTAT -j $JOB >> $MESSAGE
+	cat <<EOF >> $MESSAGE
 
 Explanation of some columns in the usage list:
 node: The compute node running your job.
