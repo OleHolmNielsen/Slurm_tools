@@ -121,7 +121,7 @@ then
 	fi
 	# Job found in the queue
 	echo "Queued job information:"
-	scontrol show job $jobid | tee $TMPFILE
+	scontrol --details show job $jobid | tee $TMPFILE
 	# Parse the job status information (read E-mail)
 	export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//'`
 	if test "$jobscript" != "(null)"
