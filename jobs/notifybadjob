@@ -154,7 +154,7 @@ else
 fi
 
 echo -n Get job information...
-scontrol show job $JOB >$JOBMSGS 2>$JOBERRS
+scontrol --details show job $JOB >$JOBMSGS 2>$JOBERRS
 # Check for errors from job status
 if test -s $JOBERRS
 then
