@@ -10,8 +10,6 @@ then
 	exit -1
 fi
 
-SINFO=/usr/bin/sinfo
-SCONTROL=/usr/bin/scontrol
 PS="/bin/ps"
 PSFLAGS="-o pid,state,user,start,cputime,%cpu,rssize,command --columns 100"
 SSH="ssh -n -x"
@@ -34,10 +32,11 @@ do
 done
 
 # The "scontrol show hostnames" command is used to expand NodeList expressions
-for node in `$SCONTROL show hostnames $*`
+for node in `scontrol show hostnames $*`
 do
 	echo Node ${node}:
-	$SINFO -N --long -n $node 
+	sinfo -N --long -n $node 
+	squeue -o "%A" -w $node
 	if $PING $node 2>&1 > /dev/null
 	then
 		$SSH $node $PS $PSFLAGS --deselect -u \""${deselect_list}"\"
