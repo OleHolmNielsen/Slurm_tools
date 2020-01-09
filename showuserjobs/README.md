@@ -16,6 +16,7 @@ where:
 	-A: Print only ACCT_TOTAL lines
 	-C: Print comma separated lines for Excel
         -p partition: Print only jobs in partition <partition-list>
+        -q qos-list: Print only jobs in QOS <qos-list>
         -r: Print additional job Reason columns
         -h: Print this help information
 ```
