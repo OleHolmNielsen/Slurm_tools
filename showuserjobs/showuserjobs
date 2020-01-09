@@ -12,13 +12,14 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-u username] [-a account] [-p partition] [-A] [-C] [-h]
+Usage: $0 [-u username] [-a account] [-p partition] [-q QOS] [-A] [-C] [-h]
 where:
         -u username: Print only user <username>
         -a account: Print only jobs in Slurm account <account>
 	-A: Print only ACCT_TOTAL lines
 	-C: Print comma separated lines for Excel
         -p partition: Print only jobs in partition <partition-list>
+        -q qos-list: Print only jobs in QOS <qos-list>
         -r: Print additional job Reason columns
         -h: Print this help information
 EOF
@@ -43,7 +44,7 @@ export SORT_SEP=""
 export reason_print=0
 export account=""
 
-while getopts "u:a:p:ACrh" options; do
+while getopts "u:a:p:q:ACrh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username >> $TMPFILE
@@ -64,6 +65,14 @@ while getopts "u:a:p:ACrh" options; do
 				exit 1
 			fi
 			echo Print only jobs in partition $OPTARG >> $TMPFILE
+			;;
+		q ) 	export qoslist="-q $OPTARG"
+			if test -z "`sacctmgr -n show qos $OPTARG`"
+			then
+				echo "ERROR: QOS $OPTARG does not exist on this cluster"
+				exit 1
+			fi
+			echo Print only jobs in QOS $OPTARG >> $TMPFILE
 			;;
 		r ) 	export reason_print=1
 			echo "Print additional job Reason columns (see 'man squeue'):" >> $TMPFILE
@@ -213,7 +222,7 @@ BEGIN {
 # The squeue -o format selects fields we are interested in:
 # Userid Account Jobstatus Nodecount CPUcount Partition Reason
 squeue_fmt="%u %a %.10T %.6D %.6C %P %r"
-squeue $partition --noheader -o "$squeue_fmt" | awk '
+squeue $partition $qoslist --noheader -o "$squeue_fmt" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]
