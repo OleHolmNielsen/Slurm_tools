@@ -217,3 +217,17 @@ slurmusersettings2conf
 ```
 
 The output should be copied to the file ```/etc/slurm/user_settings.conf```.
+
+slurmusertable tool
+-------------------
+
+This tool reads your current Slurm database ```user_table``` and prints out a list of usernames, creation time, and modification time.
+
+Read access to the Slurm MySQL database is required, so the appropriate MySQL user and hostname must be configured in the MySQL server,
+see https://wiki.fysik.dtu.dk/niflheim/Slurm_database#set-up-mariadb-database
+
+Usage:
+
+```
+slurmusertable [username(s)]
+```
