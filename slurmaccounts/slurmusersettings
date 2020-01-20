@@ -103,7 +103,7 @@ function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d", $1,$2,$3); }'; 
  
 # sacctmgr show associations format (non-default) adding GrpJobsAccrue,MaxJobsAccrue
 # Default format: Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
-# See "man acctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
+# See "man sacctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
 assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmit,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins"
 # Add parameters from newer Slurm versions
 if test $(version $SLURM_VERSION) -ge $(version 18.08)
