@@ -22,18 +22,16 @@ sorting="ORDER BY creation_time"
 fields='name,creation_time,mod_time'
 
 function print_name {
-	# Print the $name record (all records if absent)
-	mysql $mysqloptions -e "select $fields from user_table $name $sorting ;"
+	# Print the $1 name record (all records if empty)
+	mysql $mysqloptions -e "select $fields from user_table $1 $sorting ;"
 }
 
 if test $# -eq 0
 then
-	name=""
-	print_name	# Print entire user list
+	print_name ""	# Print entire user list
 else
 	for i in $*
 	do
-		name="where name=\"$i\""
-		print_name
+		print_name "where name=\"$i\""
 	done
 fi
