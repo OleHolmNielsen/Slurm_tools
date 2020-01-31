@@ -11,6 +11,11 @@
 
 ### CONFIGURE these settings for your cluster
 
+# Users are considered having NEWUSER status for the first $newuserperiod
+# after the Slurm account was created.  Lower limits may be implemented for NEWUSERs.
+# After $newuserperiod the usual DEFAULT limits will be applied.
+export newuserperiod="30 days"
+
 # Skip users with UID < MINUID
 export MINUID=1000
 
@@ -93,8 +98,12 @@ export passwd_tmp="/tmp/passwd.$$"
 export group_tmp="/tmp/group.$$"
 export assoc_tmp="/tmp/assoc.$$"
 export users_tmp="/tmp/users.$$"
+export newusers_tmp="/tmp/newusers.$$"
 $remote getent passwd > $passwd_tmp
 $remote getent group > $group_tmp
+
+# Set default time format
+export -n SLURM_TIME_FORMAT
 
 # Get the Slurm version
 SLURM_VERSION="`$sacctmgr --version | awk '{print $2}'`"
@@ -112,10 +121,16 @@ then
 fi
 echo "### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt"
 
+# Read the associations
 $remote sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
+
+# Read the users
 # Format for users:
 userfmt="User,DefaultAccount,Account,Cluster"
 $remote sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
+
+# Read the list of NEWUSER users which were added to Slurm recently
+$remote sacctmgr -nrp list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=where,time > $newusers_tmp
 
 cat $passwd_tmp | gawk -F: '
 BEGIN {
@@ -125,11 +140,12 @@ BEGIN {
 	ignore_primary_groups = ENVIRON["ignore_primary_groups"]
 	user_settings_conf = ENVIRON["user_settings_conf"]
 	accounts_conf	= ENVIRON["accounts_conf"]
-	sacctmgr = ENVIRON["sacctmgr"]
-	passwd	= ENVIRON["passwd_tmp"]
-	group	= ENVIRON["group_tmp"]
-	assoc	= ENVIRON["assoc_tmp"]
-	users	= ENVIRON["users_tmp"]
+	sacctmgr	= ENVIRON["sacctmgr"]
+	passwd		= ENVIRON["passwd_tmp"]
+	group		= ENVIRON["group_tmp"]
+	assoc		= ENVIRON["assoc_tmp"]
+	users		= ENVIRON["users_tmp"]
+	newusers	= ENVIRON["newusers_tmp"]
 	debug = 0	# Debugging flag
 
 	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
@@ -210,6 +226,15 @@ BEGIN {
 	}
 	close (users)
 
+	# Read list of NEWUSER Slurm users 
+	while ((getline < newusers) > 0) {
+		if (debug > 1) print "Got new user " $0
+		u = $1	# User
+		newuser[u] = u
+		newusertime[u] = $2	# Timestamp of "Add User" transaction
+	}
+	close (newusers)
+
 	# Read list of existing accounts (parseable output)
 	# Header of sacctmgr -snorp show associations: See the "assocfmt" variable above.
 	while ((getline < assoc) > 0) {
@@ -263,7 +288,7 @@ BEGIN {
 	FS=":"	# Set the Field Separator
 
 	# Syntax of this file is 3, 4 or 5 items separated by ":"
-	# [DEFAULT|UNIX_group|username]:[Type]:value[:partition[:cluster]]
+	# [DEFAULT|NEWUSER|UNIX_group|username]:[Type]:value[:partition[:cluster]]
 	# Type may be: fairshare, GrpTRES, GrpTRESRunMins, etc.
 	# The partition and cluster fields (4,5) are optional, defaults are chosen if omitted.
 
@@ -286,6 +311,8 @@ BEGIN {
 				type = slurm_factors[f]	# Force correct spelling of type
 		if (item == "DEFAULT") {			# Default value
 			defaults[type] = value
+		} else if (item == "NEWUSER") {			# Default value for NEWUSER
+			newuserdefaults[type] = value
 		} else if (groupname[item] == "") {	# Unknown UNIX group: Assume that item is a username
 			if (useraccount[item] == "")
 				print "### NOTICE: Slurm account in " user_settings_conf " for group/user " item " is unknown: " $0
@@ -355,6 +382,13 @@ $3 >= MINUID {
 	COMMAND = ""		# We are going to append a number of variables to COMMAND below
 
 	# Adding a user to an existing account
+
+	if (newuser[u] != "") {
+		print ""
+		printf("### NOTICE: User %s is a NEWUSER account created on %s\n", u, newusertime[u])
+		printf("### Password entry: %s\n", $0)
+	}
+
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (ignore_primary_groups == 0 && useraccount[u] != acct) {
 		print ""
@@ -371,7 +405,8 @@ $3 >= MINUID {
 				print sacctmgr " -i add user " u " account=" acct
 			}
 		} else {
-			 print "### WARNING; Account " acct " does not exist"
+			 # print "### WARNING: Account " acct " does not exist"
+			 print "### NOTICE: User " u " has account=" useraccount[u]
 		}
 	}
 
@@ -390,8 +425,9 @@ $3 >= MINUID {
 
 	# Loop over the setting[] array and configure any changes
 
-	# If user setting not explicitly given, then use the group setting
-	if (isarray(setting[acct]) && isarray(setting[acct][config])) {
+	# If user setting not explicitly given, then use the group setting.
+	# NEWUSER users do not get the group setting.
+	if (newuser[u] == "" && isarray(setting[acct]) && isarray(setting[acct][config])) {
 		for (i in setting[acct][config]) {
 			if (setting[u][config][i] == "") setting[u][config][i] = setting[acct][config][i]
 		}
@@ -399,10 +435,23 @@ $3 >= MINUID {
 		if (debug > 0) print "### NOTICE: Group " acct " has no settings, assuming default values for user " u
 	}
 	# If user setting not explicitly given, then use the default setting
-	for (i in defaults) {
-		if (setting[u][config][i] == "") setting[u][config][i] = defaults[i]
+	if (newuser[u] != "" || user[u] == "") {
+		print "### User " u " will get NEWUSER defaults"
+		for (i in newuserdefaults) {
+			# Wipe any current settings
+			# setting[u][current][i] = ""
+			# Overwrite any current settings
+			if (setting[u][config][i] == "") setting[u][config][i] = newuserdefaults[i]
+			# setting[u][config][i] = newuserdefaults[i]
+			if (debug > 0) print "# Current value:", i, "=", setting[u][current][i], " New value: ", setting[u][config][i]
+		}
+	} else {
+		# Normal user defaults
+		for (i in defaults) {
+			if (setting[u][config][i] == "") setting[u][config][i] = defaults[i]
+		}
 	}
-	# Compare config and current settings, print out any changes
+	# Compare config and current settings, print out any changes in COMMAND
 	for (i in setting[u][config]) {
 		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
 		if (setting[u][current][i] != setting[u][config][i]) {
@@ -438,4 +487,4 @@ END {
 }'
 
 # Clean-up
-rm -f $passwd_tmp $group_tmp $assoc_tmp $users_tmp
+rm -f $passwd_tmp $group_tmp $assoc_tmp $users_tmp $newusers_tmp

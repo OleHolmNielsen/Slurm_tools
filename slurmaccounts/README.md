@@ -163,6 +163,16 @@ You may configure this value in the script in order to skip system accounts:
 export MINUID=1002
 ```
 
+Users are considered having NEWUSER status for the first $newuserperiod after the Slurm account was created.
+Lower limits may be implemented for NEWUSERs so they do not consume excessive resources.
+After $newuserperiod the usual DEFAULT limits will be applied.
+You may configure this value in the script:
+
+```
+export newuserperiod="30 days"
+```
+
+
 The file ```/etc/slurm/user_settings.conf``` defines users' Slurm factors including:
 
 ```
@@ -172,7 +182,7 @@ fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins 
 The syntax of this file is 3 items separated by ```:``` like:
 
 ```
-[DEFAULT|UNIX_group|username]:[Type]:value
+[DEFAULT|UNIX_group|username|NEWUSER]:[Type]:value
 ```
 
 The example file in this directory should be edited and copied to ```/etc/slurm/user_settings.conf```.
@@ -188,6 +198,15 @@ DEFAULT:QOS:normal
 DEFAULT:MaxJobs:500
 DEFAULT:MaxSubmitJobs:5000
 DEFAULT:MaxJobsAccrue:50
+
+# The NEWUSER fairshare, QOS and limits
+NEWUSER:fairshare:0
+NEWUSER:GrpTRES:cpu=100
+NEWUSER:GrpTRESRunMins:cpu=400000
+NEWUSER:QOS:normal
+NEWUSER:MaxJobs:50
+NEWUSER:MaxSubmitJobs:50
+NEWUSER:MaxJobsAccrue:10
 
 # UNIX group defaults
 camdfac:fairshare:5
