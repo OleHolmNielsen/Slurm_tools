@@ -54,6 +54,7 @@ where:
 	-d: Omit nodes with states: $statedown
 	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
 	-2: 2..N lines per node which participates in multiple partitions 
+	-S: Job StartTime is printed after each jobid/user
 	-E: Job EndTime is printed after each jobid/user
 	-C: Color output is forced ON
 	-c: Color output is forced OFF
@@ -100,7 +101,8 @@ export omitdown=0
 export printgres=0
 # Controls whether JobName will be printed
 export printjobname=0
-# Controls whether job EndTime will be printed
+# Controls whether job StartTime and EndTime will be printed
+export printjobstarttime=0
 export printjobendtime=0
 
 # Select UNIX group
@@ -137,7 +139,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12ENG" options; do
+while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SENG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -240,6 +242,9 @@ while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12ENG" options; do
 		2 )	export uniquenodes=0
 			echo "2..N lines per node which participates in multiple partitions"
 			;;
+		S )	export printjobstarttime=1
+			echo "Job StartTime is printed after each jobid/user"
+			;;
 		E )	export printjobendtime=1
 			echo "Job EndTime is printed after each jobid/user"
 			;;
@@ -295,6 +300,7 @@ BEGIN {
 	statedown=ENVIRON["statedown"]
 	printgres=ENVIRON["printgres"]
 	printjobname=ENVIRON["printjobname"]
+	printjobstarttime=ENVIRON["printjobstarttime"]
 	printjobendtime=ENVIRON["printjobendtime"]
 	uniquenodes=ENVIRON["uniquenodes"]
 	flaglevel=ENVIRON["flaglevel"]
@@ -343,6 +349,7 @@ BEGIN {
 		JobInfo = JobId " " User " "
 		if (printgres == 1) JobInfo = JobInfo GRES " "
 		if (printjobname == 1) JobInfo = JobInfo JobName " "
+		if (printjobstarttime == 1) JobInfo = JobInfo StartTime " "
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
 		# May select a UNIX group name
 		if (groupname != "" && Group != groupname) continue
@@ -383,6 +390,7 @@ BEGIN {
 	JobInfo = "JobId User"
 	if (printgres == 1) JobInfo = JobInfo " GRES/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
+	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
 	JobInfo = JobInfo " ..."
 	# Print a header line (variable hostnamelength)
