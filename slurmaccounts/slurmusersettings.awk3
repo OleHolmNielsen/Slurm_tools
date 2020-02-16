@@ -86,7 +86,7 @@ BEGIN {
 	# command = sacctmgr " -snorp show associations"
 	command = "cat sacctmgr.out"
 	# Header of sacctmgr -snorp show associations:
-	# Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmit|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
+	# Cluster|Account|User|Partition|Share|GrpJobs|GrpTRES|GrpSubmit|GrpWall|GrpTRESMins|MaxJobs|MaxTRES|MaxTRESPerNode|MaxSubmitJobs|MaxWall|MaxTRESMins|QOS|Def QOS|GrpTRESRunMins|
 	FS="|"	# Set the Field Separator to | for the parseable account list
 
 	while ((command | getline) > 0) {
