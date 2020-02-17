@@ -148,7 +148,7 @@ BEGIN {
 	newusers	= ENVIRON["newusers_tmp"]
 	debug = 0	# Debugging flag
 
-	IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
+	IGNORECASE = 1	# Make AWK case-insensitive string comparisons (for TRES comparisons)
 
 	# Default settings defined in this script above (fallback values)
 	defaults["fairshare"]		= ENVIRON["fairshare"]
@@ -328,7 +328,11 @@ BEGIN {
 #
 # Process password file entries
 #
-$3 < MINUID { if (debug > 0) print "Skip user " $1 " with UID=" $3 }	# Skip users with UID < MINUID
+$3 < MINUID {
+	# Skip users with UID < MINUID
+	userinformation[$1] = "IGNORE"
+	if (debug > 0) print "Skip user " $1 " with UID=" $3
+}
 $3 >= MINUID {
 	u		= $1
 	password	= $2
@@ -463,18 +467,21 @@ $3 >= MINUID {
 
 	if (user[u] != "") {
 		# Modify existing user
-		if (COMMAND != "")
+		if (COMMAND != "") {
 			print sacctmgr " -i modify user where name=" u " set" COMMAND
+			print ""
+		}
 	} else {
 		# New user: command for creating this account
 		print sacctmgr " -i create user name=" u COMMAND
+		print ""
 	}
 }
 END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
 		if (userinformation[u] == u) continue
-		if (userinformation[u] == "IGNORE") continue
+		if (userinformation[u] == "IGNORE") { printf("\n### IGNORE this username: %s\n", u); continue}
 		if (userinformation[u] == "") userinformation[u] = "No password entry"
 		printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
 		# First delete non-default accounts for this user
