@@ -328,9 +328,9 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 
-	# Running jobs info: JobState JobId User group NodeList StartTime EndTime Partition NumNodes JobName
+	# Running jobs info: JobState JobId User group NodeList StartTime EndTime TimeUsed Partition NumNodes JobName
 	# Place JobName last, just in case it is a null string
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %P %D %j\" " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %M %P %D %j\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
@@ -341,9 +341,10 @@ BEGIN {
 		NodeList=$5
 		StartTime=$6
 		EndTime=$7
-		Partition=$8
-		NumNodes=$9
-		JobName=$10
+		TimeUsed=$8
+		Partition=$9
+		NumNodes=$10
+		JobName=$11
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
@@ -353,6 +354,19 @@ BEGIN {
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
 		# May select a UNIX group name
 		if (groupname != "" && Group != groupname) continue
+		# Convert TimeUsed days-hours:minutes:seconds into seconds
+		i = split(TimeUsed,hms,":")
+		if (i == 1)
+			TimeUsedSec = hms[1]			# Seconds 
+		else if (i == 2)
+			TimeUsedSec = hms[1]*60 + hms[2]	# Minutes:seconds
+		else {
+			if (split(hms[1],dh,"-") == 1)
+				TimeUsedSec = hms[1]*3600 + hms[2]*60 + hms[3]	# No days- field
+			else
+				TimeUsedSec = dh[1]*86400 + dh[2]*3600 + hms[2]*60 + hms[3]
+		}
+
 		# Create the list of nodes for this job, and expand the list for multiple nodes
 		if (index(NodeList,"[") == 0 && index(NodeList,",") == 0) {	# Just a single node name
 			jobnodes[1] = NodeList
@@ -369,6 +383,9 @@ BEGIN {
 			n = jobnodes[i]
 			hostname[n] = n
 			jobs[n] = jobs[n] JobInfo
+			# Record the TimeUsedSec for the most recently started job
+			if (mostrecentjob[n] == 0 || TimeUsedSec < mostrecentjob[n])
+				mostrecentjob[n] = TimeUsedSec
 			# Has partitions on this node been set previously?
 			if (partitions[n] == "") {
 				# Set the partition name from this running job
@@ -442,7 +459,11 @@ BEGIN {
 		}
 	}
 
-	if (free_mem_less > 0) {
+	# Do not flag nodes whose most recently started job was < 300 seconds ago
+	# because Slurm reports the 5-minute load average.
+	if (mostrecentjob[node] > 0 && mostrecentjob[node] < 300) {
+		listnode = 0
+	} else if (free_mem_less > 0) {
 		# Free memory on the node LESS than free_mem_less
 		if (freemem < free_mem_less) listnode++
 	} else if (free_mem_more > 0) {
