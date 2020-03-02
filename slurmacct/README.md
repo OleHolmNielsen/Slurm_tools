@@ -37,7 +37,7 @@ where:
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
 	-w: Last week
-	-p partition: Select only Slurm partion <partition>
+	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data

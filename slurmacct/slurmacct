@@ -17,7 +17,7 @@ where:
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
 	-w: Last week
-	-p partition: Select only Slurm partion <partition>
+	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
@@ -45,6 +45,7 @@ export SORTCOLUMN=5
 while getopts "p:u:g:s:e:r:cwGh" options; do
 	case $options in
 		p )     export partition=$OPTARG
+			export partitionselect="--partition $OPTARG"
 			echo Print only accounting in Slurm partition $OPTARG
 			;;
 		u )     export username=$OPTARG
@@ -103,26 +104,22 @@ then
 	end_time=`date +%m01%y`
 fi
 
-# Check partition name
+# Check partition names
 if test -n "$partition"
 then
-	part_ok=0
-	for p in `sinfo -o "%R"`
+	for p in `echo $partition | sed 's/,/ /g'`
 	do
-		if test $p = "$partition"
+		# echo "Check partition $p"
+		if test -z "`sinfo -h -p $p -o %R`" 
 		then
-			part_ok=1
-			break
+			echo "ERROR: Invalid partition name $p"
+			echo "Valid partition names are:"
+			sinfo -o "%R"
+			exit -1
 		fi
 	done
-	if test "$part_ok" -ne 1
-	then
-		echo "ERROR: Invalid partition name $partition"
-		echo "Valid partition names are:"
-		sinfo -o "%R"
-		exit -1
-	fi
 fi
+
 # Test username
 if test -n "$username" 
 then
@@ -195,10 +192,6 @@ fi
 # Get and process Slurm accounting records
 
 # Get length of selection strings for sacct formatting
-if test -n "$partition"
-then
-	plen="%${#partition}"
-fi
 if test -n "$usernamelength"
 then
 	ulen="%${#username}"
@@ -211,14 +204,13 @@ fi
 # Report time in seconds:
 export SLURM_TIME_FORMAT="%s"
 # Request job data
-export FORMAT="JobID,User${ulen},Group${glen},Partition${plen},AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
+export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
 # Request job states: Cancelled, Completed, Failed, Timeout, Preempted
 export STATE="ca,cd,f,to,pr"
 
 # Get Slurm individual job accounting records using the "sacct" command
-sacct -n -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk '
+sacct $partitionselect -n -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk '
 BEGIN {
-	partitionselect=ENVIRON["partition"]
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
 	ALLGROUPS=ENVIRON["ALLGROUPS"]
@@ -238,8 +230,6 @@ BEGIN {
 	user	= $2		# User name
 	group	= $3		# Group name
 	part	= $4		# Slurm partition name for this job
-	# Check if the partition of this job matches selection criteria
-	if (partitionselect != "" && part != partitionselect) next
 	nodect	= $5		# Number of nodes used
 	total_ncpus = $6	# Total number of CPUs used (>=nodect)
 	submit	= $7		# submit time
