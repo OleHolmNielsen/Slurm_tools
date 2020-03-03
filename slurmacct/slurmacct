@@ -81,7 +81,7 @@ while getopts "p:u:g:s:e:r:cwGh" options; do
 			REPORT_NAME=Last_week
 			;;
 		r )     export REPORT_PREFIX="$OPTARG"
-			echo Copy report to $OPTARG.
+			echo Copy report to $OPTARG
 			;;
 		h|? ) usage
 			exit 1;;
@@ -152,6 +152,14 @@ REPORT=${REPORT_PREFIX}${REPORT_NAME}
 export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
 
+if test -n "$partition"
+then
+	cat <<EOF >> $REPORT
+
+Partition selected: $partition
+EOF
+fi
+
 if test $ALLGROUPS -eq 0
 then
 	# User statistics
@@ -166,10 +174,6 @@ then
 	then
 		echo "Group name selected: $groupname" >> $REPORT
 	fi
-	if test -n "$partition"
-	then
-		echo "Partition selected: $partition" >> $REPORT
-	fi
 	echo "			     Wallclock	  Average Average" >> $REPORT
 	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
 	echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
@@ -178,10 +182,6 @@ else
 	echo >> $REPORT
 	echo Usage sorted by top groups: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
-	if test -n "$partition"
-	then
-		echo "Partition selected: $partition" >> $REPORT
-	fi
 	echo "		    Wallclock	  Average Average" >> $REPORT
 	echo "   Group    #jobs       hours  Percent  #nodes q-hours" >> $REPORT
 	echo "   -----  ------- -----------  ------- ------- -------" >> $REPORT
