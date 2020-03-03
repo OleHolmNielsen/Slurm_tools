@@ -17,17 +17,19 @@ where:
         -M cluster: Print only cluster <cluster>
         -l Print selected limits only
         -s Print selected sub-limits only
+	-n Print also limits with value None
         -h Print help information
 EOF
 }
 
 # Default: Current user
 username="$USER"
+printNone=0
 
 #
 # Parse command options
 #
-while getopts "u:A:p:M:l:s:h" options; do
+while getopts "u:A:p:M:l:s:hn" options; do
 	case $options in
 		u ) username=$OPTARG	# Select user
 	    	;;
@@ -41,6 +43,9 @@ while getopts "u:A:p:M:l:s:h" options; do
 		l ) export limits=$OPTARG	# Select limits to display
 	    	;;
 		s ) export sublimits=$OPTARG	# Select sublimits to display
+	    	;;
+		n ) export printNone=1
+		    echo Print also limits with value None
 	    	;;
 		h|*|? ) usage
 	    	exit 1;;
@@ -100,6 +105,7 @@ BEGIN {
 	partition	= ENVIRON["partition"]
 	cluster		= ENVIRON["cluster"]
 	limits		= ENVIRON["limits"]
+	printNone	= ENVIRON["printNone"]
 	# Add some aliases for limits:
 	if (limits == "AssocGrpCPURunMinutesLimit")
 		limits = "GrpTRESRunMins"
@@ -171,8 +177,10 @@ function split_parenthesis (string, array) {
 					printf("\t%s", value)	# Value
 				else if (rec == "UserName" && array[1] != "None")
 					printf("\t%s, UID=%s", array[1], array[2])	# UserName and UID
-				else
-					printf("\t%s, current value = %s", array[1], array[2])	# Values
+				else {
+					if (printNone==1 || array[1]!="None")
+						printf("\t%s, current value = %s", array[1], array[2])	# Values
+				}
 			} else if (numrec >= 3) {			# Extra value fields
 				printf("\n")
 				gsub(rec "=","",$i)		# Remove leading rec= from string
@@ -181,11 +189,13 @@ function split_parenthesis (string, array) {
 					split(b[j],c,"=")	# Sub-limit value=field
 					if (sublimits == "" || c[1] == sublimits) {
 						# Value c[2] sub-field consists of "Limit(Value)" pairs
-						if (split_parenthesis(c[2], array))
-							printf("\t\t%8s:\tLimit = %s, current value = %s\n",
-								c[1], array[1], array[2])
-						else	# Just in case c[2] might not consist of "Limit(Value)"
+						if (split_parenthesis(c[2], array)) {
+							if (printNone==1 || array[1]!="None")
+								printf("\t\t%8s:\tLimit = %s, current value = %s\n",
+									c[1], array[1], array[2])
+						} else {	# Just in case c[2] might not consist of "Limit(Value)"
 							printf("\t\t%8s:\tLimit(Value) = %s\n", c[1], c[2])
+						}
 					}
 				}
 			}
