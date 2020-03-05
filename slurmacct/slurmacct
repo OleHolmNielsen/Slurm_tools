@@ -11,12 +11,13 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct -s Start_time -e End_time [-c | -w] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-prefix] [-n] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
 	-w: Last week
+	-m monthyear: Select month and year (like "november2019")
 	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
@@ -42,9 +43,10 @@ export groupname=""
 export ALLGROUPS=0
 export SORTCOLUMN=5
 export printheader=1
+export month="last"
 
 # Process options
-while getopts "p:u:g:s:e:r:cwGhn" options; do
+while getopts "p:u:g:s:e:r:m:cwGhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			export partitionselect="--partition $OPTARG"
@@ -71,6 +73,13 @@ while getopts "p:u:g:s:e:r:cwGhn" options; do
 		e )     export end_time=$OPTARG
 			echo End date $OPTARG
 			REPORT_NAME=${start_time}_${end_time}
+			;;
+		m )     echo Select month $OPTARG 
+			start_time=`date -d "1$OPTARG" +%m01%y`
+			end_time=`date -d "1$OPTARG + 1 month" +%m01%y`
+			MONTH=`date -d "1$OPTARG" +%B`
+			YEAR=`date -d "1$OPTARG" +%Y`
+			REPORT_NAME=${MONTH}_${YEAR}
 			;;
 		c )     export start_time=`date +%m01%y`
 			export end_time=`date +%m%d%y`
@@ -105,7 +114,7 @@ then
 	YEAR=`date -d "last month" +%Y`
 	REPORT_NAME=${MONTH}_${YEAR}
 	start_time=`date -d "last month" +%m01%y`
-	end_time=`date +%m01%y`
+	end_time=`date -d "last month + 1 month" +%m01%y`
 fi
 
 # Check partition names
@@ -157,6 +166,7 @@ export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 
 if test $printheader -gt 0
 then
+	# Print a sreport header (overwrite any existing file)
 	sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
 	if test -n "$partition"
 	then
@@ -179,7 +189,7 @@ then
 	then
 		echo "Group name selected: $groupname" >> $REPORT
 	fi
-	echo "			     Wallclock	              Average Average" >> $REPORT
+	echo "                             Wallclock          Average Average" >> $REPORT
 	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
 	echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
 else
@@ -187,7 +197,7 @@ else
 	echo >> $REPORT
 	echo Usage sorted by top groups: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
-	echo "		    Wallclock	             Average Average" >> $REPORT
+	echo "                    Wallclock          Average Average" >> $REPORT
 	echo "   Group    #jobs       hours  Percent  #nodes q-hours" >> $REPORT
 	echo "   -----  ------- -----------  ------- ------- -------" >> $REPORT
 fi

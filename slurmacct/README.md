@@ -31,10 +31,11 @@ Usage
 -----
 
 ```
-Usage: slurmacct -s Start_time -e End_time [-c | -w] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-directory] [-n] [-h]
+Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-directory] [-n] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
+	-m monthyear: Select month and year (like "november2019")
 	-c: Current month
 	-w: Last week
 	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
