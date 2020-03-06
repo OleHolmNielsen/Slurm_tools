@@ -354,7 +354,7 @@ BEGIN {
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
 		# May select a UNIX group name
 		if (groupname != "" && Group != groupname) continue
-		# Convert TimeUsed days-hours:minutes:seconds into seconds
+		# Convert job TimeUsed days-hours:minutes:seconds into seconds
 		i = split(TimeUsed,hms,":")
 		if (i == 1)
 			TimeUsedSec = hms[1]			# Seconds 
@@ -383,7 +383,7 @@ BEGIN {
 			n = jobnodes[i]
 			hostname[n] = n
 			jobs[n] = jobs[n] JobInfo
-			# Record the TimeUsedSec for the most recently started job
+			# Record the TimeUsedSec for the most recently started job on this node
 			if (mostrecentjob[n] == 0 || TimeUsedSec < mostrecentjob[n])
 				mostrecentjob[n] = TimeUsedSec
 			# Has partitions on this node been set previously?

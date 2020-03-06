@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # Print one or more user names from the Slurm database user_table
+# Usage: slurmusertable [user1 [user2] ...]
+#        All users are printed if there are no arguments.
 
 StorageUser=`grep -i StorageUser /etc/slurm/slurmdbd.conf | sed '/#/d' | awk -F= '$1~"^StorageUser" {print $2}'`
 StoragePass=`grep -i StoragePass /etc/slurm/slurmdbd.conf | sed '/#/d' | awk -F= '$1~"^StoragePass" {print $2}'`
