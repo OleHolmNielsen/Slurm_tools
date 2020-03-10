@@ -17,6 +17,8 @@ export prefix=/usr/bin
 my_awk=$prefix/awk
 # Variable width of the hostname column (default=8)
 export hostnamelength="8"
+# Job grace time (seconds) before we may flag the node
+export jobgracetime=300
 # Global configuration file for pestat
 export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
 # Per-user configuration file for pestat
@@ -305,6 +307,7 @@ BEGIN {
 	uniquenodes=ENVIRON["uniquenodes"]
 	flaglevel=ENVIRON["flaglevel"]
 	hostnamelength=ENVIRON["hostnamelength"]
+	jobgracetime=ENVIRON["jobgracetime"]
 	colors=ENVIRON["colors"]
 	# Define terminal colors for the output if requested
 	if (colors != 0) {
@@ -459,11 +462,7 @@ BEGIN {
 		}
 	}
 
-	# Do not flag nodes whose most recently started job was < 300 seconds ago
-	# because Slurm reports the 5-minute load average.
-	if (mostrecentjob[node] > 0 && mostrecentjob[node] < 300) {
-		listnode = 0
-	} else if (free_mem_less > 0) {
+	if (free_mem_less > 0) {
 		# Free memory on the node LESS than free_mem_less
 		if (freemem < free_mem_less) listnode++
 	} else if (free_mem_more > 0) {
@@ -537,6 +536,13 @@ BEGIN {
 			freememcolor=NORMAL
 			memcolor=NORMAL
 		}
+	}
+
+	# Do not flag nodes whose most recently started job was < jobgracetime seconds ago
+	# because Slurm reports the 5-minute load average.
+	if (mostrecentjob[node] > 0 && mostrecentjob[node] < jobgracetime) {
+		# Override the listnode flag which may have been set above
+		listnode = printallnodes
 	}
 		
 	if (listnode > 0 && nodewasprinted[node] == 0) {
