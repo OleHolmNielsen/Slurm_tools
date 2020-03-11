@@ -198,7 +198,7 @@ else
 	echo Usage sorted by top groups: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	echo "                    Wallclock          Average Average" >> $REPORT
-	echo "   Group    #jobs       hours  Percent  #nodes q-hours" >> $REPORT
+	echo "   Group    #jobs       hours  Percent  #cpus  q-hours" >> $REPORT
 	echo "   -----  ------- -----------  ------- ------- -------" >> $REPORT
 fi
 
