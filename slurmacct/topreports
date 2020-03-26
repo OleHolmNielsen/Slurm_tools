@@ -2,6 +2,7 @@
 
 # Make Slurm cluster usage statistics
 # Usage: topreports [monthyear]
+# Default periods: last-month ("") current-month (-c) current-week (-w)
 
 # Author:       Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
