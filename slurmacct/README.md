@@ -9,8 +9,12 @@ slurmacct
 topreports
 ```
 
-Specific start and end Time/Date may be specified.
+slurmacct tool
+--------------
+
+Specific start and end Time/Date for the report may be specified.
 The default period is last month.
+
 The -c option selects the current month until today, and -w selects the last week.
 
 A specific user, group or node partition may be specified.
@@ -32,9 +36,6 @@ but there are some advantages of ```slurmacct```  over the ```sreport``` command
 * Average waiting time in the queue is printed (answer to "My jobs wait for too long").
 
 * User full name is printed (useful to managers).
-
-slurmacct tool
---------------
 
 ```
 Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-directory] [-n] [-h]
@@ -81,6 +82,9 @@ Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name
 
 topreports tool
 ---------------
+
+The ```topreports``` tool uses ```slurmacct``` to generate specific useful reports.
+It may be executed daily to get updated weekly and monthly reports.
 
 ```
 topreports [monthyear]
