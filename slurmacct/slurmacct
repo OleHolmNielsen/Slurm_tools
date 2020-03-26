@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Summarize USER accounting information from Slurm sacct accounting records
+# Summarize TOP USER accounting information from Slurm sacct accounting records
 # Author:	Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 

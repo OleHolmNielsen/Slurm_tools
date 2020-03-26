@@ -1,7 +1,13 @@
-Slurm accounting report tool
-----------------------------
+Slurm accounting report tools
+-----------------------------
 
-Generate user and group accounting statistics from Slurm as an alternative to the ```sreport``` command.
+Generate top user and group accounting statistics from Slurm as an alternative to the ```sreport``` command.
+The tools are:
+
+```
+slurmacct
+topreports
+```
 
 Specific start and end Time/Date may be specified.
 The default period is last month.
@@ -27,8 +33,8 @@ but there are some advantages of ```slurmacct```  over the ```sreport``` command
 
 * User full name is printed (useful to managers).
 
-Usage
------
+slurmacct tool
+--------------
 
 ```
 Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-directory] [-n] [-h]
@@ -72,3 +78,13 @@ Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name
   user03   group3      423    349400.0    13.91   16.00   74.40  Name 3
   ...
 ```
+
+topreports tool
+---------------
+
+```
+topreports [monthyear]
+```
+
+By default 3 report periods will be generated: Last month, current month, and current week.
+The optional monthyear argument selects month and year (like "november2019")

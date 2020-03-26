@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# Make Slurm cluster usage statistics
+# Usage: topreports [monthyear]
+
+# Author:       Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# CONFIGURE: 
+# Directory and report file name prefix:
+PREFIX=/TOPDIR/Top
+# Partion list: similar, overlapping partitions are comma-separated
+partitionlist="xeon8,xeon8_48 xeon16,xeon16_128,xeon16_256 xeon24,xeon24_512 xeon40,xeon40_768"
+# END CONFIGURE
+
+slurmacct=slurmacct
+
+if test $# -eq 0
+then
+	# Default periods: last-month ("") current-month (-c) current-week (-w)
+	periods="None -c -w"
+else
+	# Select month and year (like "november2019")
+	periods="-m$1"
+fi
+
+# The empty string selects the default period (last month)
+for period in $periods
+do
+	echo "================================================"
+	echo
+	echo Generating reports for period=$period
+	echo
+	if test "$period" = "None"
+	then
+		period=""
+	fi
+	# The empty string selects all partitions in the cluster
+	for p in "" $partitionlist
+	do
+		if test -z "$p"
+		then
+			name="."
+			partition=""
+		else
+			name=`echo $p | cut -f1 -d,`	# Select first field in a,b,...
+			name=."$name."
+			partition="-p $p"
+		fi
+		echo
+		echo Generating report for partition=$partition and period=$period
+		echo Group report
+		$slurmacct -G $partition $period -r $PREFIX$name	# Group report
+		echo User report
+		$slurmacct -n $partition $period -r $PREFIX$name	# Append user report
+	done
+done
