@@ -92,3 +92,10 @@ topreports [monthyear]
 
 By default 3 report periods will be generated: Last month, current month, and current week.
 The optional monthyear argument selects month and year (like "november2019")
+
+You have to configure two items in the script:
+
+* Directory and report file name prefix: PREFIX
+
+* Partion list: similar, overlapping partitions are comma-separated
+
