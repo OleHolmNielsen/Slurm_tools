@@ -312,7 +312,12 @@ BEGIN {
 		if (item == "DEFAULT") {			# Default value
 			defaults[type] = value
 		} else if (item == "NEWUSER") {			# Default value for NEWUSER
-			newuserdefaults[type] = value
+			if (value == "ignore")
+				delete newuser[type]	# Ignore username "type" as a NEWUSER
+			else {
+				newuserdefaultsinitialized = 1		# Some NEWUSER parameter is defined
+				newuserdefaults[type] = value
+			}
 		} else if (groupname[item] == "") {	# Unknown UNIX group: Assume that item is a username
 			if (useraccount[item] == "")
 				print "### NOTICE: Slurm account in " user_settings_conf " for group/user " item " is unknown: " $0
@@ -387,6 +392,8 @@ $3 >= MINUID {
 
 	# Adding a user to an existing account
 
+	# Treatment of NEWUSER users
+	if (newuserdefaultsinitialized == 0) delete newuser[u]	# Skip NEWUSER settings because no NEWUSER values are defined
 	if (newuser[u] != "") {
 		print ""
 		printf("### NOTICE: User %s is a NEWUSER account created on %s\n", u, newusertime[u])
@@ -440,14 +447,16 @@ $3 >= MINUID {
 	}
 	# If user setting not explicitly given, then use the default setting
 	if (newuser[u] != "" || user[u] == "") {
-		print "### User " u " will get NEWUSER defaults"
-		for (i in newuserdefaults) {
-			# Wipe any current settings
-			# setting[u][current][i] = ""
-			# Overwrite any current settings
-			if (setting[u][config][i] == "") setting[u][config][i] = newuserdefaults[i]
-			# setting[u][config][i] = newuserdefaults[i]
-			if (debug > 0) print "# Current value:", i, "=", setting[u][current][i], " New value: ", setting[u][config][i]
+		if (isarray(newuserdefaults)) {
+			print "### User " u " will get NEWUSER defaults"
+			for (i in newuserdefaults) {
+				# Wipe any current settings
+				# setting[u][current][i] = ""
+				# Overwrite any current settings
+				if (setting[u][config][i] == "") setting[u][config][i] = newuserdefaults[i]
+				# setting[u][config][i] = newuserdefaults[i]
+				if (debug > 0) print "# Current value:", i, "=", setting[u][current][i], " New value: ", setting[u][config][i]
+			}
 		}
 	} else {
 		# Normal user defaults
