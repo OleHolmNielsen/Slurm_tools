@@ -176,6 +176,11 @@ function format_sacct()
 }
 
 ###########################################################################
+# Get user fairshare information
+echo "User fairshare information from the sshare command:"
+sshare -lU -u $jobuser
+
+###########################################################################
 # Get job accounting information
 
 echo
