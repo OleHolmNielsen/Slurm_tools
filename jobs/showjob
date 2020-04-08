@@ -176,15 +176,17 @@ function format_sacct()
 }
 
 ###########################################################################
-# Get user fairshare information
-echo "User fairshare information from the sshare command:"
-sshare -lU -u $jobuser
-
-###########################################################################
 # Get job accounting information
 
 echo
 echo "Accounting information from the Slurm database:"
+
+###########################################################################
+# Get user fairshare information
+export jobuser=`sacct -nP -j $jobid -o user`
+echo "User fairshare information from the sshare command:"
+sshare -lU -u $jobuser
+
 echo
 echo "Job parameters for jobid $jobid:"
 export jobvars="jobid,jobname,user,account,partition,Timelimit"
