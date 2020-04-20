@@ -36,7 +36,7 @@ function usage()
 	cat <<EOF
 Usage: pestat [-p partition(s)] [-u username] [-g groupname] [-a accountname]
 	[-q qoslist] [-s/-t statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
-	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-E] [-C|-c] [-V] [-h]
+	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-S] [-E] [-T] [-C|-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
 	-u username: Print only user <username> 
@@ -58,6 +58,7 @@ where:
 	-2: 2..N lines per node which participates in multiple partitions 
 	-S: Job StartTime is printed after each jobid/user
 	-E: Job EndTime is printed after each jobid/user
+	-T: Job TimeUsed is printed after each jobid/user
 	-C: Color output is forced ON
 	-c: Color output is forced OFF
 	-h: Print this help information
@@ -141,7 +142,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SENG" options; do
+while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -250,6 +251,9 @@ while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SENG" options; do
 		E )	export printjobendtime=1
 			echo "Job EndTime is printed after each jobid/user"
 			;;
+		T )	export printtimeused=1
+			echo "Job TimeUsed is printed after each jobid/user"
+			;;
 		C )	export colors=1
 			echo Force colors ON in output
 			;;
@@ -304,6 +308,7 @@ BEGIN {
 	printjobname=ENVIRON["printjobname"]
 	printjobstarttime=ENVIRON["printjobstarttime"]
 	printjobendtime=ENVIRON["printjobendtime"]
+	printtimeused=ENVIRON["printtimeused"]
 	uniquenodes=ENVIRON["uniquenodes"]
 	flaglevel=ENVIRON["flaglevel"]
 	hostnamelength=ENVIRON["hostnamelength"]
@@ -355,6 +360,7 @@ BEGIN {
 		if (printjobname == 1) JobInfo = JobInfo JobName " "
 		if (printjobstarttime == 1) JobInfo = JobInfo StartTime " "
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
+		if (printtimeused == 1) JobInfo = JobInfo TimeUsed " "
 		# May select a UNIX group name
 		if (groupname != "" && Group != groupname) continue
 		# Convert job TimeUsed days-hours:minutes:seconds into seconds
@@ -406,12 +412,15 @@ BEGIN {
 		delete jobnodes
 	}
 	close (JOBLIST)
-	# The job information may include EndTime
+
+	# Format the column header
+	# The job information may include EndTime etc.
 	JobInfo = "JobId User"
 	if (printgres == 1) JobInfo = JobInfo " GRES/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
+	if (printtimeused == 1) JobInfo = JobInfo " TimeUsed"
 	JobInfo = JobInfo " ..."
 	# Print a header line (variable hostnamelength)
 	if (printgres == 1) { gresheader1 = "GRES/   "; gresheader2 = "node    "}

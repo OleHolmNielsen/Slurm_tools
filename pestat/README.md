@@ -33,6 +33,7 @@ where:
         -2: 2..N lines per node which participates in multiple partitions
         -S: Job StartTime is printed after each jobid/user
         -E: Job EndTime is printed after each jobid/user
+        -T: Job TimeUsed is printed after each jobid/user
         -C: Color output is forced ON
         -c: Color output is forced OFF
         -h: Print this help information
