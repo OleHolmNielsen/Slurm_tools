@@ -199,4 +199,4 @@ format_sacct -j $jobid -o $jobvars
 echo
 echo "Workdir"
 echo "-------"
-sacct -j $jobid -nP -o WorkDir
+sacct -j $jobid -nP -o WorkDir | head -1
