@@ -196,3 +196,7 @@ echo
 echo "Job details information for jobid $jobid:"
 export jobvars="jobid,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist"
 format_sacct -j $jobid -o $jobvars
+echo
+echo "Workdir"
+echo "-------"
+sacct -j $jobid -nP -o WorkDir
