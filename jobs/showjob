@@ -65,8 +65,9 @@ then
 		print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
 	}'`
 	echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
-	echo "This job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
-	echo "The job has state=$jobstate with reason=$reason"
+	echo "Job has state=$jobstate with reason=$reason"
+	echo "Job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
+	echo "Job TRESRunMin: $((NCPUS*minutes))"
 	echo
 
 	# Display job reason code (if other than "None")
