@@ -186,7 +186,7 @@ echo "Accounting information from the Slurm database:"
 # Get user fairshare information
 export jobuser=`sacct -nP -j $jobid -o user`
 echo "User fairshare information from the sshare command:"
-sshare -lU -u $jobuser
+sshare -lUm -u $jobuser
 
 echo
 echo "Job parameters for jobid $jobid:"
