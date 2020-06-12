@@ -14,6 +14,13 @@ then
 	exit 1
 fi
 
+# Make sure the ssh-keygen tool is installed
+if test ! -x /usr/bin/ssh-keygen
+then
+	echo ERROR: ssh-keygen not found, please install the openssh package
+	exit 1
+fi
+
 # Make sure the user .ssh directory exists
 if test ! -d $HOME/.ssh/
 then
@@ -23,6 +30,9 @@ fi
 
 # Make sure .ssh/ has the correct protection
 chmod 700 $HOME/.ssh/
+
+# Go to the .ssh folder
+cd $HOME/.ssh/
 
 # Append the key to $AUTHORIZEDKEYS (create if non-existent)
 if test ! -f $AUTHORIZEDKEYS
@@ -40,7 +50,7 @@ do
 	if test ! -f id_${keytype}.pub
 	then
 		echo Generating SSH keys
-		/usr/bin/ssh-keygen -t ${keytype} -f id_${keytype} -N $PASSPHRASE
+		/usr/bin/ssh-keygen -t ${keytype} -f id_${keytype} -N "$PASSPHRASE"
 	fi
 	# If the pattern in id_${keytype}.pub is not found, then append it
 	if grep -f id_${keytype}.pub $AUTHORIZEDKEYS > /dev/null
