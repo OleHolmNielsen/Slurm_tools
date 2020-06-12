@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+PASSPHRASE=""
+KEYTYPES="rsa dsa ecdsa"
+AUTHORIZEDKEYS=$HOME/.ssh/authorized_keys
+
+echo Creating the user SSH v2 $AUTHORIZEDKEYS file for user $USER
+echo Beware: An empty passphrase is used which means a lower security level.
+
+# Make sure the user HOME directory exists
+if test ! -d $HOME
+then
+	echo ERROR: No home directory $HOME for user $USER
+	exit 1
+fi
+
+# Make sure the user .ssh directory exists
+if test ! -d $HOME/.ssh/
+then
+	echo Creating $HOME/.ssh/
+	mkdir -v $HOME/.ssh/
+fi
+
+# Make sure .ssh/ has the correct protection
+chmod 700 $HOME/.ssh/
+
+# Append the key to $AUTHORIZEDKEYS (create if non-existent)
+if test ! -f $AUTHORIZEDKEYS
+then
+	touch $AUTHORIZEDKEYS
+fi
+
+#
+# Loop over possible key types
+#
+
+for keytype in $KEYTYPES
+do
+	# Generate keys if necessary
+	if test ! -f id_${keytype}.pub
+	then
+		echo Generating SSH keys
+		/usr/bin/ssh-keygen -t ${keytype} -f id_${keytype} -N $PASSPHRASE
+	fi
+	# If the pattern in id_${keytype}.pub is not found, then append it
+	if grep -f id_${keytype}.pub $AUTHORIZEDKEYS > /dev/null
+	then
+		echo $keytype key already in $AUTHORIZEDKEYS
+	else
+		echo Appending $keytype key to $AUTHORIZEDKEYS
+		cat id_${keytype}.pub >> $AUTHORIZEDKEYS
+	fi
+done
+
+# Fix file permissions
+chmod 600 $AUTHORIZEDKEYS
