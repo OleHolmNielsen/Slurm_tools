@@ -49,7 +49,7 @@ do
 	# Generate keys if necessary
 	if test ! -f id_${keytype}.pub
 	then
-		echo Generating SSH keys
+		echo Generating SSH key for keytype $keytype
 		/usr/bin/ssh-keygen -t ${keytype} -f id_${keytype} -N "$PASSPHRASE"
 	fi
 	# If the pattern in id_${keytype}.pub is not found, then append it
