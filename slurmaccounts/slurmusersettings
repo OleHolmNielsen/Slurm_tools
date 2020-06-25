@@ -315,7 +315,7 @@ BEGIN {
 			if (value == "ignore")
 				delete newuser[type]	# Ignore username "type" as a NEWUSER
 			else {
-				newuserdefaultsinitialized = 1		# Some NEWUSER parameter is defined
+				newuserdefaultsinitialized++		# Some NEWUSER parameter is defined
 				newuserdefaults[type] = value
 			}
 		} else if (groupname[item] == "") {	# Unknown UNIX group: Assume that item is a username
