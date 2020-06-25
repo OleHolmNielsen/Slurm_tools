@@ -12,6 +12,8 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```jobnice```: Add nice level to jobs, or list jobs with non-zero nice level.
 
+* ```jobtimelimit```: Update timelimit of job(s).
+
 * ```sbadjob```: Print a warning about bad jobs hanging indefinitely in the queue.
 
 * ```notifybadjob```: Notify about or Kill a badly behaving job and send information mail to the user.
