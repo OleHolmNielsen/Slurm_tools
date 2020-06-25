@@ -18,6 +18,9 @@ then
 	exit 1
 fi
 
+# Unset any SLURM_TIME_FORMAT environment variable
+unset SLURM_TIME_FORMAT
+
 jobid=$1
 TMPFILE=/tmp/showjob.$$
 # Check the showuserlimits command
