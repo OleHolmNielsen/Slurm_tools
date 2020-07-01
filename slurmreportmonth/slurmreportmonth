@@ -19,7 +19,7 @@ export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 #
 FLAGS="-t hourper --tres=cpu,gpu"
 TYPE="AccountUtilizationByUser"
-OPTIONS="tree"
+OPTIONS="format=Accounts,Cluster,Login,Proper%30,TresName,Used tree"
 
 # Command usage:
 function usage()
