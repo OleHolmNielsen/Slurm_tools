@@ -34,6 +34,8 @@ then
 		exit 1
 	fi
 	echo Job list: $JOBLIST
+	# Print a job status
+	squeue -o "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
 	# Change timelimit of jobs
 	for j in $JOBLIST
 	do
