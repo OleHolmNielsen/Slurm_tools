@@ -71,7 +71,8 @@ echo Nodelist for job-id $JOBID: $NODELIST
 echo Node usage: `cat $JOBSTATUS | grep NumNodes= ` 
 egrep 'RunTime|SubmitTime|StartTime' $JOBSTATUS
 
-# Execute parallel shell on the job nodes
+# Execute parallel shell on the job nodes:
+# The "scontrol listpids" lists all processes belonging to a jobid.
 $CLUSH -b -w $NODELIST "$PS $PSFLAGS \$(scontrol listpids $JOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
 
 rm -f $JOBSTATUS
