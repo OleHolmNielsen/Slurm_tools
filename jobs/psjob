@@ -22,23 +22,6 @@ then
 fi
 JOBID=$1
 
-# System users excluded from the list
-# The "68" is haldaemon on CentOS6 as printed by ps.
-USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
-
-# Make a deselect-list consisting only of existent users
-deselect_list=""
-sep=""
-for u in $USERLIST
-do
-	if test -n "`getent passwd $u`"
-	then
-		# This user exists in the passwd database
-		deselect_list="${deselect_list}${sep}${u}"
-		sep=" "
-	fi
-done
-
 # Temporary file
 JOBSTATUS=/tmp/jobstatus.$$
 # Catch signals
@@ -89,6 +72,6 @@ echo Node usage: `cat $JOBSTATUS | grep NumNodes= `
 egrep 'RunTime|SubmitTime|StartTime' $JOBSTATUS
 
 # Execute parallel shell on the job nodes
-$CLUSH -b -w $NODELIST $PS $PSFLAGS --deselect -u \""$USERLIST"\"
+$CLUSH -b -w $NODELIST "$PS $PSFLAGS \$(scontrol listpids $JOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
 
 rm -f $JOBSTATUS
