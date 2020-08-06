@@ -34,8 +34,10 @@ a058           1    xeon8*       mixed    8    2:4:1  23900    32752      1 xeon
 Compute node OS and firmware updates
 ------------------------------------
 
-Assume that you want to update a specific set of nodes defined as ```<nodelist>```.
-This requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
+This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
+
+Assume that you want to update OS and firmware on a specific set of nodes defined as ```<nodelist>```.
+It is recommended to update entire partitions, or the entire cluster, at a time in order to avoid having inconsistent nodes states in the partitions.
 
 First configure the ```update.sh``` script so that it will perform the required OS and firmware updates.
 
