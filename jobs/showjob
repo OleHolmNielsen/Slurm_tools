@@ -10,10 +10,10 @@ then
 	echo "Usage: showjob <jobid>"
 	exit 1
 fi
-# Check that jobid is a number
-if ! [[ ${1} =~ ^[0-9]+$ ]]
+# Check that jobid is a number (possibly with _ separating job array_task_id)
+if ! [[ ${1} =~ ^[0-9_]+$ ]]
 then
-	echo "ERROR: <jobid> must be a number"
+	echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
 	echo "Usage: showjob <jobid>"
 	exit 1
 fi
