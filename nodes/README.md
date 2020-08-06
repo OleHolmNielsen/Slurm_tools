@@ -49,20 +49,24 @@ On the compute nodes append this crontab entry:
 clush -bw <nodelist> 'echo "@reboot root /bin/bash /root/update.sh" >> /etc/crontab'
 ```
 
-Then reboot the nodes as soon as they become idle (ASAP, see the ```scontrol``` manual page) 
+Then set the nodes to make an automatic reboot (via Slurm)
+as soon as they become idle (ASAP, see the ```scontrol``` manual page) 
 and change the node state to ```DOWN``` with:
 ```
 scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
 ```
 
-After updating has completed, check the status of the DOWN nodes.
-For example, check the running kernel and the BMC version,
+You can now check nodes regularly (a few times per day) as the rolling updates proceed.
+List the DOWN nodes with ```sinfo -lR```.
+
+Check the status of the DOWN nodes.
+For example, you may check the running kernel and the BMC version,
 and use [NHC](https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#node-health-check):
 ```
 clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
 ```
 
-When the node has been updated and tested successfully, resume the nodes by:
+When some nodes have been updated and tested successfully, resume these nodes by:
 ```
-scontrol update nodename=<nodelist> state=resume
+scontrol update nodename=<nodes that have completed updating> state=resume
 ```
