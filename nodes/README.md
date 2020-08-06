@@ -6,7 +6,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Drain a node-list: ```sdrain node-list "Reason"```.
 * Resume a node-list: ```sresume node-list```.
 * Do a ```ps``` process status on a node-list, but exclude system processes: ```psnode node-list```.
-* Print Slurm version on a node-list: ```sversion node-list```. Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
+* Print Slurm version on a node-list: ```sversion node-list```. Requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
 * Check consistency of /etc/slurm/topology.conf with nodelist in /etc/slurm/slurm.conf: ```checktopology```
 * Compute node OS and firmware updates using the ```update.sh``` script.
 
@@ -35,9 +35,9 @@ Compute node OS and firmware updates
 ------------------------------------
 
 Assume that you want to update a specific set of nodes defined as ```<nodelist>```.
-This requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
+This requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
 
-First configure the update.sh script so that it will perform the required OS and firmware updates.
+First configure the ```update.sh``` script so that it will perform the required OS and firmware updates.
 
 Then copy the ```update.sh``` file to the compute nodes:
 ```
@@ -49,7 +49,8 @@ On the compute nodes append this crontab entry:
 clush -bw <nodelist> 'echo "@reboot root /bin/bash /root/update.sh" >> /etc/crontab'
 ```
 
-Then reboot the nodes with:
+Then reboot the nodes as soon as they become idle (ASAP, see the ```scontrol``` manual page) 
+and change the node state to ```DOWN``` with:
 ```
 scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
 ```
