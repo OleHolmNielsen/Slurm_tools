@@ -8,6 +8,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Do a ```ps``` process status on a node-list, but exclude system processes: ```psnode node-list```.
 * Print Slurm version on a node-list: ```sversion node-list```. Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
 * Check consistency of /etc/slurm/topology.conf with nodelist in /etc/slurm/slurm.conf: ```checktopology```
+* Compute node OS and firmware updates using the ```update.sh``` script.
 
 
 Usage
@@ -28,5 +29,37 @@ a058           1    xeon8*       mixed    8    2:4:1  23900    32752      1 xeon
  1213 S user01   20:27:07 00:00:00  0.0  1684 /bin/bash /var/spool/slurmd/job127132/slurm_script
  1490 S user01   20:27:13 00:00:00  0.0  4956 srun --mpi=pmi2 -n 1 fasttube
  1492 S user01   20:27:15 00:00:00  0.0   672 srun --mpi=pmi2 -n 1 fasttube
+```
 
+Compute node OS and firmware updates
+------------------------------------
+
+Assume that you want to update a specific set of nodes defined as ```<nodelist>```.
+This requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
+
+Copy the present file to the compute nodes:
+```
+clush -bw <nodelist> --copy update.sh --dest /root/
+```
+
+On the compute nodes append this crontab entry:
+```
+clush -bw <nodelist> 'echo "@reboot root /bin/bash /root/update.sh" >> /etc/crontab'
+```
+
+Then reboot the nodes with:
+```
+scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
+```
+
+After updating has completed, check the status of the DOWN nodes.
+For example, check the running kernel and the BMC version,
+and use [NHC](https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#node-health-check):
+```
+clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
+```
+
+When the node has been updated and tested successfully, resume the nodes by:
+```
+scontrol update nodename=<nodelist> state=resume
 ```
