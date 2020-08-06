@@ -37,7 +37,9 @@ Compute node OS and firmware updates
 Assume that you want to update a specific set of nodes defined as ```<nodelist>```.
 This requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
 
-Copy the present file to the compute nodes:
+First configure the update.sh script so that it will perform the required OS and firmware updates.
+
+Then copy the ```update.sh``` file to the compute nodes:
 ```
 clush -bw <nodelist> --copy update.sh --dest /root/
 ```
