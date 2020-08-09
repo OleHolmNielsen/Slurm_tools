@@ -40,7 +40,7 @@ fi
 words=( $JOBSTATE )
 if [[ ${#words[@]} > 1 ]]
 then
-	echo ERROR: The job $JOBID is a job array with multiple jobs, select only one array job.
+	echo "ERROR: The job $JOBID is a job array with multiple jobs. Please select only one array job."
 	exit 1
 fi
 
@@ -64,4 +64,4 @@ fi
 
 # Execute parallel shell on the job nodes:
 # The "scontrol listpids" lists all processes belonging to a Slurm job REALJOBID
-$CLUSH -bw@sj:$JOBID "$PS $PSFLAGS \$(scontrol listpids $REALJOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
+$CLUSH -bw@sj:$REALJOBID "$PS $PSFLAGS \$(scontrol listpids $REALJOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
