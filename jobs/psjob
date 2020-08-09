@@ -5,12 +5,11 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 # Usage: psjob jobid
 
-# Requires ClusterShell for parallel commands,
-# see https://wiki.fysik.dtu.dk/niflheim/SLURM
+# Requires ClusterShell with configuration for parallel commands on Slurm jobs,
+# see https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell
 # and https://clustershell.readthedocs.io/en/latest/intro.html
 
 # Possibly configure these variables:
-SCONTROL="/usr/bin/scontrol"
 CLUSH="/usr/bin/clush"
 PS="/bin/ps"
 PSFLAGS="-o pid,state,user,start,nlwp,cputime,%cpu,rssize,command --columns 100"
@@ -20,59 +19,49 @@ then
 	echo ERROR. Usage: $0 jobid
 	exit -1
 fi
+# Check that jobid is a number (possibly with _ separating job array_task_id)
+if ! [[ ${1} =~ ^[0-9_]+$ ]]
+then
+        echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
+        echo "Usage: $0 <jobid>"
+        exit 1
+fi
+
 JOBID=$1
-
-# Temporary file
-JOBSTATUS=/tmp/jobstatus.$$
-# Catch signals
-trap "rm -f $JOBSTATUS; exit 2" 1 2 3 14 15 19
-
-# Check if this job-ID can be inquired successfully.
-$SCONTROL show job $JOBID > $JOBSTATUS
+# Check if this JOBID can be inquired successfully.
+JOBSTATE="`squeue -h -o %T -j $JOBID`"
 if test "$?" != "0"
 then
 	echo Error inquiring about job $JOBID 
 	exit 1
 fi
 
-# Check for job array
-if test -n "`cat $JOBSTATUS | grep ArrayJobId`"
+# Detect job arrays by counting number of words in JOBSTATE
+words=( $JOBSTATE )
+if [[ ${#words[@]} > 1 ]]
 then
-	ArrayJobId=`cat $JOBSTATUS | grep ArrayJobId | head -1 | awk '{print $2}' | sed /ArrayJobId=/s///`
-	ArrayTaskId=`cat $JOBSTATUS | grep ArrayJobId | head -1 | awk '{print $3}' | sed /ArrayTaskId=/s///`
-	if test "$JOBID" = "$ArrayJobId"
-	then
-		JOBID="${JOBID}_${ArrayTaskId}"
-		echo Select JOBID=$JOBID
-		# Call this command again with the modified JOBID
-		$0 $JOBID
-		exit 0
-	fi
-	echo "This job $JOBID is a job array: Head job $ArrayJobId task number $ArrayTaskId"
+	echo ERROR: The job $JOBID is a job array with multiple jobs, select only one array job.
+	exit 1
 fi
 
-# Check the job state
-JOBSTATE="`cat $JOBSTATUS | grep JobState | awk '{print $1}'`"
-if test "$JOBSTATE" != "JobState=RUNNING"
+if test "$JOBSTATE" != "RUNNING"
 then
 	echo The job $JOBID is not running, it has state=$JOBSTATE
 	exit 1
 fi
 
-NODELIST="`cat $JOBSTATUS | grep '^   NodeList=' | awk -F= '{print $2}'`"
-if test -z "$NODELIST"
+# For an array job, get the individual jobid corresponding to the array job:
+REALJOBID=`squeue -h -o %A -j $JOBID`
+
+# Print some job information
+if test "$REALJOBID" = "$JOBID"
 then
-	echo Error: The node list is empty
-	exit 1
+	squeue -O JobID,NodeList,TimeUsed,StartTime -j $JOBID
+else
+	# For array jobs
+	squeue -O JobID,ArrayJobID,ArrayTaskID,NodeList,TimeUsed,StartTime -j $JOBID
 fi
 
-# Get the number of nodes and node properties used
-echo Nodelist for job-id $JOBID: $NODELIST
-echo Node usage: `cat $JOBSTATUS | grep NumNodes= ` 
-egrep 'RunTime|SubmitTime|StartTime' $JOBSTATUS
-
 # Execute parallel shell on the job nodes:
-# The "scontrol listpids" lists all processes belonging to a jobid.
-$CLUSH -b -w $NODELIST "$PS $PSFLAGS \$(scontrol listpids $JOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
-
-rm -f $JOBSTATUS
+# The "scontrol listpids" lists all processes belonging to a Slurm job REALJOBID
+$CLUSH -bw@sj:$JOBID "$PS $PSFLAGS \$(scontrol listpids $REALJOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
