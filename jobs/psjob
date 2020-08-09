@@ -63,5 +63,7 @@ else
 fi
 
 # Execute parallel shell on the job nodes:
+NODELIST="`squeue -h -o %N -j $REALJOBID`"
 # The "scontrol listpids" lists all processes belonging to a Slurm job REALJOBID
-$CLUSH -bw@sj:$REALJOBID "$PS $PSFLAGS \$(scontrol listpids $REALJOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
+$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $REALJOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
+# Can also use: $CLUSH -bw@sj:$REALJOBID ...
