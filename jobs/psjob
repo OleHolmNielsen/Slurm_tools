@@ -57,12 +57,12 @@ REALJOBID=`squeue -h -o %A -j $JOBID`
 if test "$REALJOBID" = "$JOBID"
 then
 	squeue -O JobID,TimeUsed,StartTime -j $JOBID
-	squeue -o %N -j $JOBID
 else
 	# For array jobs
 	squeue -O JobID,ArrayJobID,ArrayTaskID,TimeUsed,StartTime -j $JOBID
-	squeue -o %N -j $JOBID
 fi
+# Print the NodeList
+squeue -o %N -j $JOBID
 
 # Execute parallel shell on the job nodes:
 NODELIST="`squeue -h -o %N -j $REALJOBID`"
