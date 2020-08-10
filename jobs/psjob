@@ -19,7 +19,7 @@ then
 	echo ERROR. Usage: $0 jobid
 	exit -1
 fi
-# Check that jobid is a number (possibly with _ separating job array_task_id)
+# Check that jobid is a number (possibly with _ separating jobid and arraytaskid)
 if ! [[ ${1} =~ ^[0-9_]+$ ]]
 then
         echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
@@ -40,7 +40,8 @@ fi
 words=( $JOBSTATE )
 if [[ ${#words[@]} > 1 ]]
 then
-	echo "ERROR: The job $JOBID is a job array with multiple jobs. Please select only one array job."
+	echo "ERROR: The job $JOBID is a job array with multiple jobs. Please select only one of the array jobs:"
+	squeue -j $JOBID
 	exit 1
 fi
 
