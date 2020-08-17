@@ -27,12 +27,12 @@ then
         exit 1
 fi
 
-JOBID=$1
-# Check if this JOBID can be inquired successfully.
-JOBSTATE="`squeue -h -o %T -j $JOBID`"
+jobid=$1
+# Check if this jobid can be inquired successfully.
+JOBSTATE="`squeue -h -o %T -j $jobid`"
 if test "$?" != "0"
 then
-	echo Error inquiring about job $JOBID 
+	echo Error inquiring about job $jobid 
 	exit 1
 fi
 
@@ -40,33 +40,33 @@ fi
 words=( $JOBSTATE )
 if [[ ${#words[@]} > 1 ]]
 then
-	echo "ERROR: The job $JOBID is a job array with multiple jobs. Please select only one of the array jobs:"
-	squeue -j $JOBID
+	echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
+	squeue -j $jobid
 	exit 1
 fi
 
 if test "$JOBSTATE" != "RUNNING"
 then
-	echo The job $JOBID is not running, it has state=$JOBSTATE
+	echo The job $jobid is not running, it has state=$JOBSTATE
 	exit 1
 fi
 
 # For an array job, get the individual jobid corresponding to the array job:
-REALJOBID=`squeue -h -o %A -j $JOBID`
+realjobid=`squeue -h -o %A -j $jobid`
 
 # Print some job information
-if test "$REALJOBID" = "$JOBID"
+if test "$realjobid" = "$jobid"
 then
-	squeue -O JobID,StartTime,TimeUsed,TimeLimit -j $REALJOBID
+	squeue -O JobID,StartTime,TimeUsed,TimeLimit -j $realjobid
 else
 	# For array jobs
-	squeue -O JobID,ArrayJobID,ArrayTaskID,StartTime,TimeUsed,TimeLimit -j $REALJOBID
+	squeue -O JobID,ArrayJobID,ArrayTaskID,StartTime,TimeUsed,TimeLimit -j $realjobid
 fi
 # Print the NodeList
-NODELIST="`squeue -h -o %N -j $REALJOBID`"
+NODELIST="`squeue -h -o %N -j $realjobid`"
 echo NODELIST: $NODELIST
 
 # Execute parallel shell on the job nodes:
-# The "scontrol listpids" lists all processes belonging to a Slurm job REALJOBID
-$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $REALJOBID | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
-# Can also use: $CLUSH -bw@sj:$REALJOBID ...
+# The "scontrol listpids" lists all processes belonging to a Slurm job realjobid
+$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
+# Can also use: $CLUSH -bw@sj:$realjobid ...
