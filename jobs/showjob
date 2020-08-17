@@ -36,111 +36,123 @@ fi
 # Get Slurm queue information
 #
 
-# Check if job is in the queue and squeue displays job information
-jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
-if test $? -eq 0 -a -n "$jobfound"
+# Check if this jobid can be inquired successfully.
+JOBSTATE="`squeue -h -o %T -j $jobid`"
+if test "$?" != "0"
 then
-	# Print basic job information
-	#
-	# Get required job information from a single squeue command:
-	eval `squeue -ho "%u %a %P %T %C %l %r %V %E" -j $jobid | awk '{
-		print "jobuser=" $1
-		print "jobaccount=" $2
-		print "partition=" $3
-		print "jobstate=" $4
-		print "NCPUS=" $5
-		print "timelimit=" $6
-		print "reason=" $7
-		print "submittime=" $8	# Note: Time %V may modified by SLURM_TIME_FORMAT
-		print "dependency=" $9	# Note: Dependency %E may be a null string and must be last
-	}'`
-	# Get time limit as a number of minutes
-	minutes=`echo $timelimit | awk -F- '
-	{
-		if (NF == 1)
-			# If timelimit has 0 days there is only the hour:minute:second field
-			hms = $1
-		else {
-			days = $1
-			hms = $2
-		}
-		split(hms,a,":")	# Split hour:minute:second
-		print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
-	}'`
-	echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
-	echo "Job has state=$jobstate with reason=$reason"
-	echo "Job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
-	echo "Job TRESRunMin: $((NCPUS*minutes))"
-	echo
-
-	# Display job reason code (if other than "None")
-	if test "$reason" != "None"
-	then
-		if test "$reason" == "AssocGrpCPURunMinutesLimit"
-		then
-			echo Information about $reason:
-			JobValue=$((NCPUS*minutes))
-			echo "This job requires TRESRunMins:   cpu=$JobValue"
-			echo
-			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
-		elif test "$reason" == "AssocGrpCPUMinutesLimit"
-		then
-			echo Information about $reason:
-			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
-			echo
-			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
-		elif test "$reason" == "AssocGrpCpuLimit"
-		then
-			echo Information about $reason:
-			echo -n "Current user TRES is:      "
-			# Count number of CPUs for running jobs
-			squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
-			NCPUS=`squeue -ho "%C" -j $jobid`
-			echo "This job requires TRES:    cpu=$NCPUS"
-			echo
-			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
-		elif test "$reason" == "AssocGrpGRES"
-		then
-			echo Information about $reason:
-			gres=`squeue -ho "%b" -j $jobid`
-			grestype=`echo $gres | awk -F: '{print $1}'`
-			echo "This job requires GRES: $gres"
-			echo
-			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s $grestype
-		elif test "$reason" == "AssocMaxJobsLimit"
-		then
-			echo Information about $reason:
-			echo User $jobuser number of running jobs is: `squeue -ho "%A" -u $jobuser -t running | wc -l`
-			echo Information about Account and User limits:
-			$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
-		elif test "$reason" == "Dependency"
-		then
-			echo "Dependency information: $dependency"
-		fi
-		echo
-	fi
-	# Job found in the queue
-	echo "Queued job information:"
-	scontrol --details show job $jobid | tee $TMPFILE
-	# Parse the job status information (read E-mail)
-	export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//'`
-	if test "$jobscript" != "(null)"
-	then
-		grep "mail-user" $jobscript > $TMPFILE
-		if test -s $TMPFILE
-		then
-			echo Job script E-mail has been set:
-			cat $TMPFILE
-		fi
-	fi
-	rm -f $TMPFILE
-else
-	echo "The job $jobid is not in the current Slurm queue."
+	echo Error inquiring about job $jobid 
+	exit 1
 fi
+
+# Detect job arrays by counting number of words in JOBSTATE
+words=( $JOBSTATE )
+if [[ ${#words[@]} > 1 ]]
+then
+	echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
+	squeue -j $jobid
+	exit 1
+fi
+
+# 
+# Print basic job information
+#
+# Get required job information from a single squeue command:
+eval `squeue -ho "%u %a %P %T %C %l %r %V %E" -j $jobid | awk '{
+	print "jobuser=" $1
+	print "jobaccount=" $2
+	print "partition=" $3
+	print "jobstate=" $4
+	print "NCPUS=" $5
+	print "timelimit=" $6
+	print "reason=" $7
+	print "submittime=" $8	# Note: Time %V may modified by SLURM_TIME_FORMAT
+	print "dependency=" $9	# Note: Dependency %E may be a null string and must be last
+}'`
+# Get time limit as a number of minutes
+minutes=`echo $timelimit | awk -F- '
+{
+	if (NF == 1)
+		# If timelimit has 0 days there is only the hour:minute:second field
+		hms = $1
+	else {
+		days = $1
+		hms = $2
+	}
+	split(hms,a,":")	# Split hour:minute:second
+	print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
+}'`
+echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
+echo "Job has state=$jobstate with reason=$reason"
+echo "Job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
+echo "Job TRESRunMin: $((NCPUS*minutes))"
+echo
+
+# Display job reason code (if other than "None")
+if test "$reason" != "None"
+then
+	if test "$reason" == "AssocGrpCPURunMinutesLimit"
+	then
+		echo Information about $reason:
+		JobValue=$((NCPUS*minutes))
+		echo "This job requires TRESRunMins:   cpu=$JobValue"
+		echo
+		echo Information about Account and User limits:
+		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
+	elif test "$reason" == "AssocGrpCPUMinutesLimit"
+	then
+		echo Information about $reason:
+		echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
+		echo
+		echo Information about Account and User limits:
+		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
+	elif test "$reason" == "AssocGrpCpuLimit"
+	then
+		echo Information about $reason:
+		echo -n "Current user TRES is:      "
+		# Count number of CPUs for running jobs
+		squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
+		NCPUS=`squeue -ho "%C" -j $jobid`
+		echo "This job requires TRES:    cpu=$NCPUS"
+		echo
+		echo Information about Account and User limits:
+		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
+	elif test "$reason" == "AssocGrpGRES"
+	then
+		echo Information about $reason:
+		gres=`squeue -ho "%b" -j $jobid`
+		grestype=`echo $gres | awk -F: '{print $1}'`
+		echo "This job requires GRES: $gres"
+		echo
+		echo Information about Account and User limits:
+		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s $grestype
+	elif test "$reason" == "AssocMaxJobsLimit"
+	then
+		echo Information about $reason:
+		echo User $jobuser number of running jobs is: `squeue -ho "%A" -u $jobuser -t running | wc -l`
+		echo Information about Account and User limits:
+		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
+	elif test "$reason" == "Dependency"
+	then
+		echo "Dependency information: $dependency"
+	fi
+	echo
+fi
+
+# Job found in the queue
+echo "Queued job information:"
+scontrol --details show job $jobid | tee $TMPFILE
+# Parse the job status information (read E-mail)
+export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//'`
+if test "$jobscript" != "(null)"
+then
+	grep "mail-user" $jobscript > $TMPFILE
+	if test -s $TMPFILE
+	then
+		echo Job script E-mail has been set:
+		cat $TMPFILE
+	fi
+fi
+rm -f $TMPFILE
 
 ###########################################################################
 # Execute sacct and print nicely formatted output
