@@ -40,28 +40,22 @@ Examples
 Example output from ```psjob```:
 
 ```
-# psjob  126528
-Nodelist for job-id 126528: a[003,018,022-026,047]
-Node usage: NumNodes=8 NumCPUs=64 NumTasks=64 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
-   RunTime=1-03:27:18 TimeLimit=2-00:00:00 TimeMin=N/A
-   SubmitTime=2017-07-19T10:46:42 EligibleTime=2017-07-19T10:46:42
-   StartTime=2017-07-19T11:28:12 EndTime=2017-07-21T11:28:12 Deadline=N/A
+# psjob  2727657_48
+JOBID               ARRAY_JOB_ID        ARRAY_TASK_ID       START_TIME          TIME                TIME_LIMIT
+2727706             2727657             48                  2020-08-17T13:27:10 7:55:09             2-02:00:00
+NODELIST: a134
 ---------------
-a003
+a134
 ---------------
   PID S USER      STARTED NLWP     TIME %CPU   RSS COMMAND
-17113 S user01     Jul 19    1 00:00:00  0.0  1860 /bin/bash -l /var/spool/slurmd/job126528/slurm_sc
-17219 S user01     Jul 19    2 00:00:00  0.0  3872 mpiexec gpaw-python res.py
-17221 S user01     Jul 19    5 00:00:00  0.0  5276 srun --ntasks-per-node=1 --kill-on-bad-exit --cpu
-17222 S user01     Jul 19    1 00:00:00  0.0   672 srun --ntasks-per-node=1 --kill-on-bad-exit --cpu
-17241 R user01     Jul 19    2 1-03:25:45 99.9 605044 gpaw-python res.py
-17242 R user01     Jul 19    2 1-03:25:52 99.9 827892 gpaw-python res.py
-17243 R user01     Jul 19    2 1-03:25:43 99.9 747220 gpaw-python res.py
-17244 R user01     Jul 19    2 1-03:25:54 99.9 609900 gpaw-python res.py
-17245 R user01     Jul 19    2 1-03:25:47 99.9 599428 gpaw-python res.py
-17246 R user01     Jul 19    2 1-03:25:55 99.9 826440 gpaw-python res.py
-17247 R user01     Jul 19    2 1-03:25:49 99.9 751420 gpaw-python res.py
-17248 R user01     Jul 19    2 1-03:25:48 99.9 609428 gpaw-python res.py
-...
-
+30018 S user01   13:27:10    1 00:00:00  0.0  1392 /bin/bash /var/spool/slurmd/job2727706/slurm_scri
+30059 S user01   13:27:15    5 00:00:00  0.0  5232 srun -n 8 -N 1 gpaw-python run_gpaw.py test
+30061 S user01   13:27:15    1 00:00:00  0.0   256 srun -n 8 -N 1 gpaw-python run_gpaw.py test
+30076 R user01   13:27:15    1 07:54:42 99.9 3313044 a.out
+30077 R user01   13:27:15    1 07:54:58 99.9 3276640 a.out
+30078 R user01   13:27:15    1 07:54:59 99.9 3315204 a.out
+30079 R user01   13:27:15    1 07:54:59 99.9 3313304 a.out
+30080 R user01   13:27:15    1 07:54:53 99.9 3311864 a.out
+30082 R user01   13:27:15    1 07:54:53 99.9 3315336 a.out
+30083 R user01   13:27:15    1 07:54:58 99.9 3306656 a.out
 ```
