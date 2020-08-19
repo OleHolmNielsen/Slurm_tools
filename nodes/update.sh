@@ -56,5 +56,9 @@ touch $STOP_FILE
 
 echo
 echo "Finished $0 script at `date`"
-echo "Rebooting..."
-/usr/sbin/shutdown -r now
+
+# echo "Rebooting..."
+# /usr/sbin/shutdown -r now
+
+echo Reboot and resume node by Slurm scontrol reboot
+scontrol reboot nextstate=resume `hostname -s`
