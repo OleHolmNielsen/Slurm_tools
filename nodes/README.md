@@ -68,7 +68,12 @@ and use [NHC](https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#node-health
 clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
 ```
 
-When some nodes have been updated and tested successfully, resume these nodes by:
+When some nodes have been updated and tested successfully, you could resume these nodes by:
 ```
 scontrol update nodename=<nodes that have completed updating> state=resume
 ```
+Resuming the node is actually accomplished at the end of the ```update.sh``` script by these lines:
+```
+scontrol reboot nextstate=resume `hostname -s`
+```
+
