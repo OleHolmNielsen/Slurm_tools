@@ -6,6 +6,8 @@
 # Usage:
 # Listing: $0 -l | -p partition"
 # Setting: $0 [-n nice-value] job [jobs ...]"
+# Jobs should be comma or space separated.
+# The jobs list may also be specified in a file with -f <jobfile>
 
 # List or set nice values:
 listnice=0
@@ -15,7 +17,7 @@ NICE=-50000
 SQUEUE_FORMAT="%y %Q %T %A %P %u %g %S %e %j %b %R"
 
 # Parse command options
-while getopts "lp:n:h" options; do
+while getopts "lp:n:f:h" options; do
 	case $options in
 		l )	listnice=1
 			;;
@@ -27,9 +29,13 @@ while getopts "lp:n:h" options; do
 			listnice=0
 			echo Set job nice value to $NICE
 			;;
+		f )	export JOBFILE=$OPTARG
+			listnice=0
+			echo Read jobid list from file $JOBFILE
+			;;
 		h | * )	echo "Usage:"
 			echo "Listing: $0 -l | -p partition"
-			echo "Setting: $0 [-n nice-value] job [jobs ...]"
+			echo "Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
 			exit 1;;
 	esac
 done
@@ -38,20 +44,22 @@ shift $((OPTIND-1))
 if test $listnice -eq 0
 then
 	JOBLIST="$*"
+	# Add jobs from file (remove duplicates)
+	if test -n "$JOBFILE"
+	then
+		JOBLIST="$JOBLIST `cat $JOBFILE | sort | uniq`"
+	fi
 	if test -z "$JOBLIST"
 	then
 		echo $0: No job list provided
 		$0 -h
 		exit 1
 	fi
-	echo Job list: $JOBLIST
-	# Change nice level of jobs
-	for j in $JOBLIST
-	do
-		scontrol update jobid=$j nice=$NICE
-	done
-	# Print a job status
-	squeue -o "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
+	# Replace all spaces in list by comma to get single job string
+	JOBLIST=`echo $JOBLIST | sed "/ /s//,/g"`
+	# Change nice level of jobs and print a status
+	scontrol update jobid=$JOBLIST nice=$NICE
+	squeue -o "$SQUEUE_FORMAT" -j $JOBLIST
 else
 	echo; echo "Jobs with a non-zero nice value:"; echo
 	squeue $partition -o "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
