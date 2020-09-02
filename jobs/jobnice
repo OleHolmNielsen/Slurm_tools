@@ -44,19 +44,25 @@ shift $((OPTIND-1))
 if test $listnice -eq 0
 then
 	JOBLIST="$*"
-	# Add jobs from file (remove duplicates)
+	# Add jobs from file, if any (and remove duplicates)
 	if test -n "$JOBFILE"
 	then
 		JOBLIST="$JOBLIST `cat $JOBFILE | sort | uniq`"
 	fi
+	# Replace all spaces in list by comma to get a single job string
+	JOBLIST=`echo $JOBLIST | sed "/ /s//,/g"`
 	if test -z "$JOBLIST"
 	then
 		echo $0: No job list provided
 		$0 -h
 		exit 1
+	elif ! [[ ${JOBLIST} =~ ^[0-9_,]+$ ]]
+	then
+		echo ERROR: Joblist does not look like jobids:
+		echo $JOBLIST
+		$0 -h
+		exit 1
 	fi
-	# Replace all spaces in list by comma to get single job string
-	JOBLIST=`echo $JOBLIST | sed "/ /s//,/g"`
 	# Change nice level of jobs and print a status
 	scontrol update jobid=$JOBLIST nice=$NICE
 	squeue -o "$SQUEUE_FORMAT" -j $JOBLIST
