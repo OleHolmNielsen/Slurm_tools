@@ -30,6 +30,11 @@ while getopts "lp:n:f:h" options; do
 			echo Set job nice value to $NICE
 			;;
 		f )	export JOBFILE=$OPTARG
+			if test ! -s "$JOBFILE"
+			then
+				echo File $JOBFILE is not a regular file or is empty
+				exit 1
+			fi
 			listnice=0
 			echo Read jobid list from file $JOBFILE
 			;;
@@ -45,7 +50,7 @@ if test $listnice -eq 0
 then
 	JOBLIST="$*"
 	# Add jobs from file, if any (and remove duplicates)
-	if test -n "$JOBFILE"
+	if test -s "$JOBFILE"
 	then
 		JOBLIST="$JOBLIST `cat $JOBFILE | sort | uniq`"
 	fi
