@@ -522,7 +522,7 @@ BEGIN {
 		} else if (state == "mix" && multinodejobs[node] > 0) {
 			# Flag multi-node jobs running on nodes in state==mixed (possibly incorrect node utilization)
 			jobflag="*"
-			jobcolor=RED
+			jobcolor=MAGENTA
 			listnode++
 		} else {
 			jobflag=" "
