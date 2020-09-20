@@ -32,9 +32,86 @@ then
 fi
 
 ###########################################################################
+# Execute sacct and print nicely formatted output
+
+function format_sacct()
+{
+	# echo Called format_sacct with $@
+	# Add -P flag for parseable output with fields separated by "|"
+	sacct -P $@ | awk -F "|" '
+{
+	for (i=1; i<= NF; i++) {
+		column[i][NR] = $i
+		len = length($i)
+		if (len > colwidth[i]) colwidth[i] = len	# Column width
+	}
+	cols=NF
+	lines=NR
+} END {
+	# Print a header
+	for (i=1; i<= cols; i++) {
+		printf("%*s ", colwidth[i], column[i][1])
+	}
+	printf("\n")
+	for (i=1; i<= cols; i++) {
+		printf("%.*s ", colwidth[i], "-----------------------------------------------------")
+	}
+	printf("\n")
+	# Print lines
+	for (l=2; l<=lines; l++) {
+		for (i=1; i<= cols; i++) {
+			printf("%*s ", colwidth[i], column[i][l])
+		}
+		printf("\n")
+	}
+}'
+
+}
+
+# Get job accounting information
+function print_job_accounting()
+{
+	if test -z "`sacct -nP -o JobID -j $jobid.batch`"
+	then
+		echo
+		echo ERROR: Invalid JobID: $jobid is not found in the Slurm database
+		exit 1
+	fi
+	echo
+	echo "Accounting information from the Slurm database:"
+	echo
+	echo "Job parameters for jobid $jobid:"
+	export jobvars="jobid,jobname,user,account,partition,Timelimit"
+	format_sacct -j $jobid -o $jobvars
+	echo
+	echo "Job details information for jobid $jobid:"
+	export jobvars="jobid,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist"
+	format_sacct -j $jobid -o $jobvars
+	echo
+	echo "Workdir"
+	echo "-------"
+	sacct -j $jobid -nP -o WorkDir | head -1
+	# Get user fairshare information
+	export jobuser=`sacct -nP -j $jobid -o user`
+	echo
+	echo "User fairshare information from the sshare command:"
+	sshare -lUm -u $jobuser
+}
+
+###########################################################################
 #
 # Get Slurm queue information
 #
+
+# Check if job is in the queue and squeue displays job information
+jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
+if test $? -ne 0 -o -z "$jobfound"
+then
+	echo
+	echo Job $jobid is not in the current Slurm queue
+	print_job_accounting
+	exit 1
+fi
 
 # Check if this jobid can be inquired successfully.
 JOBSTATE="`squeue -h -o %T -j $jobid`"
@@ -154,65 +231,4 @@ then
 fi
 rm -f $TMPFILE
 
-###########################################################################
-# Execute sacct and print nicely formatted output
-
-function format_sacct()
-{
-	# echo Called format_sacct with $@
-	# Add -P flag for parseable output with fields separated by "|"
-	sacct -P $@ | awk -F "|" '
-{
-	for (i=1; i<= NF; i++) {
-		column[i][NR] = $i
-		len = length($i)
-		if (len > colwidth[i]) colwidth[i] = len	# Column width
-	}
-	cols=NF
-	lines=NR
-} END {
-	# Print a header
-	for (i=1; i<= cols; i++) {
-		printf("%*s ", colwidth[i], column[i][1])
-	}
-	printf("\n")
-	for (i=1; i<= cols; i++) {
-		printf("%.*s ", colwidth[i], "-----------------------------------------------------")
-	}
-	printf("\n")
-	# Print lines
-	for (l=2; l<=lines; l++) {
-		for (i=1; i<= cols; i++) {
-			printf("%*s ", colwidth[i], column[i][l])
-		}
-		printf("\n")
-	}
-}'
-
-}
-
-###########################################################################
-# Get job accounting information
-
-echo
-echo "Accounting information from the Slurm database:"
-
-###########################################################################
-# Get user fairshare information
-export jobuser=`sacct -nP -j $jobid -o user`
-echo "User fairshare information from the sshare command:"
-sshare -lUm -u $jobuser
-
-echo
-echo "Job parameters for jobid $jobid:"
-export jobvars="jobid,jobname,user,account,partition,Timelimit"
-format_sacct -j $jobid -o $jobvars
-
-echo
-echo "Job details information for jobid $jobid:"
-export jobvars="jobid,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist"
-format_sacct -j $jobid -o $jobvars
-echo
-echo "Workdir"
-echo "-------"
-sacct -j $jobid -nP -o WorkDir | head -1
+print_job_accounting
