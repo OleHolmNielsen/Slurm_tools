@@ -159,7 +159,7 @@ minutes=`echo $timelimit | awk -F- '
 	print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
 }'`
 echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
-echo "Job has state=$jobstate with reason=$reason"
+echo "Job has state=$jobstate"
 echo "Job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
 echo "Job TRESRunMin: $((NCPUS*minutes))"
 echo
@@ -167,23 +167,27 @@ echo
 # Display job reason code (if other than "None")
 if test "$reason" != "None"
 then
-	if test "$reason" == "AssocGrpCPURunMinutesLimit"
+	echo "Job is in state $jobstate with reason=$reason"
+	if test "$reason" = "AssocGrpCPURunMinutesLimit"
 	then
+		echo
 		echo Information about $reason:
 		JobValue=$((NCPUS*minutes))
 		echo "This job requires TRESRunMins:   cpu=$JobValue"
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
-	elif test "$reason" == "AssocGrpCPUMinutesLimit"
+	elif test "$reason" = "AssocGrpCPUMinutesLimit"
 	then
+		echo
 		echo Information about $reason:
 		echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
-	elif test "$reason" == "AssocGrpCpuLimit"
+	elif test "$reason" = "AssocGrpCpuLimit"
 	then
+		echo
 		echo Information about $reason:
 		echo -n "Current user TRES is:      "
 		# Count number of CPUs for running jobs
@@ -193,8 +197,9 @@ then
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
-	elif test "$reason" == "AssocGrpGRES"
+	elif test "$reason" = "AssocGrpGRES"
 	then
+		echo
 		echo Information about $reason:
 		gres=`squeue -ho "%b" -j $jobid`
 		grestype=`echo $gres | awk -F: '{print $1}'`
@@ -202,14 +207,16 @@ then
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s $grestype
-	elif test "$reason" == "AssocMaxJobsLimit"
+	elif test "$reason" = "AssocMaxJobsLimit"
 	then
+		echo
 		echo Information about $reason:
 		echo User $jobuser number of running jobs is: `squeue -ho "%A" -u $jobuser -t running | wc -l`
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
-	elif test "$reason" == "Dependency"
+	elif test "$reason" = "Dependency"
 	then
+		echo
 		echo "Dependency information: $dependency"
 	fi
 	echo
@@ -231,4 +238,8 @@ then
 fi
 rm -f $TMPFILE
 
-print_job_accounting
+# Print accounting information only when the job is in the Running state
+if test "$jobstate" = "Running"
+then
+	print_job_accounting
+fi
