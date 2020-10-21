@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 
-# Slurm: Add nice level to jobs, or list jobs with non-zero nice level
+# Slurm: Add nice level to jobs, or list jobs with non-zero nice level.
+# Requires also the helper script "joblistformat".
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Usage:
 # Listing: $0 -l | -p partition"
-# Setting: $0 [-n nice-value] job [jobs ...]"
+# Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
 # Jobs should be comma or space separated.
-# The jobs list may also be specified in a file with -f <jobfile>
 
+# Requires also the helper script "joblistformat".
+JOBLISTFORMAT=`which joblistformat`
+if test $? -ne 0
+then
+	echo ERROR: The joblistformat script cannot be found
+	exit 1
+fi
 # List or set nice values:
 listnice=0
 # Default nice value
@@ -36,7 +43,7 @@ while getopts "lp:n:f:h" options; do
 				exit 1
 			fi
 			listnice=0
-			echo Read jobid list from file $JOBFILE
+			echo Append jobid list from file $JOBFILE
 			;;
 		h | * )	echo "Usage:"
 			echo "Listing: $0 -l | -p partition"
@@ -48,24 +55,16 @@ shift $((OPTIND-1))
 
 if test $listnice -eq 0
 then
-	JOBLIST="$*"
-	# Add jobs from file, if any (and remove duplicates)
-	if test -s "$JOBFILE"
+	if test -z "$JOBFILE"
 	then
-		JOBLIST="$JOBLIST `cat $JOBFILE | sort | uniq`"
+		JOBLIST="`$JOBLISTFORMAT $*`"
+	else
+		JOBLIST="`$JOBLISTFORMAT -f $JOBFILE $*`"
 	fi
-	# Replace all spaces in list by comma to get a single job string
-	JOBLIST=`echo $JOBLIST | sed "/ /s//,/g"`
-	if test -z "$JOBLIST"
+	if test $? -ne 0
 	then
-		echo $0: No job list provided
-		$0 -h
-		exit 1
-	elif ! [[ ${JOBLIST} =~ ^[0-9_,]+$ ]]
-	then
-		echo ERROR: Joblist does not look like jobids:
+		# The $JOBLISTFORMAT script returned an error on this job list:
 		echo $JOBLIST
-		$0 -h
 		exit 1
 	fi
 	# Change nice level of jobs and print a status
