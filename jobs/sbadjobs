@@ -11,7 +11,7 @@ REASONLIST="JobHeldAdmin|BadConstraints|InvalidAccount|InvalidQOS|JobLaunchFailu
 DONTPRINT="Reserved for maintenance"
 
 # Configure the columns printed by squeue
-export SQUEUE_FORMAT="%.18i %.9P %.8j %.8u %.8a %.10T %.9Q %.10M %.9l %.6D %.6C %m %R"
+export SQUEUE_FORMAT="%.18i %.10P %.8j %.8u %.8a %.10T %.9Q %.10M %.9l %.6D %.6C %m %R"
 
 if test -z "$DONTPRINT"
 then
