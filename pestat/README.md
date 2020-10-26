@@ -28,7 +28,7 @@ where:
         -F: Like -f, but only nodes flagged in RED are printed.
         -m free_mem: Print only nodes with free memory LESS than free_mem MB
         -M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
-        -d: Omit nodes with states: down drained
+        -d: Omit nodes with states: down drain drng resv maint boot
         -1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
         -2: 2..N lines per node which participates in multiple partitions
         -S: Job StartTime is printed after each jobid/user
