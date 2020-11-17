@@ -15,6 +15,8 @@
 # after the Slurm account was created.  Lower limits may be implemented for NEWUSERs.
 # After $newuserperiod the usual DEFAULT limits will be applied.
 export newuserperiod="30 days"
+# Printing of NEWUSER users: 0=off, 1=summary, 2=details
+export newuserprint=1
 
 # Skip users with UID < MINUID
 export MINUID=1000
@@ -146,6 +148,7 @@ BEGIN {
 	assoc		= ENVIRON["assoc_tmp"]
 	users		= ENVIRON["users_tmp"]
 	newusers	= ENVIRON["newusers_tmp"]
+	newuserprint	= ENVIRON["newuserprint"]
 	debug = 0	# Debugging flag
 
 	IGNORECASE = 1	# Make AWK case-insensitive string comparisons (for TRES comparisons)
@@ -232,8 +235,10 @@ BEGIN {
 		u = $1	# User
 		newuser[u] = u
 		newusertime[u] = $2	# Timestamp of "Add User" transaction
+		newuserlist = newuserlist u "(" substr($2,0,10) ") "	# List of username(date)
 	}
 	close (newusers)
+	if (newuserprint == 1) print "### NEWUSER list user(date): " newuserlist
 
 	# Read list of existing accounts (parseable output)
 	# Header of sacctmgr -snorp show associations: See the "assocfmt" variable above.
@@ -394,7 +399,7 @@ $3 >= MINUID {
 
 	# Treatment of NEWUSER users
 	if (newuserdefaultsinitialized == 0) delete newuser[u]	# Skip NEWUSER settings because no NEWUSER values are defined
-	if (newuser[u] != "") {
+	if (newuserprint == 2 && newuser[u] != "") {
 		print ""
 		printf("### NOTICE: User %s is a NEWUSER account created on %s\n", u, newusertime[u])
 		printf("### Password entry: %s\n", $0)
@@ -448,7 +453,7 @@ $3 >= MINUID {
 	# If user setting not explicitly given, then use the default setting
 	if (newuser[u] != "" || user[u] == "") {
 		if (isarray(newuserdefaults)) {
-			print "### User " u " will get NEWUSER defaults"
+			if (newuserprint == 2) print "### User " u " will get NEWUSER defaults"
 			for (i in newuserdefaults) {
 				# Wipe any current settings
 				# setting[u][current][i] = ""
