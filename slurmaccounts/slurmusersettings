@@ -386,8 +386,15 @@ $3 >= MINUID {
 	}
 	# Check for existence of the user home directory, skip user if absent:
 	if (check_homedirs > 0 && system("test -d \""HOMEDIR"\"") != 0) {
-		if (debug > 0) printf("### Skipping user %s because homedir %s does not exist\n", u, HOMEDIR)
-		userinformation[u] = "User " u " has NO HOME directory=" HOMEDIR
+		if (debug > 0) printf("### Omitting user %s because homedir %s does not exist\n", u, HOMEDIR)
+		# Check filesystem: Verify that the user parent directory is mounted/exists.
+		# The filesystem could be unavailable due to file server errors.
+		if (system("test -d `dirname "HOMEDIR"`") != 0) {
+			printf("\n### WARNING: Parent directory of user %s homedir %s does not exist!\n\n", u, HOMEDIR)
+			userinformation[u] = u
+		} else {
+			userinformation[u] = "User " u " has NO HOME directory=" HOMEDIR
+		}
 		next
 	}
 	userinformation[u] = u	# Record existing valid users
