@@ -41,7 +41,7 @@ words=( $JOBSTATE )
 if [[ ${#words[@]} > 1 ]]
 then
 	echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
-	squeue -O JobID,ArrayJobID,ArrayTaskID,StartTime,TimeUsed,TimeLimit -j $jobid
+	squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j $jobid
 	exit 1
 fi
 
