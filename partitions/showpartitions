@@ -51,7 +51,7 @@ while getopts "p:gmafh" options; do
 			;;
 		m ) 	export minmax=1
 			;;
-		a ) 	export all_partitions="-all"
+		a ) 	export all_partitions="--all"
 			;;
 		f ) 	export federation="--federation"
 			# Append sinfo option %V (CLUSTER) for Slurm 18.08 and newer.
