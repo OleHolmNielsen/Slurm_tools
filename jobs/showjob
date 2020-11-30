@@ -227,7 +227,8 @@ echo "Queued job information:"
 scontrol --details show job $jobid | tee $TMPFILE
 # Parse the job status information (read E-mail)
 export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//' | awk '{print $1}'`
-if test "$jobscript" != "(null)"
+# Check that jobscript is defined and that the file is readable
+if test "$jobscript" != "(null)" -a -s "$jobscript"
 then
 	grep "mail-user" $jobscript > $TMPFILE
 	if test -s $TMPFILE
