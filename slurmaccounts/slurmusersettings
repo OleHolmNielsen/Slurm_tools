@@ -477,12 +477,14 @@ $3 >= MINUID {
 		}
 	}
 	# Compare config and current settings, print out any changes in COMMAND
-	for (i in setting[u][config]) {
-		if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
-		if (setting[u][current][i] != setting[u][config][i]) {
-			if (setting[u][current][i] != "")
-				print "# User " u " currently has " i "=" setting[u][current][i] " but configuration is " i "=" setting[u][config][i]
-			COMMAND = COMMAND " " i "=" setting[u][config][i]
+	if (isarray(setting[u][config])) {
+		for (i in setting[u][config]) {
+			if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
+			if (setting[u][current][i] != setting[u][config][i]) {
+				if (setting[u][current][i] != "")
+					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration is " i "=" setting[u][config][i]
+				COMMAND = COMMAND " " i "=" setting[u][config][i]
+			}
 		}
 	}
 
