@@ -1,0 +1,78 @@
+#!/bin/sh
+#
+# MariaDB/MySQL database dump script
+# See also https://serversforhackers.com/c/mysqldump-with-modern-mysql
+#
+# Compression: Use lbzip2 or gzip
+#
+# Configure these parameters:
+HOST=localhost
+USER=root
+PWD='set-the-database-password'
+# Database dump file name (a backup .BAK will be made)
+BACKUPFILE=/root/mysqldump_slurm_acct_db
+
+# mysqldump options recommended by SchedMD in https://bugs.schedmd.com/show_bug.cgi?id=10295
+# Do not change unless you know what you are doing!
+MYSQLDUMPARGS="--single-transaction -B slurm_acct_db"
+
+# Parse command options
+while getopts "vh" options; do
+        case $options in
+                v )     verbose=1
+                        ;;
+                h | * ) echo "Usage:"
+                        echo "$0 [-v]"
+                        exit 1;;
+        esac
+done
+shift $((OPTIND-1))
+
+
+# Select a compression command: lbzip2 (preferred) or gzip
+if test -x /usr/bin/lbzip2
+then
+	# Use the faster parallel lbzip2 (limit to $NUMPROC worker processes)
+	# Enable the EPEL repo and install the lbzip2 package.
+	NUMPROC=5
+	ZIP="/usr/bin/lbzip2 --force -n $NUMPROC"
+	BACKUPFILE=$BACKUPFILE.bz2
+elif test -x /bin/gzip
+then
+	ZIP="/bin/gzip"
+	BACKUPFILE=$BACKUPFILE.gz
+else
+	ZIP="NONE"
+fi
+
+if test $verbose -gt 0
+then
+	echo Compression command for the dump file: $ZIP
+fi
+
+# Make a backup of the last dump with .BAK extension
+if test -f $BACKUPFILE
+then
+	rm -f $BACKUPFILE.BAK
+	mv $BACKUPFILE $BACKUPFILE.BAK
+fi
+
+if test "$ZIP" -ne "NONE"
+then
+	# Database dump with compressed output
+	/usr/bin/mysqldump --host=$HOST --user=$USER --password=$PWD $MYSQLDUMPARGS | $ZIP > $BACKUPFILE
+else
+	# Database dump
+	/usr/bin/mysqldump --host=$HOST --user=$USER --password=$PWD $MYSQLDUMPARGS > $BACKUPFILE
+fi
+
+# Write-protect the dump file
+chmod 444 $BACKUPFILE
+
+if test $verbose -gt 0
+then
+	echo Database dump completed to file:
+	ls -l $BACKUPFILE
+	echo Backup dump file:
+	ls -l $BACKUPFILE.BAK
+fi
