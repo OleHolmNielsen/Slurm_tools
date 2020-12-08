@@ -8,7 +8,7 @@
 # 3. Change the database password in the mysqldump command below.
 # 4. Copy this file to /etc/logrotate.d/
 # 
-# Testing: logrotate -dv /etc/logrotate.d/slurm_acct_db_backup.conf
+# Testing: logrotate -dv /etc/logrotate.d/slurm_acct_db_backup
 # See "man logrotate" for configuration details.
 # See "man logrotate_selinux" regarding SELinux.
 # See /var/log/audit/audit.log in case of SELinux errors.
