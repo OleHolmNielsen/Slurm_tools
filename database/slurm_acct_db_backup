@@ -2,15 +2,18 @@
 # Slurm database slurm_acct_db.
 #
 # Configuration:
-# 1. Define the database dump file path (here: /root/slurm_acct_db_backup.bz2)
-# 2. Initialize an empty logfile: touch /root/slurm_acct_db_backup.bz2
-# 3. Set your database password in the mysqldump command.
+# 1. Define the database dump file path (here: /var/log/mariadb/slurm_acct_db_backup.bz2)
+#    This path must be below /var/log due to SELinux restrictions on logrotate.
+# 2. Initialize an empty dump file: touch /var/log/mariadb/slurm_acct_db_backup.bz2
+# 3. Change the database password in the mysqldump command below.
 # 4. Copy this file to /etc/logrotate.d/
 # 
 # Testing: logrotate -dv /etc/logrotate.d/slurm_acct_db_backup.conf
 # See "man logrotate" for configuration details.
+# See "man logrotate_selinux" regarding SELinux.
+# See /var/log/audit/audit.log in case of SELinux errors.
 
-/root/slurm_acct_db_backup.bz2 {
+/var/log/mariadb/slurm_acct_db_backup.bz2 {
 daily
 dateext
 dateyesterday
@@ -22,6 +25,6 @@ postrotate
 # Strongly recommended: --single-transaction
 # Use bzip2 for compression.
 # Alternatively use lbzip2 from the EPEL repo: lbzip2 --force -n 5
-/usr/bin/mysqldump --user=root --password=<DATABASE-PASSWORD> --single-transaction -B slurm_acct_db | bzip2 > /root/slurm_acct_db_backup.bz2
+/usr/bin/mysqldump --user=root --password=<DATABASE-PASSWORD> --single-transaction -B slurm_acct_db | bzip2 > /var/log/mariadb/slurm_acct_db_backup.bz2
 endscript
 }
