@@ -32,7 +32,8 @@ where:
         -1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
         -2: 2..N lines per node which participates in multiple partitions
         -S: Job StartTime is printed after each jobid/user
-        -E: Job EndTime is printed after each jobid/user
+        -E: Job EndTime is printed after each jobid/user.
+            Hint: Pipe output through "sort -k 11" to sort the EndTimes.
         -T: Job TimeUsed is printed after each jobid/user
         -C: Color output is forced ON
         -c: Color output is forced OFF
