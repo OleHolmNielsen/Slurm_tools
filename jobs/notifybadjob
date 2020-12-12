@@ -136,7 +136,7 @@ echo
 #
 # Big loop over jobs
 #
-for JOB in $JOBLIST
+for jobid in $JOBLIST
 do
 
 #
@@ -146,15 +146,32 @@ if test $killjob -eq 1
 then
 	action='Kill'
 	action_done='killed'
-	action_print="Your $CLUSTERNAME job id $JOB has been ${action_done} by the superuser."
+	action_print="Your $CLUSTERNAME job id $jobid has been ${action_done} by the superuser."
 else
 	action='Notify about'
 	action_done='investigated'
-	action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME job id $JOB may have to be killed."
+	action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME job id $jobid may have to be killed."
+fi
+
+# Check if this jobid can be inquired successfully.
+JOBSTATE="`squeue -h -o %T -j $jobid`"
+if test "$?" != "0"
+then
+        echo Error inquiring about job $jobid
+        exit 1
+fi
+
+# Detect job arrays by counting number of words in JOBSTATE
+words=( $JOBSTATE )
+if [[ ${#words[@]} > 1 ]]
+then
+        echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
+        squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j $jobid
+        exit 1
 fi
 
 echo -n Get job information...
-scontrol --details show job $JOB >$JOBMSGS 2>$JOBERRS
+scontrol --details show job $jobid >$JOBMSGS 2>$JOBERRS
 # Check for errors from job status
 if test -s $JOBERRS
 then
@@ -164,10 +181,10 @@ then
 fi
 
 # Get user E-mail address and name (job arrays handled by uniq)
-USERID=`squeue -h -o '%u' -j $JOB | uniq`
+USERID=`squeue -h -o '%u' -j $jobid | uniq`
 if test -z "$USERID"
 then
-	echo ERROR: Could not get userid of job $JOB
+	echo ERROR: Could not get userid of job $jobid
 	exit 1
 fi
 
@@ -180,9 +197,9 @@ NOTIFYMAIL=""
 
 cat <<EOF
 
-Job $JOB belongs to user $USERID, full name is $FULLNAME
+Job $jobid belongs to user $USERID, full name is $FULLNAME
 User groups: `groups $USERID`
-Action: ${action} a badly behaving job id $JOB
+Action: ${action} a badly behaving job id $jobid
 EOF
 
 #
@@ -203,7 +220,7 @@ $INFOURL
 
 In the following we display various pieces of information about your badly behaving batch job.
 
-Slurm batch system information about job id $JOB:
+Slurm batch system information about job id $jobid:
 ---------------------------------------------------
 
 EOF
@@ -238,7 +255,7 @@ EOF
 
 	# Print job memory and CPU usage by pestat
 	# echo -n RAM and CPU usage...
-	$PESTAT -j $JOB >> $MESSAGE
+	$PESTAT -j $jobid >> $MESSAGE
 	cat <<EOF >> $MESSAGE
 
 Explanation of some columns in the usage list:
@@ -261,7 +278,7 @@ EOF
 
 	# Print job processes by sshjob (local command)
 	echo -n Process status...
-	$PSJOB $JOB 2>&1 >> $MESSAGE
+	$PSJOB $jobid 2>&1 >> $MESSAGE
 fi
 
 # Amount of job wallclock time 
@@ -295,7 +312,7 @@ else
 Information about files in job working directory
 ------------------------------------------------
 
-Job $JOB working directory $WORKDIR
+Job $jobid working directory $WORKDIR
 This directory contains $NUMFILESINDIR files in total.
 Newest files in this directory are (max. $MAXFILES files):
 
@@ -308,7 +325,7 @@ EOF
 Information about files in job working directory
 ------------------------------------------------
 
-Job $JOB working directory $WORKDIR
+Job $jobid working directory $WORKDIR
 This directory contains $NUMFILESINDIR files in total.
 NOTICE: This is a very large number of files in a single directory,
 and this may possibly cause slow job behavior.
@@ -324,9 +341,9 @@ echo Done.
 #
 
 if [ "${killjob}" = "1" ]; then
-  echo Now deleting job $JOB
+  echo Now deleting job $jobid
   echo Reason: "$action_reason"
-  scancel $JOB 
+  scancel $jobid 
 
   #
   # Write statistics to the Syslog logfile
@@ -340,7 +357,7 @@ if [ "${killjob}" = "1" ]; then
   TIMESTAMP=`date +"%Y %b %e %T"`
   # Append a logfile entry
   echo Adding entry to logfile $LOGFILE
-  echo $TIMESTAMP $JOB $USERID $WORKDIR $WALLTIME $NODELIST ${action_reason} >> $LOGFILE
+  echo $TIMESTAMP $jobid $USERID $WORKDIR $WALLTIME $NODELIST ${action_reason} >> $LOGFILE
 
 fi
 
