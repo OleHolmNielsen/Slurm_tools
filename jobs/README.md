@@ -18,6 +18,8 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```notifybadjob```: Notify about or Kill a badly behaving job and send information mail to the user.
 
+* ```joblist```: Handy utility for converting jobids to a comma-separated list when the input may be separated by spaces or in a multi-line file.
+
 * ```warn_maxjobs```: Issue warnings about the number of Slurm jobs approaching MaxJobCount
 
 * ```schedjobs```: Stop or start job scheduling in ALL Slurm partitions

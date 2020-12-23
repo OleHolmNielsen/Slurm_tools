@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Slurm: Format a job list into a comma-separated list
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# Usage:
+# $0 [-f jobfile] job [[,]jobs ...]"
+# Jobs should be comma or space separated.
+
+# Parse command options
+while getopts "f:h" options; do
+	case $options in
+		f )	export JOBFILE=$OPTARG
+			if test ! -s "$JOBFILE"
+			then
+				echo File $JOBFILE is not a regular file or is empty
+				exit 1
+			fi
+			;;
+		h | * )	echo "Usage:"
+			echo "Setting: $0 [-f jobfile] job [[,]jobs ...]"
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
+JOBLIST="$*"
+# Add jobs from file, if any (and remove duplicates)
+if test -s "$JOBFILE"
+then
+	JOBLIST="$JOBLIST `cat $JOBFILE | sort | uniq`"
+fi
+# Replace all spaces in list by comma to get a single job string
+JOBLIST=`echo $JOBLIST | sed "/ /s//,/g"`
+if test -z "$JOBLIST"
+then
+	echo $0: No job list provided
+	exit 1
+elif ! [[ ${JOBLIST} =~ ^[0-9_,]+$ ]]
+then
+	echo ERROR: Joblist does not look like jobids:
+	echo $JOBLIST
+	exit 1
+fi
+
+# Print a comma-separated list of jobs
+echo $JOBLIST
+exit 0
