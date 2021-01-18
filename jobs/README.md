@@ -42,22 +42,34 @@ Examples
 Example output from ```psjob```:
 
 ```
-# psjob  2727657_48
-JOBID               ARRAY_JOB_ID        ARRAY_TASK_ID       START_TIME          TIME                TIME_LIMIT
-2727706             2727657             48                  2020-08-17T13:27:10 7:55:09             2-02:00:00
-NODELIST: a134
+$ psjob  3378173_124
+JOBID     TASKS USER      ARRAY_JOB_ID ARRAY_TASK_ID START_TIME          TIME          TIME_LIMIT    
+3378599   16    user01    3378173      124           2021-01-18T11:48:10 3:05:07       15:00:00      
+NODELIST: g012
 ---------------
-a134
+g012
 ---------------
-  PID S USER      STARTED NLWP     TIME %CPU   RSS COMMAND
-30018 S user01   13:27:10    1 00:00:00  0.0  1392 /bin/bash /var/spool/slurmd/job2727706/slurm_scri
-30059 S user01   13:27:15    5 00:00:00  0.0  5232 srun -n 8 -N 1 gpaw-python run_gpaw.py test
-30061 S user01   13:27:15    1 00:00:00  0.0   256 srun -n 8 -N 1 gpaw-python run_gpaw.py test
-30076 R user01   13:27:15    1 07:54:42 99.9 3313044 a.out
-30077 R user01   13:27:15    1 07:54:58 99.9 3276640 a.out
-30078 R user01   13:27:15    1 07:54:59 99.9 3315204 a.out
-30079 R user01   13:27:15    1 07:54:59 99.9 3313304 a.out
-30080 R user01   13:27:15    1 07:54:53 99.9 3311864 a.out
-30082 R user01   13:27:15    1 07:54:53 99.9 3315336 a.out
-30083 R user01   13:27:15    1 07:54:58 99.9 3306656 a.out
+  PID NLWP S USER      STARTED     TIME %CPU   RSS COMMAND
+57532    1 S user01   11:48:10 00:00:00  0.0  2432 /bin/bash /var/spool/slurmd/job3378599/slurm_scri
+57550    1 S user01   11:48:12 00:00:00  0.0 42532 python run_vasp.py
+57556    1 S user01   11:48:13 00:00:00  0.0  1672 sh -c srun /home/user01/bin/vasp/5.4.4-intel20
+57557    5 S user01   11:48:13 00:00:00  0.0  5872 srun /home/user01/bin/vasp/5.4.4-intel2019/bin
+57558    1 S user01   11:48:13 00:00:00  0.0   836 srun /home/user01/bin/vasp/5.4.4-intel2019/bin
+57573    1 R user01   11:48:13 03:04:46 99.8 579552 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57574    1 R user01   11:48:13 03:04:41 99.7 562172 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57575    1 R user01   11:48:13 03:04:50 99.8 551500 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57576    1 R user01   11:48:13 03:04:52 99.8 550996 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57577    1 R user01   11:48:13 03:04:48 99.8 563908 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57578    1 R user01   11:48:13 03:04:52 99.8 554440 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57579    1 R user01   11:48:13 03:04:47 99.8 567204 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57580    1 R user01   11:48:13 03:04:51 99.8 547952 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57581    1 R user01   11:48:13 03:04:51 99.8 553780 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57582    1 R user01   11:48:13 03:04:52 99.8 570144 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57583    1 R user01   11:48:13 03:04:45 99.8 556076 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57584    1 R user01   11:48:13 03:04:51 99.8 543584 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57585    1 R user01   11:48:13 03:04:47 99.8 552348 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57586    1 R user01   11:48:13 03:04:50 99.8 552232 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57587    1 R user01   11:48:13 03:04:50 99.8 555896 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+57588    1 R user01   11:48:13 03:04:52 99.8 556588 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
+Total: 21 processes and 25 threads
 ```
