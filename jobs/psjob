@@ -68,7 +68,8 @@ echo NODELIST: $NODELIST
 
 # Execute parallel shell on the job nodes:
 # The "scontrol listpids" lists all processes belonging to a Slurm job $realjobid
-# $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
 # Count also the number of processes (numprocs) and threads (numthreads) when field $1 is a number
-$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    ' | awk '{print \$0; if(\$1~/^[0-9]+$/) {numprocs++; numthreads+=\$5}} END {printf(\"Total: %d processes and %d threads\n\", numprocs, numthreads)}'"
+$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    ' | awk '{print \$0; if(\$1~/^[0-9]+\$/) {numprocs++; numthreads+=\$5}} END {printf(\"Total: %d processes and %d threads\n\", numprocs, numthreads)}'"
+
+# $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
 # You could also use: $CLUSH -bw@sj:$realjobid ...
