@@ -11,7 +11,7 @@ then
 fi
 
 PS="/bin/ps"
-PSFLAGS="-o pid,state,user,start,cputime,%cpu,rssize,command --columns 100"
+PSFLAGS="-o pid,state,user,start,nlwp,cputime,%cpu,rssize,command --columns 100"
 SSH="ssh -n -x"
 PING="/bin/ping -c 1 -w 3"
 
@@ -36,10 +36,12 @@ for node in `scontrol show hostnames $*`
 do
 	echo Node ${node}:
 	sinfo -N --long -n $node 
+	echo Jobs on node $node:
 	squeue -o "%A" -w $node
 	if $PING $node 2>&1 > /dev/null
 	then
-		$SSH $node $PS $PSFLAGS --deselect -u \""${deselect_list}"\"
+		# Count also the number of processes (numprocs) and threads (numthreads) when field $1 is a number
+		$SSH $node $PS $PSFLAGS --deselect -u \""${deselect_list}"\" | awk '{print $0; if($1~/^[0-9]+$/) {numprocs++; numthreads+=$6}} END {printf("Total: %d processes and %d threads\n", numprocs, numthreads)}'
 	else
 		echo '*** WARNING ***' Cannot ping host ${node} !
 	fi
