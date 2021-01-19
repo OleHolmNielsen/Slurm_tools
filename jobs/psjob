@@ -1,30 +1,55 @@
 #!/usr/bin/env bash
 
 # Do "ps aux" on a set of nodes belonging to a single job, but exclude system processes.
+export usage="$0 [-c columns] jobid"
+
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
-# Usage: psjob jobid
 
 # Requires ClusterShell with configuration for parallel commands on Slurm jobs,
 # see https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell
 # and https://clustershell.readthedocs.io/en/latest/intro.html
 
-# Possibly configure these variables:
+# Default value:
+export columns=100
+
+# Parse command options
+while getopts "c:h" options; do
+	case $options in
+		c )	export columns=$OPTARG
+			if ! [[ $columns =~ ^[0-9]+$ ]]
+			then
+				echo Number of columns $columns must be a positive number
+				exit 1
+			fi
+			if [[ $columns -lt 5 ]] || [[ $columns -gt 256 ]]
+			then
+				echo Unreasonable number of columns $columns 
+				exit 1
+			fi
+			;;
+		h | * ) echo "Usage: $usage"
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
 CLUSH="/usr/bin/clush"
 PS="/bin/ps"
-PSFLAGS="-o pid,nlwp,state,user,start,cputime,%cpu,rssize,command --columns 100"
+PSFLAGS="-o pid,nlwp,state,user,start,cputime,%cpu,rssize,command --columns $columns"
 
 if test $# -ne 1
 then
-	echo ERROR. Usage: $0 jobid
+	echo ERROR: No jobid given
+	echo Usage: $usage
 	exit -1
 fi
 # Check that jobid is a number (possibly with _ separating jobid and arraytaskid)
 if ! [[ ${1} =~ ^[0-9_]+$ ]]
 then
-        echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
-        echo "Usage: $0 <jobid>"
-        exit 1
+	echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
+	echo "Usage: $usage"
+	exit 1
 fi
 
 jobid=$1

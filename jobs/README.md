@@ -3,7 +3,7 @@ Slurm job scripts
 
 Some convenient scripts for managing Slurm jobs:
 
-* ```psjob```: Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob <jobid>```.
+* ```psjob```: Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob [-c columns] <jobid>```.
   Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
 
 * ```showjob```: Show status of Slurm job(s). Both queue information and accounting information is printed.
