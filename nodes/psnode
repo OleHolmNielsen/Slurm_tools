@@ -1,17 +1,43 @@
 #!/usr/bin/env bash
 
 # Do a "ps" process status on a node-list, but exclude system processes
-# Usage: psnode node-list
+# Usage: psnode [-c columns] node-list
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# Default value:
+export columns=100
+
+# Parse command options
+while getopts "c:" options; do
+	case $options in
+		c )	export columns=$OPTARG
+			if ! [[ $columns =~ ^[0-9]+$ ]]
+			then
+				echo Number of columns $columns must be a positive number
+				exit 1
+			fi
+			if [[ $columns -lt 5 ]] || [[ $columns -gt 256 ]]
+			then
+				echo Unreasonable number of columns $columns 
+				exit 1
+			fi
+			;;
+		h | * ) echo "Usage: psnode [-c columns | -h] node-list"
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
 
 if test $# -ne 1
 then
-	echo ERROR. Usage: $0 node-list
+	echo ERROR:
+	echo "Usage: psnode [-c columns | -h] node-list"
 	exit -1
 fi
 
 PS="/bin/ps"
-PSFLAGS="-o pid,nlwp,state,user,start,cputime,%cpu,rssize,command --columns 100"
+PSFLAGS="-o pid,nlwp,state,user,start,cputime,%cpu,rssize,command --columns $columns"
 SSH="ssh -n -x"
 PING="/bin/ping -c 1 -w 3"
 
