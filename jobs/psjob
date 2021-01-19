@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Do "ps aux" on a set of nodes belonging to a single job, but exclude system processes.
-export usage="$0 [-c columns] jobid"
+export usage="$0 [-c columns | -h] jobid"
 
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
