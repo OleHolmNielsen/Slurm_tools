@@ -16,7 +16,7 @@ while getopts "c:" options; do
 				echo Number of columns $columns must be a positive number
 				exit 1
 			fi
-			if [[ $columns -lt 5 ]] || [[ $columns -gt 256 ]]
+			if [[ $columns -lt 5 ]] || [[ $columns -gt 1024 ]]
 			then
 				echo Unreasonable number of columns $columns 
 				exit 1
@@ -57,15 +57,19 @@ do
 	fi
 done
 
+sep=""
 # The "scontrol show hostnames" command is used to expand NodeList expressions
 for node in `scontrol show hostnames $*`
 do
-	echo $sep
-	echo Node ${node}:
-	echo "----------"
-	sinfo -N --long -n $node 
-	echo Jobs on node $node:
-	squeue -o "%A" -w $node
+	if test -n "$sep"
+	then
+		echo $sep
+	fi
+	echo Node ${node} information:
+	# Print node status information:
+	sinfo sinfo -N  -o "%10N %10P %.4c %.9O %.8z %.7m %.11T %20E" -n $node
+	echo Jobid list: `squeue -h -o "%A" -w $node`
+	echo Node ${node} user processes:
 	if $PING $node 2>&1 > /dev/null
 	then
 		# Count also the number of processes (numprocs) and threads (numthreads) when field $1 is a number

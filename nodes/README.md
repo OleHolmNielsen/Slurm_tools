@@ -20,37 +20,22 @@ If necessary configure the variables in the script.
 Example output from ```psnode```:
 
 ```
-Node g012:
-----------
-Mon Jan 18 14:56:42 2021
-NODELIST   NODES PARTITION       STATE CPUS    S:C:T MEMORY TMP_DISK WEIGHT AVAIL_FE REASON               
-g012           1    xeon16   allocated 16      2:8:1  64000   198000  10212 xeon2670 none                 
-Jobs on node g012:
-JOBID
-3378599
+Node d064 information:
+NODELIST   PARTITION  CPUS  CPU_LOAD    S:C:T  MEMORY       STATE REASON              
+d064       xeon8*        8      2.01    2:4:1   47000       mixed none                
+d064       xeon8_48      8      2.01    2:4:1   47000       mixed none                
+Jobid list: 3381322 3380373
+Node d064 user processes:
   PID NLWP S USER      STARTED     TIME %CPU   RSS COMMAND
-57532    1 S user01   11:48:10 00:00:00  0.0  2432 /bin/bash /var/spool/slurmd/job3378599/slurm_scri
-57550    1 S user01   11:48:12 00:00:00  0.0 42532 python run_vasp.py
-57556    1 S user01   11:48:13 00:00:00  0.0  1672 sh -c srun /home/user01/bin/vasp/5.4.4-intel20
-57557    5 S user01   11:48:13 00:00:00  0.0  5872 srun /home/user01/bin/vasp/5.4.4-intel2019/bin
-57558    1 S user01   11:48:13 00:00:00  0.0   836 srun /home/user01/bin/vasp/5.4.4-intel2019/bin
-57573    1 R user01   11:48:13 03:08:11 99.8 579644 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57574    1 R user01   11:48:13 03:08:06 99.8 562188 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57575    1 R user01   11:48:13 03:08:15 99.8 551612 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57576    1 R user01   11:48:13 03:08:17 99.8 551256 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57577    1 R user01   11:48:13 03:08:13 99.8 563964 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57578    1 R user01   11:48:13 03:08:17 99.8 554440 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57579    1 R user01   11:48:13 03:08:12 99.8 567204 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57580    1 R user01   11:48:13 03:08:16 99.8 548012 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57581    1 R user01   11:48:13 03:08:16 99.8 553972 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57582    1 R user01   11:48:13 03:08:17 99.8 570340 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57583    1 R user01   11:48:13 03:08:10 99.8 556320 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57584    1 R user01   11:48:13 03:08:16 99.8 543640 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57585    1 R user01   11:48:13 03:08:12 99.8 552384 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57586    1 R user01   11:48:13 03:08:16 99.8 552244 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57587    1 R user01   11:48:13 03:08:15 99.8 555908 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-57588    1 R user01   11:48:13 03:08:17 99.8 556708 /home/user01/bin/vasp/5.4.4-intel2019/bin/vas
-Total: 21 processes and 25 threads
+19984    1 S user1      Jan 19 00:00:00  0.0  2224 /bin/bash -l /var/spool/slurmd/job3380373/slurm_s
+20092    1 S user1      Jan 19 00:00:00  0.0  1368 /bin/bash -l /var/spool/slurmd/job3380373/slurm_s
+20094    3 R user1      Jan 19 1-06:25:18 99.9 256676 python3 /home/user1/wlda/atomic_bench
+20096    5 S user1      Jan 19 00:00:01  0.0 15136 orted --hnp --set-sid --report-uri 8 --singleton-
+27564    1 S user1    22:42:23 00:00:00  0.0  2228 /bin/bash -l /var/spool/slurmd/job3381322/slurm_s
+27673    1 S user1    22:42:27 00:00:00  0.0  1372 /bin/bash -l /var/spool/slurmd/job3381322/slurm_s
+27675    3 R user1    22:42:27 10:11:58 99.9 242464 python3 /home/user1/wlda/atomic_benchma
+27676    5 S user1    22:42:27 00:00:00  0.0 15132 orted --hnp --set-sid --report-uri 8 --singleton-
+Total: 8 processes and 20 threads
 ```
 
 Compute node OS and firmware updates
