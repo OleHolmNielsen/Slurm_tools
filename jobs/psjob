@@ -82,10 +82,10 @@ realjobid=`squeue -h -o %A -j $jobid`
 # Print some job information
 if test "$realjobid" = "$jobid"
 then
-	squeue -O JobID:10,NumTasks:6,UserName:10,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
+	squeue -O JobID:10,Partition:10,NumTasks:6,UserName:10,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
 else
 	# For array jobs
-	squeue -O JobID:10,NumTasks:6,UserName:10,ArrayJobID:13,ArrayTaskID:14,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
+	squeue -O JobID:10,Partition:10,NumTasks:6,UserName:10,ArrayJobID:13,ArrayTaskID:14,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
 fi
 # Print the NodeList
 NODELIST="`squeue -h -o %N -j $jobid`"
