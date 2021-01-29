@@ -220,8 +220,8 @@ fi
 export SLURM_TIME_FORMAT="%s"
 # Request job data
 export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
-# Request job states: Cancelled, Completed, Failed, Timeout, Preempted
-export STATE="ca,cd,f,to,pr"
+# Request job states: Cancelled, Completed, Failed, Timeout, Preempted, OUT_OF_MEMORY
+export STATE="ca,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
 sacct $partitionselect -n -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk '
