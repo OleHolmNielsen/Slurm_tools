@@ -55,12 +55,18 @@ Example output
 Installation
 ------------
 
-Copy pestat:
+Copy pestat to a directory in the PATH:
 
 ```
 wget https://raw.githubusercontent.com/OleHolmNielsen/Slurm_tools/master/pestat/pestat
 chmod 755 pestat
 cp pestat /usr/local/bin
+```
+
+If installing as a normal user, copy to the ~/bin for example:
+
+```
+cp pestat ~/bin
 ```
 
 If desired copy pestat.conf:
