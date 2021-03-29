@@ -336,9 +336,10 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 
-	# Running jobs info: JobState JobId User group NodeList StartTime EndTime TimeUsed Partition NumNodes JobName
+	# Running jobs info: JobState JobId User group NodeList StartTime EndTime TimeUsed Partition NumNodes GRES JobName
+	# NOTE: The "-o %b" flag to print TRES_PER_NODE is not documented in the squeue man-page (up to 20.11.5).
 	# Place JobName last, just in case it is a null string
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %M %P %D %j\" " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %M %P %D %b %j\" " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
@@ -352,7 +353,8 @@ BEGIN {
 		TimeUsed=$8
 		Partition=$9
 		NumNodes=$10
-		JobName=$11
+		GRES=$11
+		JobName=$12
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
