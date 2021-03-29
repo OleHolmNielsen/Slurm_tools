@@ -358,7 +358,11 @@ BEGIN {
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
 		JobInfo = JobId " " User " "
-		if (printgres == 1) JobInfo = JobInfo GRES " "
+		if (printgres == 1) {
+			JobInfo = JobInfo GRES " "
+			# Job GRES width for formatting the width below:
+			if (length(GRES) > greswidth) greswidth = length(GRES)
+		}
 		if (printjobname == 1) JobInfo = JobInfo JobName " "
 		if (printjobstarttime == 1) JobInfo = JobInfo StartTime " "
 		if (printjobendtime == 1) JobInfo = JobInfo EndTime " "
@@ -424,11 +428,14 @@ BEGIN {
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
 	if (printtimeused == 1) JobInfo = JobInfo " TimeUsed"
 	JobInfo = JobInfo " ..."
-	# Print GRES column (if requested)
-	if (printgres == 1) { gresheader1 = "GRES/node   "; gresheader2 = "            "}
 	# Print a header line (variable hostnamelength)
-	printf("%*s %15s %8s %7s %8s %8s %8s  %s%s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", gresheader1, "Joblist")
-	printf("%*s %15s %8s %7s %8s %8s %8s  %s%s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", gresheader2, JobInfo)
+	if (printgres == 1) {	# Print GRES column (if requested)
+		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", greswidth, "GRES/node", "Joblist")
+		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", greswidth, "", JobInfo)
+	} else {
+		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
+		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", JobInfo)
+	}
 }
 {
 	#####################################################################################
@@ -564,7 +571,7 @@ BEGIN {
 		printf("%s%3d%s %3d ", cpucolor, allocated_cores, NORMAL, total_cores)
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
 		printf("%s%8d %s%8d%1s%s ", memcolor, memory, freememcolor, freemem, memflag, NORMAL)
-		if (printgres == 1) printf("%s ", nodegres)
+		if (printgres == 1) printf("%*-s ", greswidth, nodegres)
 		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
 		printf("\n")
 	}
