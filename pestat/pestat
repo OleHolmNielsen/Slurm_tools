@@ -152,8 +152,8 @@ while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 			then
 				echo Select only user $username
 			else
-				echo Error selecting Slurm username $username 
-				exit -1
+				# An incorrectly configured Slurm database may not contain user associations
+				echo Warning: No Slurm association found in the database for username $username 
 			fi
 			;;
 		g )	export groupname="$OPTARG"
