@@ -102,6 +102,8 @@ export omitdown=0
 
 # Controls whether GRES (Generic Resources) will be printed
 export printgres=0
+# Set width of the GRES/node column
+export greswidth=12
 # Controls whether JobName will be printed
 export printjobname=0
 # Controls whether job StartTime and EndTime will be printed
@@ -305,6 +307,7 @@ BEGIN {
 	omitdown=ENVIRON["omitdown"]
 	statedown=ENVIRON["statedown"]
 	printgres=ENVIRON["printgres"]
+	greswidth=ENVIRON["greswidth"]
 	printjobname=ENVIRON["printjobname"]
 	printjobstarttime=ENVIRON["printjobstarttime"]
 	printjobendtime=ENVIRON["printjobendtime"]
@@ -337,7 +340,7 @@ BEGIN {
 	# Gather the list of running jobs with squeue
 
 	# Running jobs info: JobState JobId User group NodeList StartTime EndTime TimeUsed Partition NumNodes GRES JobName
-	# NOTE: The "-o %b" flag to print TRES_PER_NODE is not documented in the squeue man-page (up to 20.11.5).
+	# NOTE: The "-o %b" flag to print TRES_PER_NODE is not supported. May also use -O tres-per-node 
 	# Place JobName last, just in case it is a null string
 	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %M %P %D %b %j\" " selection
 	while ((JOBLIST | getline) > 0) {
