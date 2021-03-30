@@ -199,7 +199,7 @@ while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 		d )	export omitdown=1
 			echo Omit nodes with states: $statedown
 			;;
-		j )	hostlist="-n `$prefix/squeue -j $OPTARG -h -o %N`"
+		j )	hostlist="-n `$prefix/squeue -j $OPTARG -h -O NodeList`"
 			echo Select only nodes with jobs in joblist=$OPTARG
 			;;
 		G )	export printgres=1
@@ -338,11 +338,8 @@ BEGIN {
 
 	#####################################################################################
 	# Gather the list of running jobs with squeue
-
-	# Running jobs info: JobState JobId User group NodeList StartTime EndTime TimeUsed Partition NumNodes GRES JobName
-	# NOTE: The "-o %b" flag to print TRES_PER_NODE is not supported. May also use -O tres-per-node 
 	# Place JobName last, just in case it is a null string
-	JOBLIST = prefix "/squeue -t RUNNING -h -o \"%T %A %u %g %N %S %e %M %P %D %b %j\" " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,NodeList,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-per-node,Name " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
