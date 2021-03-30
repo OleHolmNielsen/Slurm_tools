@@ -181,7 +181,7 @@ then
 fi
 
 # Get user E-mail address and name (job arrays handled by uniq)
-USERID=`squeue -h -O UserName -j $jobid | uniq`
+USERID=`squeue -h -O UserName: -j $jobid | uniq`
 if test -z "$USERID"
 then
 	echo ERROR: Could not get userid of job $jobid
