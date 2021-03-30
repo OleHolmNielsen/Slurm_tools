@@ -148,7 +148,7 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 #
 # Print a job summary
 #
-export NUMJOBS=`squeue -h -o "%i" | wc -l`
+export NUMJOBS=`squeue -hO JobID | wc -l`
 export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
 echo >> $TMPFILE
 echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions." >> $TMPFILE
@@ -219,10 +219,7 @@ BEGIN {
 	}
 }'
 
-# The squeue -o format selects fields we are interested in:
-# Userid Account Jobstatus Nodecount CPUcount Partition Reason
-squeue_fmt="%u %a %.10T %.6D %.6C %P %r"
-squeue $partition $qoslist --noheader -o "$squeue_fmt" | awk '
+squeue $partition $qoslist -hO "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]

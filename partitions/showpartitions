@@ -96,8 +96,8 @@ BEGIN {
 			hidden[array[i]] = 1
 	delete array
 
-	# Get the list of all pending jobs (JobID Partition CPUs Reason)
-	JOBLIST = "squeue --noheader -t pending -o \"%i %P %C %R\" " federation partitionlist
+	# Get the list of all pending jobs
+	JOBLIST = "squeue --noheader -t pending -O JobID,Partition,NumCPUs,Reason " federation partitionlist
 	while ((JOBLIST | getline) > 0) {
 		split($2, jobpartitions, ",") # Job partitions (may be a comma-separated list)
 		numcpus = $3

@@ -154,7 +154,7 @@ else
 fi
 
 # Check if this jobid can be inquired successfully.
-JOBSTATE="`squeue -h -o %T -j $jobid`"
+JOBSTATE="`squeue -h -O State -j $jobid`"
 if test "$?" != "0"
 then
         echo Error inquiring about job $jobid
@@ -181,7 +181,7 @@ then
 fi
 
 # Get user E-mail address and name (job arrays handled by uniq)
-USERID=`squeue -h -o '%u' -j $jobid | uniq`
+USERID=`squeue -h -O UserName -j $jobid | uniq`
 if test -z "$USERID"
 then
 	echo ERROR: Could not get userid of job $jobid

@@ -104,7 +104,7 @@ function print_job_accounting()
 #
 
 # Check if job is in the queue and squeue displays job information
-jobfound=`squeue -ho "%i" -j $jobid 2>/dev/null`
+jobfound=`squeue -hO JobID -j $jobid 2>/dev/null`
 if test $? -ne 0 -o -z "$jobfound"
 then
 	echo
@@ -114,7 +114,7 @@ then
 fi
 
 # Check if this jobid can be inquired successfully.
-JOBSTATE="`squeue -h -o %T -j $jobid`"
+JOBSTATE="`squeue -h -O State -j $jobid`"
 if test "$?" != "0"
 then
 	echo Error inquiring about job $jobid 
@@ -134,7 +134,8 @@ fi
 # Print basic job information
 #
 # Get required job information from a single squeue command:
-eval `squeue -ho "%u %a %P %T %C %l %r %V %E" -j $jobid | awk '{
+# eval `squeue -ho "%u %a %P %T %C %l %r %V %E" -j $jobid | awk '{
+eval `squeue -hO "UserName,Account,Partition,State,NumCPUs,TimeLimit,Reason: ,SubmitTime,Dependency" -j $jobid | awk '{
 	print "jobuser=" $1
 	print "jobaccount=" $2
 	print "partition=" $3
@@ -191,8 +192,8 @@ then
 		echo Information about $reason:
 		echo -n "Current user TRES is:      "
 		# Count number of CPUs for running jobs
-		squeue -ho "%C" -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
-		NCPUS=`squeue -ho "%C" -j $jobid`
+		squeue -hO NumCPUs -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
+		NCPUS=`squeue -hO NumCPUs -j $jobid`
 		echo "This job requires TRES:    cpu=$NCPUS"
 		echo
 		echo Information about Account and User limits:
@@ -201,7 +202,7 @@ then
 	then
 		echo
 		echo Information about $reason:
-		gres=`squeue -ho "%b" -j $jobid`
+		gres=`squeue -hO tres-per-job -j $jobid`
 		grestype=`echo $gres | awk -F: '{print $1}'`
 		echo "This job requires GRES: $gres"
 		echo
@@ -211,7 +212,7 @@ then
 	then
 		echo
 		echo Information about $reason:
-		echo User $jobuser number of running jobs is: `squeue -ho "%A" -u $jobuser -t running | wc -l`
+		echo User $jobuser number of running jobs is: `squeue -hO JobID -u $jobuser -t running | wc -l`
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
 	elif test "$reason" = "Dependency"

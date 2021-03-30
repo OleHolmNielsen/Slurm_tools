@@ -67,8 +67,8 @@ do
 	fi
 	echo Node ${node} information:
 	# Print node status information:
-	sinfo sinfo -N  -o "%10N %10P %.4c %.9O %.8z %.7m %.11T %20E" -n $node
-	echo Jobid list: `squeue -h -o "%A" -w $node`
+	sinfo -N  -O "NodeList:10 ,Partition:10 ,CPUs:4 ,CPUsLoad:9 ,SocketCoreThread:8 ,Memory:7 ,StateLong:11 ,Reason:20" -n $node
+	echo Jobid list: `squeue -h -O JobID -w $node`
 	echo Node ${node} user processes:
 	if $PING $node 2>&1 > /dev/null
 	then

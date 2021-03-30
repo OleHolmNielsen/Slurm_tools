@@ -54,7 +54,7 @@ fi
 
 jobid=$1
 # Check if this jobid can be inquired successfully.
-JOBSTATE="`squeue -h -o %T -j $jobid`"
+JOBSTATE="`squeue -h -O State:. -j $jobid`"
 if test "$?" != "0"
 then
 	echo Error inquiring about job $jobid 
@@ -77,7 +77,7 @@ then
 fi
 
 # For an array job, get the individual jobid corresponding to the array job:
-realjobid=`squeue -h -o %A -j $jobid`
+realjobid=`squeue -h -O JobID -j $jobid`
 
 # Print some job information
 if test "$realjobid" = "$jobid"
@@ -88,7 +88,7 @@ else
 	squeue -O JobID:10,Partition:10,NumNodes:6,NumTasks:6,UserName:10,ArrayJobID:13,ArrayTaskID:14,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
 fi
 # Print the NodeList
-NODELIST="`squeue -h -o %N -j $jobid`"
+NODELIST="`squeue -h -O NodeList -j $jobid`"
 echo NODELIST: $NODELIST
 
 # Execute parallel shell on the job nodes:

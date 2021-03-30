@@ -6,8 +6,7 @@
 # Usage:
 # $0 -t timelimit job [jobs ...]
 
-# squeue: the %l option prints timelimit
-SQUEUE_FORMAT="%l %T %A %P %u %g %S %e %j %R"
+SQUEUE_FORMAT=TimeLimit,State,JobID,Partition,UserName,GroupName,StartTime,EndTime,Name,Reason
 export SLURM_TIME_FORMAT=standard
 
 # Parse command options
@@ -34,15 +33,15 @@ then
 		exit 1
 	fi
 	echo Job list: $JOBLIST
-	# Print a job status
-	squeue -o "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
+	echo Current job status:
+	squeue -O "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
 	# Change timelimit of jobs
 	for j in $JOBLIST
 	do
 		scontrol update jobid=$j timelimit=$timelimit
 	done
-	# Print a job status
-	squeue -o "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
+	echo New job status:
+	squeue -O "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
 else
 	echo "ERROR: timelimit must be specified"
 	$0 -h

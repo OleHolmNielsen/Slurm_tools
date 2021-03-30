@@ -9,7 +9,7 @@
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
 
-export NUMJOBS=`squeue -h -o "%i" | wc -l`
+export NUMJOBS=`squeue -hO JobID | wc -l`
 export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
 # Check if NUMJOBS exceeds some percentage of the maximum:
 if (( NUMJOBS > maxjobpercent*MAXJOBCOUNT/100 ))

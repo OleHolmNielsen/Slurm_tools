@@ -8,7 +8,8 @@ listqos=0
 # Default QOS 
 export QOS=normal
 # squeue: the %q option prints QOS
-SQUEUE_FORMAT="%q %Q %T %A %P %u %g %S %e %j %b %R"
+# SQUEUE_FORMAT="%q %Q %T %A %P %u %g %S %e %j %b %R"
+SQUEUE_FORMAT=QOS,Priority,State,JobID,Partition,UserName,Groupname,StartTime,EndTime,Name,tres-per-node,Reason
 
 # Parse command options
 while getopts "lp:q:h" options; do
@@ -48,8 +49,8 @@ then
 		scontrol update jobid=$j qos=$QOS
 	done
 	# Print a job status
-	squeue -o "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
+	squeue -O "$SQUEUE_FORMAT" -j `echo $JOBLIST | sed 's/ /,/g'`
 else
 	echo; echo "Jobs with QOS=$QOS:"; echo
-	squeue $partition -q $QOS -o "$SQUEUE_FORMAT" 
+	squeue $partition -q $QOS -O "$SQUEUE_FORMAT" 
 fi
