@@ -339,7 +339,9 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 	# Place JobName last, just in case it is a null string
-	JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,NodeList,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-per-node,Name " selection
+	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,NodeList,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-per-node,Name " selection
+	# The -O output fields must be space-separated, so use :(space) and enclose -O fields in '' (octal 047)
+	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,UserName: ,GroupName: ,NodeList: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-per-node: ,Name\047 " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
