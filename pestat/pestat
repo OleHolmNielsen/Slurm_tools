@@ -199,8 +199,18 @@ while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 		d )	export omitdown=1
 			echo Omit nodes with states: $statedown
 			;;
-		j )	hostlist="-n `$prefix/squeue -j $OPTARG -h -O NodeList:`"
-			echo Select only nodes with jobs in joblist=$OPTARG
+		j )	joblist=$OPTARG
+			# Check if joblist is running in the Slurm queue and squeue displays job information
+			jobfound=`$prefix/squeue -j $joblist -t running -h -O JobID 2>/dev/null`
+			if test $? -ne 0 -o -z "$jobfound"
+			then
+				echo ERROR: Jobs in the list $joblist are not running in the current Slurm queue
+				exit 1
+			fi
+			echo Select only nodes with jobs in joblist=$joblist
+			# The "readarray" built-in command was introduced in Bash ver.4
+			# See https://www.baeldung.com/linux/join-multiple-lines
+			hostlist="-n `$prefix/squeue -j $joblist -t running -h -O NodeList: | (readarray -t ARRAY; IFS=','; echo "${ARRAY[*]}")`"
 			;;
 		G )	export printgres=1
 			echo "GRES (Generic Resource) is printed after each jobid"
@@ -284,8 +294,8 @@ fi
 # Main pestat function: Execute Slurm commands and print output.
 #
 
-# Print all nodes: NODELIST PARTITION CPU CPU_LOAD MEMORY FREE_MEM THREADS STATE GRES
-$prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
+# $prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
+$prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList: ,Partition: ,CPUsState: ,CPUsLoad: ,Memory: ,FreeMem: ,StateCompact: ,Threads: ,Gres: " | $my_awk '
 BEGIN {
 	#####################################################################################
 	# Initialization
