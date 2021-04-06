@@ -1,3 +1,15 @@
+
+Date: 06 April 2021
+-------------------
+
+Bug fixes:
+
+* pestat -G now prints correctly the GRES used by each JobID on the node, in addition to the node's GRES.
+
+* pestat -j joblist now works correctly for multiple jobs in joblist.
+
+Changes under the hood:  Information from squeue and sinfo now uses the -O output flag for better readability of the code than with the old -o flag and its single-letter options.
+
 Date: 14 July 2019
 ------------------
 
