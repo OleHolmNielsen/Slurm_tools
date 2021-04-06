@@ -105,6 +105,4 @@ History
 The pestat tool was inspired by a similar tool for Torque/PBS by David Singleton (Sep 23, 2004),
 see https://github.com/abarbu/torque/blob/master/contrib/README.pestat
 
-The present author later wrote a pestat bash script for Torque, see
-http://www.clusterresources.com/pipermail/torqueusers/2007-September/006188.html
-and https://ftp.fysik.dtu.dk/Torque/
+The present author later (in 2007) wrote a pestat bash script for Torque, see https://ftp.fysik.dtu.dk/Torque/
