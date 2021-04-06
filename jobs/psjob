@@ -88,7 +88,7 @@ else
 	squeue -O JobID:10,Partition:10,NumNodes:6,NumTasks:6,UserName:10,ArrayJobID:13,ArrayTaskID:14,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
 fi
 # Print the NodeList
-NODELIST="`squeue -h -O NodeList -j $jobid`"
+NODELIST="`squeue -h -O NodeList: -j $jobid`"
 echo NODELIST: $NODELIST
 
 # Execute parallel shell on the job nodes:
