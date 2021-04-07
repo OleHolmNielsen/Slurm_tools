@@ -294,8 +294,10 @@ fi
 # Main pestat function: Execute Slurm commands and print output.
 #
 
-# $prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
-$prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList: ,Partition: ,CPUsState: ,CPUsLoad: ,Memory: ,FreeMem: ,StateCompact: ,Threads: ,Gres: " | $my_awk '
+# Was: $prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
+# $prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList: ,Partition: ,CPUsState: ,CPUsLoad: ,Memory: ,FreeMem: ,StateCompact: ,Threads: ,Gres: " | $my_awk '
+# Column size(width)=30 hopefully suffices to separate columns
+$prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList:30,Partition:30,CPUsState:30,CPUsLoad:30,Memory:30,FreeMem:30,StateCompact:30,Threads:30,Gres:30" | $my_awk '
 BEGIN {
 	#####################################################################################
 	# Initialization
