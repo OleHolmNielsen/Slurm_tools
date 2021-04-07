@@ -70,8 +70,6 @@ then
 else
 	# Default account if none was specified
 	account=`sacctmgr -nrp show user $username | awk -F'|' '{print $2}'`
-	echo User $username default account=$account is selected.
-	echo
 fi
 
 # Check the cluster name
