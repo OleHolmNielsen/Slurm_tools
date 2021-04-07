@@ -70,6 +70,8 @@ then
 else
 	# Default account if none was specified
 	account=`sacctmgr -nrp show user $username | awk -F'|' '{print $2}'`
+	echo User $username default account=$account is selected.
+	echo
 fi
 
 # Check the cluster name
@@ -98,9 +100,14 @@ then
 	exit 1
 fi
 
+# The selected account (may be empty in unsual configurations)
+if test -n "$account"
+then
+	selectedaccount="account=$account"
+fi
 # Get Current Association Manager state Association Records
 # Valid assoc_mgr flags are 'Assoc, QOS, and/or Users'
-scontrol -o show assoc_mgr users=$username account=$account flags=Assoc | awk '
+scontrol -o show assoc_mgr users=$username $selectedaccount flags=Assoc | awk '
 BEGIN {
 	partition	= ENVIRON["partition"]
 	cluster		= ENVIRON["cluster"]
