@@ -59,7 +59,7 @@ while getopts "u:a:p:q:ACrh" options; do
 			export SORT_SEP="-t ,"
 			;;
 		p ) 	export partition="-p $OPTARG"
-			if test -z "`sinfo -ho %P $partition`"
+			if test -z "`sinfo -h -O Partition $partition`"
 			then
 				echo "ERROR: Partition $OPTARG does not exist on this cluster"
 				exit 1
@@ -114,7 +114,8 @@ echo Batch job status for cluster $SYSTEMNAME at `date` >> $TMPFILE
 
 # Count the nodes and CPUs:
 # Output: Nodename cpus partition state
-sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
+# Was: sinfo --noheader -N $partition -o  "%N %c %P %6t" | awk '
+sinfo --noheader -N $partition -O NodeList,CPUs,Partition,StateLong:30| awk '
 {
 	node = $1
 	if (hostname[node] != "") next		# Nodes in multiple partitions are counted once only
@@ -132,7 +133,7 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 } END {
 	print " "
 	print "Node states summary:"
-	format = "%-7s %5d nodes (%d CPUs)\n"
+	format = "%-10s %5d nodes (%6.2f%%) %6d CPUs (%6.2f%%)\n"
 
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
@@ -140,15 +141,15 @@ sinfo --noheader -N  $partition -o  "%N %c %P %6t" | awk '
 
 	for (i in nodestates) {
 		s =  nodestates[i]
-		printf(format, s, nodecount[s],  cpucount[s])
+		printf(format, s, nodecount[s], (100*nodecount[s]/total_node),  cpucount[s], (100*cpucount[s]/total_cpus))
 	}
-	printf(format, "Total", total_node, total_cpus)
+	printf(format, "Total", total_node, 100.0, total_cpus, 100.0)
 }' >> $TMPFILE
 
 #
 # Print a job summary
 #
-export NUMJOBS=`squeue -hO JobID | wc -l`
+export NUMJOBS=`squeue -h -O JobID | wc -l`
 export MAXJOBCOUNT=`scontrol show config | grep MaxJobCount | awk '{print $3}'`
 echo >> $TMPFILE
 echo "Job summary: $NUMJOBS jobs total (max=$MAXJOBCOUNT) in all partitions." >> $TMPFILE
@@ -219,7 +220,7 @@ BEGIN {
 	}
 }'
 
-squeue $partition $qoslist -hO "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason" | awk '
+squeue $partition $qoslist -h -O "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]
