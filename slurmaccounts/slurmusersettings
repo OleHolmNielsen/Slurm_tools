@@ -15,6 +15,9 @@
 # after the Slurm account was created.  Lower limits may be implemented for NEWUSERs.
 # After $newuserperiod the usual DEFAULT limits will be applied.
 export newuserperiod="30 days"
+# User limits will not be modified if the user had submitted <= userminjobs
+# during the last $newuserperiod.
+export userminjobs=50
 # Printing of NEWUSER users: 0=off, 1=summary, 2=details
 export newuserprint=1
 
@@ -148,6 +151,8 @@ BEGIN {
 	assoc		= ENVIRON["assoc_tmp"]
 	users		= ENVIRON["users_tmp"]
 	newusers	= ENVIRON["newusers_tmp"]
+	newuserperiod	= ENVIRON["newuserperiod"]
+	userminjobs	= ENVIRON["userminjobs"]
 	newuserprint	= ENVIRON["newuserprint"]
 	debug = 0	# Debugging flag
 
@@ -489,13 +494,23 @@ $3 >= MINUID {
 	}
 
 	if (user[u] != "") {
-		# Modify existing user
+		# Modify existing user, only if the jobcount is sufficient
 		if (COMMAND != "") {
-			print sacctmgr " -i modify user where name=" u " set" COMMAND
+			# Print user information
+			print "# User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
+			# Get the number of jobs submitted by this user
+			cmd = "sacct -nX -S \"now-" newuserperiod "\" -b -u " u " | wc -l"
+			cmd | getline jobcount
+			print "# User " u " has submitted " jobcount " jobs in the last " newuserperiod
+			if (jobcount > userminjobs) 
+				print sacctmgr " -i modify user where name=" u " set" COMMAND
+			else
+				print "# User " u " will not be modified because job count is <=" userminjobs
 			print ""
 		}
 	} else {
 		# New user: command for creating this account
+		print "# User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
 		print sacctmgr " -i create user name=" u COMMAND
 		print ""
 	}
