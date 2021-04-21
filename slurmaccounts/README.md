@@ -207,8 +207,10 @@ NEWUSER:QOS:normal
 NEWUSER:MaxJobs:50
 NEWUSER:MaxSubmitJobs:50
 NEWUSER:MaxJobsAccrue:10
-# It is possible to ignore NEWUSER settings for "username" if you define it like this:
+# Configure "username" so that NEWUSER settings will be ignored
 # NEWUSER:username:ignore
+# Configure NEWUSER "username" so we do not create this Slurm user
+# NEWUSER:username:dontcreate
 
 # UNIX group defaults
 camdfac:fairshare:5

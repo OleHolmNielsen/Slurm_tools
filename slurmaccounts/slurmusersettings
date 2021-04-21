@@ -164,7 +164,7 @@ BEGIN {
 	defaults["GrpTRESRunMins"]	= ENVIRON["GrpTRESRunMins"]
 
 	# Create an array of Slurm factors (slurm_factors)
-	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS GrpJobsAccrue MaxJobsAccrue"
+	string = "fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS GrpJobsAccrue MaxJobsAccrue MaxJobs MaxSubmitJobs"
 	split(string, slurm_factors, " ")
 
 	# Define index values of the setting[] array
@@ -324,9 +324,19 @@ BEGIN {
 		} else if (item == "NEWUSER") {			# Default value for NEWUSER
 			if (value == "ignore")
 				delete newuser[type]	# Ignore username "type" as a NEWUSER
+			else if (value == "dontcreate")
+				dontcreate[type] = 1	# This username "type" should not be created in Slurm
 			else {
-				newuserdefaultsinitialized++		# Some NEWUSER parameter is defined
-				newuserdefaults[type] = value
+				# Check that type is indeed one of the slurm_factors
+				checkok = 0
+				for (f in slurm_factors)
+					if (tolower(type) == tolower(slurm_factors[f])) {
+						newuserdefaultsinitialized++		# Some NEWUSER parameter is defined
+						newuserdefaults[type] = value
+						checkok = 1		# This is a known slurm_factors
+					}
+				if (checkok == 0)
+					print "\n### ERROR in " user_settings_conf " line " $0
 			}
 		} else if (groupname[item] == "") {	# Unknown UNIX group: Assume that item is a username
 			if (useraccount[item] == "")
@@ -418,7 +428,7 @@ $3 >= MINUID {
 	}
 
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
-	if (ignore_primary_groups == 0 && useraccount[u] != acct) {
+	if (dontcreate[u] == 0 && ignore_primary_groups == 0 && useraccount[u] != acct) {
 		print ""
 		if (defaultaccount[u] == "") {
 			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new Slurm user to be created\n", u)
@@ -486,8 +496,17 @@ $3 >= MINUID {
 		for (i in setting[u][config]) {
 			if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
 			if (setting[u][current][i] != setting[u][config][i]) {
-				if (setting[u][current][i] != "")
-					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration is " i "=" setting[u][config][i]
+				if (setting[u][current][i] != "") {
+					# Determine if current setting is less than configuration setting
+					# Delete any cpu= string and make comparisons of the numbers
+					cu = setting[u][current][i]; sub("cpu=", "", cu); cu = strtonum(cu)
+					co = setting[u][config][i];  sub("cpu=", "", co); co = strtonum(co)
+					if (cu < co)
+						diff = "greater"
+					else
+						diff = "smaller"
+					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration " i "=" setting[u][config][i] " is " diff
+				}
 				COMMAND = COMMAND " " i "=" setting[u][config][i]
 			}
 		}
@@ -505,10 +524,10 @@ $3 >= MINUID {
 			if (jobcount > userminjobs) 
 				print sacctmgr " -i modify user where name=" u " set" COMMAND
 			else
-				print "# User " u " will not be modified because job count is <=" userminjobs
+				print "# User " u " will not be modified because job count " jobcount " is <=" userminjobs
 			print ""
 		}
-	} else {
+	} else if (dontcreate[u] == 0) {
 		# New user: command for creating this account
 		print "# User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
 		print sacctmgr " -i create user name=" u COMMAND
