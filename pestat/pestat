@@ -351,24 +351,24 @@ BEGIN {
 	#####################################################################################
 	# Gather the list of running jobs with squeue
 	# Place JobName last, just in case it is a null string
-	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,NodeList,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-per-node,Name " selection
+	# Place NodeList second before last because it may be very long
+	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-per-node,NodeList,Name " selection
 	# Column size(width)=30 hopefully suffices to separate columns
-	# The -O output fields must be space-separated, so use :(space) and enclose -O fields in '' (octal 047)
-	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State:30,JobID:30,UserName:30,GroupName:30,NodeList:30,StartTime:30,EndTime:30,TimeUsed:30,Partition:30,NumNodes:30,tres-per-node:30,Name:\047 " selection
+	# The -O output fields must be space-separated, so use :(space) "sufix" and enclose -O fields in '' (octal 047)
+	# Older Slurm versions before 20.02 do not support the "sufix" after -O and may thus not work correctly
+	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,UserName: ,GroupName: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-per-node: ,NodeList: ,Name:\047 " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
-		# Replaced by -t RUNNING flag: Skip jobs if not in RUNNING state
-		# if (JobState != "RUNNING") continue
 		JobId=$2
 		User=$3
 		Group=$4
-		NodeList=$5
-		StartTime=$6
-		EndTime=$7
-		TimeUsed=$8
-		Partition=$9
-		NumNodes=$10
-		GRES=$11
+		StartTime=$5
+		EndTime=$6
+		TimeUsed=$7
+		Partition=$8
+		NumNodes=$9
+		GRES=$10
+		NodeList=$11
 		JobName=$12
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job

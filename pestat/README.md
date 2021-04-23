@@ -41,11 +41,7 @@ where:
         -V: Version information
 ```
 
-For continuous monitoring in a terminal window you may for example use this command:
-
-```
-	watch -n 60 --color 'pestat -f -C'
-```
+Notice: This version of pestat uses ```squeue -O``` flags to list jobs, and this may not work correctly for Slurm 19.05 and older.
 
 Example output
 --------------
