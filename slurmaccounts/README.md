@@ -146,7 +146,7 @@ To use this feature uncomment and customize the script line ```# export remote="
 Usage:
 
 ```
-slurmusersettings
+slurmusersettings [-u username]
 ```
 
 The output consists of command lines which could be executed directly by:
