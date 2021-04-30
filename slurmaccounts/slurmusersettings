@@ -69,6 +69,37 @@ export accounts_conf=/etc/slurm/accounts.conf
 
 ### END CONFIGURE these settings for your cluster
 
+#
+# Command usage:
+#
+function usage()
+{
+	cat <<EOF
+Usage: $0 [-u username | -h ]
+where:
+	-u username: Select user <username> (Default is all users)
+	-h Print help information
+EOF
+}
+
+#
+# Parse command options
+#
+while getopts "u:h" options; do
+	case $options in
+		u ) export username=$OPTARG    # Select user
+		    echo "### Select only user $username"
+		    if test -z "`$remote getent passwd $username`"
+		    then
+			echo "ERROR: User $username is not in the passwd database"
+			exit 1
+		    fi
+		;;
+		h|*|? ) usage
+		exit 1;;
+	esac
+done
+
 if test ! -f $user_settings_conf
 then
 	echo "### ERROR: No account settings configuration file $user_settings_conf"
@@ -104,7 +135,7 @@ export group_tmp="/tmp/group.$$"
 export assoc_tmp="/tmp/assoc.$$"
 export users_tmp="/tmp/users.$$"
 export newusers_tmp="/tmp/newusers.$$"
-$remote getent passwd > $passwd_tmp
+# $remote getent passwd > $passwd_tmp
 $remote getent group > $group_tmp
 
 # Set default time format
@@ -137,7 +168,8 @@ $remote sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
 # Read the list of NEWUSER users which were added to Slurm recently
 $remote sacctmgr -nrp list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=where,time > $newusers_tmp
 
-cat $passwd_tmp | gawk -F: '
+# cat $passwd_tmp | gawk -F: '
+$remote getent passwd | gawk -F: '
 BEGIN {
 	MINUID = ENVIRON["MINUID"]
 	skip_locked = ENVIRON["skip_locked"]
@@ -146,7 +178,8 @@ BEGIN {
 	user_settings_conf = ENVIRON["user_settings_conf"]
 	accounts_conf	= ENVIRON["accounts_conf"]
 	sacctmgr	= ENVIRON["sacctmgr"]
-	passwd		= ENVIRON["passwd_tmp"]
+	username	= ENVIRON["username"]
+	# passwd		= ENVIRON["passwd_tmp"]
 	group		= ENVIRON["group_tmp"]
 	assoc		= ENVIRON["assoc_tmp"]
 	users		= ENVIRON["users_tmp"]
@@ -491,6 +524,15 @@ $3 >= MINUID {
 			if (setting[u][config][i] == "") setting[u][config][i] = defaults[i]
 		}
 	}
+
+	# Process only the selected username:
+	if (username != "") {
+		if (u!= username) next
+		if (dontcreate[username] > 0) {
+			print "### NOTICE: The user " username " will not be created according to " user_settings_conf
+			next
+		}
+	}
 	# Compare config and current settings, print out any changes in COMMAND
 	if (isarray(setting[u][config])) {
 		for (i in setting[u][config]) {
@@ -537,6 +579,8 @@ $3 >= MINUID {
 END {
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
+		# Process only the selected username:
+		if (username != "" && u!= username) continue
 		if (userinformation[u] == u) continue
 		if (userinformation[u] == "IGNORE") { printf("\n### IGNORE this username: %s\n", u); continue}
 		if (userinformation[u] == "") userinformation[u] = "No password entry"
