@@ -19,12 +19,12 @@ Usage
 -----
 
 ```
-Usage: showpartitions [-p partition-list] [-g] [-m] [-a] [-f] [-h]
+Usage: showpartitions [-p partition-list] [-g] [-m] [-a|-P] [-f] [-h]
 where:
 	-p partition: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
-	-a: Display information about all partitions including hidden ones.
+	-a|-P: Display information about all partitions including hidden ones.
 	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
 	-h: Print this help information
 

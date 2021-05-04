@@ -10,12 +10,12 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-p partition-list] [-g] [-m] [-a] [-f] [-h]
+Usage: $0 [-p partition-list] [-g] [-m] [-a|-P] [-f] [-h]
 where:
 	-p partition-list: Print only jobs in partition(s) <partition-list>
 	-g: Print also GRES information
 	-m: Print minimum and maximum values for memory and cores/node.
-	-a: Display information about all partitions including hidden ones.
+	-a|-P: Display information about all partitions including hidden ones.
 	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
 	-h: Print this help information
 
@@ -42,7 +42,7 @@ export minmax=0
 # Enable colors in output
 export colors=1
 
-while getopts "p:gmafh" options; do
+while getopts "p:gmaPfh" options; do
 	case $options in
 		p ) 	export partitionlist="-p $OPTARG"
 			echo "Print only jobs in partition $OPTARG"
@@ -51,7 +51,7 @@ while getopts "p:gmafh" options; do
 			;;
 		m ) 	export minmax=1
 			;;
-		a ) 	export all_partitions="--all"
+		a|P ) 	export all_partitions="--all"
 			;;
 		f ) 	export federation="--federation"
 			# Append sinfo option %V (CLUSTER) for Slurm 18.08 and newer.
