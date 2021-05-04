@@ -47,7 +47,7 @@ export SORT_SEP=""
 export reason_print=0
 export account=""
 
-while getopts "u:a:p:q:ACrh" options; do
+while getopts "u:a:Pp:q:ACrh" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username >> $TMPFILE
