@@ -12,13 +12,14 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-u username] [-a account] [-p partition] [-q QOS] [-A] [-C] [-h]
+Usage: $0 [-u username] [-a account] [-p partition] [-P] [-q QOS] [-A] [-C] [-h]
 where:
         -u username: Print only user <username>
         -a account: Print only jobs in Slurm account <account>
 	-A: Print only ACCT_TOTAL lines
 	-C: Print comma separated lines for Excel
         -p partition: Print only jobs in partition <partition-list>
+        -P: Include all partitions, including hidden and unavailable ones
         -q qos-list: Print only jobs in QOS <qos-list>
         -r: Print additional job Reason columns
         -h: Print this help information
@@ -30,6 +31,8 @@ export maxlu=11		# Usernames
 export maxla=7		# Account names
 # Set the percentage of MaxJobCount above which we print a warning.
 export maxjobpercent=80
+# By default sinfo does not show hidden and unavailable partitions
+export all_partitions=""
 
 # Temporary file for headers
 TMPFILE=/tmp/showuserjobs.$$
@@ -65,6 +68,8 @@ while getopts "u:a:p:q:ACrh" options; do
 				exit 1
 			fi
 			echo Print only jobs in partition $OPTARG >> $TMPFILE
+			;;
+		P ) 	export all_partitions="--all"
 			;;
 		q ) 	export qoslist="-q $OPTARG"
 			if test -z "`sacctmgr -n show qos $OPTARG`"
@@ -115,7 +120,7 @@ echo Batch job status for cluster $SYSTEMNAME at `date` >> $TMPFILE
 # Count the nodes and CPUs:
 # Output: Nodename cpus partition state
 # Was: sinfo --noheader -N $partition -o  "%N %c %P %6t" | awk '
-sinfo --noheader -N $partition -O NodeList,CPUs,Partition,StateLong:30| awk '
+sinfo --noheader -N $all_partitions $partition -O NodeList,CPUs,Partition,StateLong:30| awk '
 {
 	node = $1
 	if (hostname[node] != "") next		# Nodes in multiple partitions are counted once only

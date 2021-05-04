@@ -9,13 +9,14 @@ Usage
 -----
 
 ```
-Usage: showuserjobs [-u username] [-a account] [-p partition] [-A] [-C] [-h]
+Usage: showuserjobs [-u username] [-a account] [-p partition] [-P] [-q QOS] [-A] [-C] [-h]
 where:
         -u username: Print only user <username>
         -a account: Print only jobs in Slurm account <account>
 	-A: Print only ACCT_TOTAL lines
 	-C: Print comma separated lines for Excel
         -p partition: Print only jobs in partition <partition-list>
+        -P: Include all partitions, including hidden and unavailable ones
         -q qos-list: Print only jobs in QOS <qos-list>
         -r: Print additional job Reason columns
         -h: Print this help information
