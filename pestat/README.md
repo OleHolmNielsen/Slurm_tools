@@ -14,6 +14,7 @@ Usage: pestat [-p partition(s)] [-u username] [-g groupname] [-a accountname]
         [-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-E] [-C|-c] [-V] [-h]
 where:
         -p partition: Select only partion <partition>
+        -P: Include all partitions, including hidden and unavailable ones
         -u username: Print only user <username>
         -g groupname: Print only users in UNIX group <groupname>
 	-a accountname: Print only jobs in Slurm account <accountname>

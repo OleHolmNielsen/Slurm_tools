@@ -39,6 +39,7 @@ Usage: pestat [-p partition(s)] [-u username] [-g groupname] [-a accountname]
 	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-S] [-E] [-T] [-C|-c] [-V] [-h]
 where:
 	-p partition: Select only partion <partition>
+        -P: Include all partitions, including hidden and unavailable ones
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-a accountname: Print only jobs in Slurm account <accountname>
@@ -114,6 +115,8 @@ export printjobendtime=0
 export groupname=""
 
 export partition=""
+# By default sinfo does not show hidden and unavailable partitions
+export all_partitions=""
 export hostlist=""
 
 # Remove any custom format for squeue and Slurm time format (may mess up output formatting)
@@ -144,10 +147,12 @@ fi
 # Parse command options
 #
 
-while getopts "p:u:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
+while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
+			;;
+		P )	export all_partitions="--all"
 			;;
 		u )	export username=$OPTARG
 			if test "`$prefix/sacctmgr -p -n show assoc where users=$username`"
@@ -297,7 +302,7 @@ fi
 # Was: $prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
 # $prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList: ,Partition: ,CPUsState: ,CPUsLoad: ,Memory: ,FreeMem: ,StateCompact: ,Threads: ,Gres: " | $my_awk '
 # Column size(width)=30 hopefully suffices to separate columns
-$prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList:30,Partition:30,CPUsState:30,CPUsLoad:30,Memory:30,FreeMem:30,StateCompact:30,Threads:30,Gres:30" | $my_awk '
+$prefix/sinfo -h -N $all_partitions $partition $hostlist $statelist -O "NodeList:30,Partition:30,CPUsState:30,CPUsLoad:30,Memory:30,FreeMem:30,StateCompact:30,Threads:30,Gres:30" | $my_awk '
 BEGIN {
 	#####################################################################################
 	# Initialization
