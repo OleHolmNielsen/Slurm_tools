@@ -565,9 +565,10 @@ $3 >= MINUID {
 			print "# User " u " has submitted " jobcount " jobs in the last " newuserperiod
 			if (jobcount > userminjobs) 
 				print sacctmgr " -i modify user where name=" u " set" COMMAND
-			else
+			else {
 				print "# User " u " will not be modified because job count " jobcount " is <=" userminjobs
 				print "# User " u " Command would be: sacctmgr -i modify user where name=" u " set" COMMAND
+			}
 			print ""
 		}
 	} else if (dontcreate[u] == 0) {
