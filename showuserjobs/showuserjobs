@@ -201,7 +201,7 @@ BEGIN {
 		else
 			fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
 				maxlu, maxlu, maxla, maxla)
-		printf (fmt, "Username/", "", "Running", "", "Idle", "", "")
+		printf (fmt, "Username/", "", "Running", "", "Pending", "", "")
 		printf (fmt, "Totals", "Account", "Jobs", "CPUs", "Jobs", "CPUs", "Further info")
 		if (comma_separated!=1)
 			printf (fmt, line, line, line, line, line, line, line)
@@ -212,7 +212,7 @@ BEGIN {
 		else
 			reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
 				maxlu, maxlu, maxla, maxla)
-		printf (reasonfmt, "Username/", "", "Running", "", "Idle", "",
+		printf (reasonfmt, "Username/", "", "Running", "", "Pending", "",
 			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "", "")
 		printf (reasonfmt, "Totals", "Account", 
 			"Jobs", "CPUs", "Jobs", "CPUs",
@@ -357,7 +357,7 @@ BEGIN {
 	if (userselect > 0) exit	# Finished (username specified)
 
 	# Account info format string
-	accountfmt = "Running+Idle=%d CPUs, %d users"
+	accountfmt = "Running+Pending=%d CPUs, %d users"
 	for (acct in accounts) {
 		accountinfo = sprintf(accountfmt, account_runprocs[acct]+account_idleprocs[acct], accountusers[acct])
 		if (reason_print == 0)
