@@ -15,7 +15,7 @@ Usage: pestat [-p partition(s)] [-P] [-u username] [-g groupname] [-a accountnam
 where:
         -p partition: Select only partion <partition>
         -P: Include all partitions, including hidden and unavailable ones
-        -u username: Print only user <username>
+        -u username: Print only jobs of a single user <username>
         -g groupname: Print only users in UNIX group <groupname>
 	-a accountname: Print only jobs in Slurm account <accountname>
         -q qoslist: Print only QOS in the qoslist <qoslist>
@@ -48,6 +48,9 @@ Example output
 --------------
 
 ![pestat example](pestat-example.png)
+
+If there are any running array jobs, the JobID column will be shown as ```JobID(JobArrayID)```.
+If a JobID is a member of a job array, the (JobArrayID) is shown after JobID.
 
 Installation
 ------------
@@ -102,4 +105,5 @@ History
 The pestat tool was inspired by a similar tool for Torque/PBS by David Singleton (Sep 23, 2004),
 see https://github.com/abarbu/torque/blob/master/contrib/README.pestat
 
-The present author later (in 2007) wrote a pestat bash script for Torque, see https://ftp.fysik.dtu.dk/Torque/
+The present author later (in 2007) wrote a pestat bash script for Torque, see https://github.com/OleHolmNielsen/Torque_tools
+

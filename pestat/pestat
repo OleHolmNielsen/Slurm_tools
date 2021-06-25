@@ -40,7 +40,7 @@ Usage: pestat [-p partition(s)] [-P] [-u username] [-g groupname] [-a accountnam
 where:
 	-p partition: Select only partion <partition>
         -P: Include all partitions, including hidden and unavailable ones
-	-u username: Print only user <username> 
+	-u username: Print only jobs of a single user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-a accountname: Print only jobs in Slurm account <accountname>
 	-q qoslist: Print only QOS in the qoslist <qoslist>
@@ -48,8 +48,8 @@ where:
 	-s/-t statelist: Print only nodes with state in <statelist> 
 	-n/-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
-	-G: Print GRES (Generic Resources) in addition to JobId
-	-N: Print JobName in addition to JobId
+	-G: Print GRES (Generic Resources) in addition to JobID
+	-N: Print JobName in addition to JobID
 	-f: Print only nodes that are flagged by * (unexpected load etc.)
 	-F: Like -f, but only nodes flagged in RED are printed.
 	-m free_mem: Print only nodes with free memory LESS than free_mem MB
@@ -155,12 +155,18 @@ while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 		P )	export all_partitions="--all"
 			;;
 		u )	export username=$OPTARG
+			# Only a single username is supported, so detect any non-alphanumeric characters
+			if [[ "$username" =~ [^a-zA-Z0-9] ]]
+			then
+				echo "ERROR: Multiple usernames given: $username"
+				exit -1
+			fi
 			if test "`$prefix/sacctmgr -p -n show assoc where users=$username`"
 			then
-				echo Select only user $username
+				echo "Select a single Slurm user: $username"
 			else
 				# An incorrectly configured Slurm database may not contain user associations
-				echo Warning: No Slurm association found in the database for username $username 
+				echo "Warning: No Slurm association found in the database for username $username"
 			fi
 			;;
 		g )	export groupname="$OPTARG"
@@ -361,23 +367,30 @@ BEGIN {
 	# Column size(width)=30 hopefully suffices to separate columns
 	# The -O output fields must be space-separated, so use :(space) "sufix" and enclose -O fields in '' (octal 047)
 	# Older Slurm versions before 20.02 do not support the "sufix" after -O and may thus not work correctly
-	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,UserName: ,GroupName: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-per-node: ,NodeList: ,Name:\047 " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,JobArrayID: ,UserName: ,GroupName: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-per-node: ,NodeList: ,Name:\047 " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
-		JobId=$2
-		User=$3
-		Group=$4
-		StartTime=$5
-		EndTime=$6
-		TimeUsed=$7
-		Partition=$8
-		NumNodes=$9
-		GRES=$10
-		NodeList=$11
-		JobName=$12
+		JobID=$2
+		JobArrayID=$3
+		User=$4
+		Group=$5
+		StartTime=$6
+		EndTime=$7
+		TimeUsed=$8
+		Partition=$9
+		NumNodes=$10
+		GRES=$11
+		NodeList=$12
+		JobName=$13
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
-		JobInfo = JobId " " User " "
+		if (JobArrayID == JobID) 
+			JobInfo = JobID " " User " "
+		else {
+			# Identify array jobs
+			arrayjobs++
+			JobInfo = JobID "(" JobArrayID ") " User " "
+		}
 		if (printgres == 1) {
 			JobInfo = JobInfo GRES " "
 			# Job GRES width for formatting the width below:
@@ -412,7 +425,7 @@ BEGIN {
 			while ((cmd | getline) > 0) jobnodes[++i] = $1
 			close (cmd)
 		}
-		# Populate the jobs arrays with "JobId User" (Multiple jobs may exist on each node, and EndTime may be added).
+		# Populate the jobs arrays with "JobID User" (Multiple jobs may exist on each node, and EndTime may be added).
 		# Populate the partitions array from job info.
 		for (i in jobnodes) {
 			n = jobnodes[i]
@@ -439,9 +452,12 @@ BEGIN {
 	}
 	close (JOBLIST)
 
-	# Format the column header
+	# Format the column header:
 	# The job information may include EndTime etc.
-	JobInfo = "JobId User"
+	if (arrayjobs == 0)
+		JobInfo = "JobID User"
+	else
+		JobInfo = "JobID(JobArrayID) User"
 	if (printgres == 1) JobInfo = JobInfo " GRES/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
