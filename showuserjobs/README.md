@@ -1,9 +1,13 @@
 Slurm node and batch job status
 -------------------------------
 
-Print the current node status and batch jobs status broken down into userids.
 
-Can also display per-user or per-account status.  A partition may be selected.
+The ```showuserjobs``` tool prints the current node status and batch jobs status broken down into userids. 
+The tool can also display per-user or per-account status, as well as the reasons why jobs are in a Pending state. 
+A partition may be selected as well.
+
+The ```Limit CPUs``` column displays the users' CPU limits from the Slurm database. 
+In this way you can quickly judge whether users and accounts are above or below their CPU limits.
 
 Usage
 -----
