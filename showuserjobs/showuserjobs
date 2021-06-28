@@ -14,15 +14,15 @@ function usage()
 cat <<EOF
 Usage: $0 [-u username] [-a account] [-p partition] [-P] [-q QOS] [-r] [-A] [-C] [-h]
 where:
-        -u username: Print only user <username>
-        -a account: Print only jobs in Slurm account <account>
+	-u username: Print only user <username>
+	-a account: Print only jobs in Slurm account <account>
 	-A: Print only ACCT_TOTAL lines
 	-C: Print comma separated lines for Excel
-        -p partition: Print only jobs in partition <partition-list>
-        -P: Include all partitions, including hidden and unavailable ones
-        -q qos-list: Print only jobs in QOS <qos-list>
-        -r: Print additional job Reason columns
-        -h: Print this help information
+	-p partition: Print only jobs in partition <partition-list>
+	-P: Include all partitions, including hidden and unavailable ones
+	-q qos-list: Print only jobs in QOS <qos-list>
+	-r: Print additional job Reason columns
+	-h: Print this help information
 EOF
 }
 
@@ -130,7 +130,7 @@ sinfo --noheader -N $all_partitions $partition -O NodeList,CPUs,Partition,StateL
 	total_cpus += cpus[node]
 	partition[node] = $3
 	s = $4
-	gsub("*", "", s)    # Strip "*" from nodename in default partition
+	gsub("*", "", s)	# Strip "*" from nodename in default partition
 	state[node] = s
 	nodestates[s] = s
 	nodecount[s]++
@@ -197,29 +197,29 @@ BEGIN {
 	if (reason_print==0) {
 		# Output line format string
 		if (comma_separated==1)
-			fmt="%s,%s,%s,%s,%s,%s,%s\n"
+			fmt="%s,%s,%s,%s,%s,%s,%s,%s\n"
 		else
-			fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
+			fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%s\n",
 				maxlu, maxlu, maxla, maxla)
-		printf (fmt, "Username/", "", "Running", "", "Pending", "", "")
-		printf (fmt, "Totals", "Account", "Jobs", "CPUs", "Jobs", "CPUs", "Further info")
+		printf (fmt, "Username/", "", "Running", "", "Limit", "Pending", "", "")
+		printf (fmt, "Totals", "Account", "Jobs", "CPUs", "CPUs", "Jobs", "CPUs", "Further info")
 		if (comma_separated!=1)
-			printf (fmt, line, line, line, line, line, line, line)
+			printf (fmt, line, line, line, line, line, line, line, line)
 	} else {
 		# Additional columns for job reasons
 		if (comma_separated==1)
-			reasonfmt="%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
+			reasonfmt="%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
 		else
-			reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s   %%6.6s %%6.6s  %%s\n",
+			reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%6.6s %%s\n",
 				maxlu, maxlu, maxla, maxla)
-		printf (reasonfmt, "Username/", "", "Running", "", "Pending", "",
+		printf (reasonfmt, "Username/", "", "Running", "", "Limit", "Pending", "",
 			"Priority", "", "Dependency", "", "CpuLimit", "", "Held", "", "")
 		printf (reasonfmt, "Totals", "Account", 
-			"Jobs", "CPUs", "Jobs", "CPUs",
+			"Jobs", "CPUs", "CPUs", "Jobs", "CPUs",
 			"Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs", "Jobs", "CPUs",
 			"Further info")
 		if (comma_separated!=1)
-			printf (reasonfmt, line, line, line, line, line,
+			printf (reasonfmt, line, line, line, line, line, line,
 				line, line, line, line, line, line, line, line,
 				line, line)
 	}
@@ -250,6 +250,27 @@ BEGIN {
 			errorexit = -1
 		}
 	}
+	# Read list of existing accounts (parseable output)
+	# and get the user cpu limits from the Slurm database
+	command="sacctmgr -snrP show associations format=user,account,GrpTRES"
+	FS="|"	# Set the Field Separatator to | for the account list
+	while ((command | getline) > 0) {
+		# $1=user, $2=account, $3=GrpTRES
+		if ($1 == "") $1 = "ACCT_TOTAL"		# Account GrpTRES when user field is empty
+		cpulimits[$1][$2]	= "Inf"	# The default limit
+		# Split a comma-separated GrpTRES string in $3 and find cpu=NNN limit
+		split($3, array, ",")
+		for (i in array) {
+			if (sub("cpu=", "", array[i]) == 1) {	# Got the cpu=NNN field
+				cpulimits[$1][$2] = array[i]
+			}
+		}
+		# Debug: print "Got user " $0 " GrpTRES=" $3 " CPU limit=" cpulimits[$1][$2]
+		delete array
+	}
+	close(command)
+	FS=" "	# Reset the Field Separatator to space for the input file
+
 	if (errorexit != 0) exit errorexit	# Will jump to END section
 }
 
@@ -306,15 +327,15 @@ BEGIN {
 	if (errorexit != 0) exit errorexit	# Error encountered
 	# Output line format string
 	if (comma_separated==1)
-		fmt = "%s,%s,%d,%d,%d,%d,%s\n"
+		fmt = "%s,%s,%d,%d,%s,%d,%d,%s\n"
 	else
-		fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d  %%s\n",
+		fmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d %%6.6s %%6d %%6d %%s\n",
 			maxlu, maxlu, maxla, maxla)
 	# Additional columns for job reasons
 	if (comma_separated==1)
-		reasonfmt = "%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
+		reasonfmt = "%s,%s,%d,%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\n"
 	else
-		reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d   %%6d %%6d  %%s\n",
+		reasonfmt = sprintf("%%-%d.%ds %%-%d.%ds %%6d %%6d %%6.6s %%6d %%6d %%6d %%6d %%6d %%6d %%6d %%6d %%6d %%6d %%s\n",
 			maxlu, maxlu, maxla, maxla)
 
 	for (u in userlist) {
@@ -326,11 +347,11 @@ BEGIN {
 			if (account_totals_only==0) {
 				if (reason_print == 0)
 					printf(fmt, 
-					userid, account, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
+					userid, account, running[u][a], runprocs[u][a], cpulimits[u][a], idle[u][a], idleprocs[u][a],
 					fullname[userid])
 				else
 					printf(reasonfmt, 
-					userid, account, running[u][a], runprocs[u][a], idle[u][a], idleprocs[u][a],
+					userid, account, running[u][a], runprocs[u][a], cpulimits[u][a], idle[u][a], idleprocs[u][a],
 					Priority[u][a], Priority_procs[u][a], Dependency[u][a], Dependency_procs[u][a],
 					CpuLimit[u][a], CpuLimit_procs[u][a], Held[u][a], Held_procs[u][a],
 					fullname[userid])
@@ -360,13 +381,14 @@ BEGIN {
 	accountfmt = "Running+Pending=%d CPUs, %d users"
 	for (acct in accounts) {
 		accountinfo = sprintf(accountfmt, account_runprocs[acct]+account_idleprocs[acct], accountusers[acct])
+		u = "ACCT_TOTAL"
 		if (reason_print == 0)
 			printf(fmt, 
-			"ACCT_TOTAL", acct, account_running[acct], account_runprocs[acct], account_idle[acct], account_idleprocs[acct],
+			u, acct, account_running[acct], account_runprocs[acct], cpulimits[u][acct], account_idle[acct], account_idleprocs[acct],
 			accountinfo)
 		else
 			printf(reasonfmt, 
-			"ACCT_TOTAL", acct, account_running[acct], account_runprocs[acct], account_idle[acct], account_idleprocs[acct],
+			u, acct, account_running[acct], account_runprocs[acct], cpulimits[u][acct], account_idle[acct], account_idleprocs[acct],
 			account_Priority[acct], account_Priority_procs[acct], account_Dependency[acct], account_Dependency_procs[acct],
 			account_CpuLimit[acct], account_CpuLimit_procs[acct], account_Held[acct], account_Held_procs[acct],
 			accountinfo)
@@ -374,13 +396,15 @@ BEGIN {
 	if (length(gname) > 0) exit	# Finished (account specified)
 
 	accountinfo = sprintf(accountfmt, totalrunprocs+totalidleprocs, totalusers)
+	u = "ACCT_TOTAL"
+	a = "root"
 	if (reason_print == 0)
 		printf(fmt, 
-		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, cpulimits[u][a], totalidle, totalidleprocs, 
 		accountinfo)
 	else
 		printf(reasonfmt, 
-		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, totalidle, totalidleprocs, 
+		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, cpulimits[u][a], totalidle, totalidleprocs, 
 		totalPriority, totalPriority_procs, totalDependency, totalDependency_procs,
 		totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
 		accountinfo)

@@ -26,25 +26,32 @@ Example output
 --------------
 
 ```
-$ showuserjobs 
-Batch job status at Wed Nov 21 09:10:34 CET 2018
+$ showuserjobs
+Batch job status for cluster niflheim at Mon Jun 28 13:10:22 CEST 2021
  
 Node states summary:
-mix        19 nodes (288 CPUs)
-alloc     759 nodes (10280 CPUs)
-drng        1 nodes (16 CPUs)
-idle       23 nodes (200 CPUs)
-Total     802 nodes (10784 CPUs)
+allocated    165 nodes ( 21.97%)   5104 CPUs ( 23.89%)
+down           5 nodes (  0.67%)    152 CPUs (  0.71%)
+drained        2 nodes (  0.27%)     96 CPUs (  0.45%)
+draining@    561 nodes ( 74.70%)  15680 CPUs ( 73.38%)
+idle          14 nodes (  1.86%)    184 CPUs (  0.86%)
+mixed          1 nodes (  0.13%)     80 CPUs (  0.37%)
+reboot         3 nodes (  0.40%)     72 CPUs (  0.34%)
+Total        751 nodes (100.00%)  21368 CPUs (100.00%)
 
-Job summary: 3092 jobs total (max=20000) in all partitions.
+Job summary: 1393 jobs total (max=20000) in all partitions.
  
-Username/            Runnin            Idle         
-Totals      Account    Jobs   CPUs     Jobs   CPUs  Further info
-=========== ======== ====== ======   ====== ======  =============================
-GRAND_TOTAL ALL         379  10498     2713  95305  Running+Idle=105803 CPUs, 46 users
-ACCT_TOTAL  camdvip     214   4406     2301  81335  Running+Idle=85741 CPUs, 11 users
-ACCT_TOTAL  ecsvip       51   1516       91   2264  Running+Idle=3780 CPUs, 8 users
-user01      camdvip       8   1200       47   6384  Full name 1
-user02      camdvip       6   1166      101  28824  Full name 2
+Username/            Runnin         Limit Pendin         
+Totals      Account    Jobs   CPUs   CPUs   Jobs   CPUs Further info
+=========== ======== ====== ====== ====== ====== ====== =============================
+GRAND_TOTAL ALL         361  20761    Inf   1032  47809 Running+Pending=68570 CPUs, 46 users
+ACCT_TOTAL  ecsvip      123   6600    Inf    238   7064 Running+Pending=13664 CPUs, 12 users
+ACCT_TOTAL  camdvip      86   6240    Inf    504  24497 Running+Pending=30737 CPUs, 9 users
+ACCT_TOTAL  catvip       52   3472    Inf    111   8736 Running+Pending=12208 CPUs, 7 users
+user01      camdvip      30   2352   2000     75   5632 Full name 1
+user02      ecsvip       16   1816   2000      1     80 Full name 2
 ...
 ```
+
+The *Limit CPUs* column is the GrpTRES cpu limit,
+where *Inf* (infinite) indicates that no limit has been set.
