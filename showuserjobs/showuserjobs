@@ -257,7 +257,6 @@ BEGIN {
 	while ((command | getline) > 0) {
 		# $1=user, $2=account, $3=GrpTRES
 		if ($1 == "") $1 = "ACCT_TOTAL"		# Account GrpTRES when user field is empty
-		cpulimits[$1][$2]	= "Inf"	# The default limit
 		# Split a comma-separated GrpTRES string in $3 and find cpu=NNN limit
 		split($3, array, ",")
 		for (i in array) {
@@ -286,6 +285,7 @@ BEGIN {
 	if (userselect > 0 && uname !~ userid) next	# Select specified username only
 	userlist[userid][account] = userid
 	accountlist[userid][account] = account
+	if (cpulimits[userid][account] == "") cpulimits[userid][account]	= "Inf"	# The default limit
 
 	if (status == "RUNNING" ) {
 		running[userid][account]++
@@ -382,6 +382,7 @@ BEGIN {
 	for (acct in accounts) {
 		accountinfo = sprintf(accountfmt, account_runprocs[acct]+account_idleprocs[acct], accountusers[acct])
 		u = "ACCT_TOTAL"
+		if (cpulimits[u][acct] == "") cpulimits[u][acct]	= "Inf"	# The default limit
 		if (reason_print == 0)
 			printf(fmt, 
 			u, acct, account_running[acct], account_runprocs[acct], cpulimits[u][acct], account_idle[acct], account_idleprocs[acct],
@@ -397,14 +398,15 @@ BEGIN {
 
 	accountinfo = sprintf(accountfmt, totalrunprocs+totalidleprocs, totalusers)
 	u = "ACCT_TOTAL"
-	a = "root"
+	acct = "root"
+	if (cpulimits[u][acct] == "") cpulimits[u][acct]	= "Inf"	# The default limit
 	if (reason_print == 0)
 		printf(fmt, 
-		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, cpulimits[u][a], totalidle, totalidleprocs, 
+		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, cpulimits[u][acct], totalidle, totalidleprocs, 
 		accountinfo)
 	else
 		printf(reasonfmt, 
-		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, cpulimits[u][a], totalidle, totalidleprocs, 
+		"GRAND_TOTAL", "ALL", totalrun, totalrunprocs, cpulimits[u][acct], totalidle, totalidleprocs, 
 		totalPriority, totalPriority_procs, totalDependency, totalDependency_procs,
 		totalCpuLimit, totalCpuLimit_procs, totalHeld, totalHeld_procs,
 		accountinfo)
