@@ -224,7 +224,7 @@ export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Sub
 export STATE="ca,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
-sacct $partitionselect -n -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk '
+sacct $partitionselect -np -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
 BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
