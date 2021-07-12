@@ -299,7 +299,7 @@ BEGIN {
 		totalwaitaverage = totalwait/totaljobs
 	else
 		totalwaitaverage = 0
-	if (wallhours > 0)
+	if (wallsecs > 0)
 		nodesaverage = wallnodesecs/wallsecs
 	else
 		nodesaverage = 0
