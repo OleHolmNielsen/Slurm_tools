@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+# Print job statistics information from Slurm sacct accounting records
+# Author:	Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+#####################################################################################
+#
+# Command usage:
+#
+function usage()
+{
+	cat <<EOF
+Usage: $0 [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-r report-prefix] [-n] [-h]
+where:
+	-s Start_time [last month]: Starting time of accounting period.
+	-e End_time [last month]: End time of accounting period.
+	-c: Current month
+	-w: Last week
+	-m monthyear: Select month and year (like "november2019")
+	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
+	-r: Report name prefix
+	-h: Print this help information
+
+The Start_time and End_time values specify the date/time interval of
+job completion/termination (see "man sacct").
+
+Hint: Specify Start/End time as MMDD (Month and Date)
+EOF
+}
+
+#####################################################################################
+
+# Report file prefix
+REPORT_PREFIX=/tmp/job_report
+export partition=""
+export month="last"
+
+# Process options
+while getopts "p:u:g:s:e:r:m:cwhn" options; do
+	case $options in
+		p )     export partition=$OPTARG
+			export partitionselect="--partition $OPTARG"
+			echo Print only accounting in Slurm partition $OPTARG
+			;;
+		s )     export start_time=$OPTARG
+			echo Start date $OPTARG
+			REPORT_NAME=${start_time}_${end_time}
+			;;
+		e )     export end_time=$OPTARG
+			echo End date $OPTARG
+			REPORT_NAME=${start_time}_${end_time}
+			;;
+		m )     echo Select month $OPTARG 
+			start_time=`date -d "1$OPTARG" +%m01%y`
+			end_time=`date -d "1$OPTARG + 1 month" +%m01%y`
+			MONTH=`date -d "1$OPTARG" +%B`
+			YEAR=`date -d "1$OPTARG" +%Y`
+			REPORT_NAME=${MONTH}_${YEAR}
+			;;
+		c )     export start_time=`date +%m01%y`
+			export end_time=`date +%m%d%y`
+			echo Select current month from $start_time until $end_time
+			REPORT_NAME=Current_month
+			;;
+		w )     export start_time=`date -d 'last week' +%m%d%y`
+			export end_time=`date +%m%d%y`
+			echo Select last week from $start_time until $end_time
+			REPORT_NAME=Last_week
+			;;
+		r )     export REPORT_PREFIX="$OPTARG"
+			echo Copy report to $OPTARG
+			;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
+#
+# Default period: last month 
+#
+# Test if either start_time or end_time are empty strings
+if test -z "$start_time" -o -z "$end_time"
+then
+	MONTH=`date -d "last month" +%B`
+	YEAR=`date -d "last month" +%Y`
+	REPORT_NAME=${MONTH}_${YEAR}
+	start_time=`date -d "last month" +%m01%y`
+	end_time=`date -d "last month + 1 month" +%m01%y`
+fi
+
+REPORT=${REPORT_PREFIX}_${REPORT_NAME}.csv
+echo Report for the period from $start_time until $end_time 
+
+# Check partition names
+if test -n "$partition"
+then
+	for p in `echo $partition | sed 's/,/ /g'`
+	do
+		# echo "Check partition $p"
+		if test -z "`sinfo -h -p $p -o %R`" 
+		then
+			echo "ERROR: Invalid partition name $p"
+			echo "Valid partition names are:"
+			sinfo -o "%R"
+			exit -1
+		fi
+	done
+fi
+
+#####################################################################################
+#
+# Get and process Slurm accounting records
+
+# Report time in seconds:
+export SLURM_TIME_FORMAT="%s"
+# Request job data
+export FORMAT="JobID,User,Group,Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,MaxRSS,AllocTRES,State"
+# Request job states: Cancelled, Completed, Failed, Timeout, Preempted, OUT_OF_MEMORY
+export STATE="ca,cd,f,to,pr,oom"
+
+# Get Slurm individual job accounting records using the "sacct" command
+# echo sacct $partitionselect -X -np -a -S $start_time -E $end_time -o $FORMAT -s $STATE 
+sacct $partitionselect -X -np -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
+BEGIN {
+	print "JobID\tuser\tncpus\twall\tnodes\tngpus"
+}
+{
+	# Parse input data
+	JobID	= $1		# JobID without .batch extension etc.
+	user	= $2		# User name
+	group	= $3		# Group name
+	part	= $4		# Slurm partition name for this job
+	nodect	= $5		# Number of nodes used
+	total_ncpus = $6	# Total number of CPUs used (>=nodect)
+	submit	= $7		# submit time
+	eligible= $8		# eligible time
+	if (eligible == "Unknown") eligible = submit
+	start	= $9		# Job start time in epoch seconds
+	end	= $10		# Job end time in epoch seconds
+	cput	= $11		# CPU time in seconds
+	maxrss	= $12		# MaxRSS: Maximum resident set size of all tasks in job
+	# AllocTRES requires AccountingStorageTRES=gres/gpu in slurm.conf
+	alloctres = $13		# AllocTRES: Trackable resources (GPUs used)
+	state	= $14		# Job state
+	wall	= end - start
+	wait	= start - eligible
+
+	# Parse the alloctres field and look for gres/gpu=XX number of gpus field
+	# Example: billing=4,cpu=2,gres/gpu:rtx3090=1,gres/gpu=1,mem=4000M,node=1
+	ngpus = 0
+	if (split(alloctres,array,",") > 0) 
+		for (i in array) {
+			if (gsub("gres/gpu=", "", array[i]) == 1)
+				ngpus = array[i]
+		}
+	# This is a local hack (delete if you do not want it):
+	# Since we do not have complete AllocTRES data in our database,
+	# fudge the number of GPUs=1 for the sm3090 partition.
+	if (ngpus == 0 && part == "sm3090") ngpus = 1
+
+	if (wall < 10) next	# Assume failed job < 10 sec
+	wallhours = wall/3600
+	printf("%d\t%s\t%d\t%.3f\t%d\t%d\n", JobID, user, total_ncpus, wallhours, nodect, ngpus)
+} ' > $REPORT
+
+echo Report generated to file $REPORT
+exit 0

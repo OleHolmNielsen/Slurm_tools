@@ -99,3 +99,26 @@ You have to configure two items in the script:
 
 * Partion list: similar, overlapping partitions are comma-separated
 
+
+jobstats tool
+-------------
+
+The ```jobstats``` tool prints job statistics information from Slurm sacct accounting records.
+
+```
+Usage: ./jobstats [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-r report-prefix] [-n] [-h]
+where:
+	-s Start_time [last month]: Starting time of accounting period.
+	-e End_time [last month]: End time of accounting period.
+	-c: Current month
+	-w: Last week
+	-m monthyear: Select month and year (like "november2019")
+	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
+	-r: Report name prefix
+	-h: Print this help information
+
+The Start_time and End_time values specify the date/time interval of
+job completion/termination (see "man sacct").
+
+Hint: Specify Start/End time as MMDD (Month and Date)
+```
