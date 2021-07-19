@@ -151,14 +151,14 @@ BEGIN {
 	# Parse the alloctres field and look for gres/gpu=XX number of gpus field
 	# Example: billing=4,cpu=2,gres/gpu:rtx3090=1,gres/gpu=1,mem=4000M,node=1
 	ngpus = 0
-	if (split(alloctres,array,",") > 0) 
+	if (split(alloctres, array, ",") > 0) 
 		for (i in array) {
 			if (gsub("gres/gpu=", "", array[i]) == 1)
 				ngpus = array[i]
 		}
 	# This is a local hack (delete if you do not want it):
-	# Since we do not have complete AllocTRES data in our database,
-	# fudge the number of GPUs=1 for the sm3090 partition.
+	# Since we do not have complete AllocTRES records in our database,
+	# fudge the number of GPUs=1 for jobs in the sm3090 partition.
 	if (ngpus == 0 && part == "sm3090") ngpus = 1
 
 	if (wall < 10) next	# Assume failed job < 10 sec
