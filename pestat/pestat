@@ -15,8 +15,6 @@ my_version="pestat Github version"
 export prefix=/usr/bin
 # The awk command
 my_awk=$prefix/awk
-# Variable width of the hostname column (default=8)
-export hostnamelength="8"
 # Job grace time (seconds) before we may flag the node
 export jobgracetime=300
 # Global configuration file for pestat
@@ -301,8 +299,11 @@ then
 fi
 
 # Determine the longest hostname length in the cluster
+# The sinfo header NODELIST will set the minimum to 8 chars
 
-maxlen=`sinfo -hN -O NodeList | awk '{if (length($1)>maxlen) maxlen=length($1)} END {print maxlen}'`
+# Variable width of the hostname column (default=8)
+export hostnamelength="8"
+maxlen=`sinfo -N -O NodeList | awk '{if (length($1)>maxlen) maxlen=length($1)} END {print maxlen}'`
 if [[ $maxlen -gt $hostnamelength ]]
 then
 	if [[ $maxlen -gt 20 ]]		# Truncate maxlen to max 20 chars
@@ -310,7 +311,7 @@ then
 		maxlen = 20
 	fi
 	echo "Longest hostname length is set to $maxlen"
-	hostnamelength = $maxlen
+	export hostnamelength = $maxlen
 fi
 
 #####################################################################################
