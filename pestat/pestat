@@ -310,8 +310,8 @@ then
 	then
 		maxlen = 20
 	fi
-	echo "Longest hostname length is set to $maxlen"
-	export hostnamelength = $maxlen
+	# echo "Longest hostname length is set to $maxlen"
+	export hostnamelength=$maxlen
 fi
 
 #####################################################################################
