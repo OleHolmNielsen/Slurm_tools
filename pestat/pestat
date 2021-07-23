@@ -300,6 +300,19 @@ then
 	exit 1
 fi
 
+# Determine the longest hostname length in the cluster
+
+maxlen=`sinfo -hN -O NodeList | awk '{if (length($1)>maxlen) maxlen=length($1)} END {print maxlen}'`
+if [[ $maxlen -gt $hostnamelength ]]
+then
+	if [[ $maxlen -gt 20 ]]		# Truncate maxlen to max 20 chars
+	then
+		maxlen = 20
+	fi
+	echo "Longest hostname length is set to $maxlen"
+	hostnamelength = $maxlen
+fi
+
 #####################################################################################
 #
 # Main pestat function: Execute Slurm commands and print output.
