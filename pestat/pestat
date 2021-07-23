@@ -481,10 +481,10 @@ BEGIN {
 	# Print a header line (variable hostnamelength)
 	if (printgres == 1) {	# Print GRES column (if requested)
 		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", greswidth, "GRES/node", "Joblist")
-		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", greswidth, "", JobInfo)
+		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15m)", "(MB)", "(MB)", greswidth, "", JobInfo)
 	} else {
 		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
-		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "", "(MB)", "(MB)", JobInfo)
+		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15m)", "(MB)", "(MB)", JobInfo)
 	}
 }
 {
