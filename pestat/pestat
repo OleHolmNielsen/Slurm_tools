@@ -303,7 +303,7 @@ fi
 
 # Variable width of the hostname column (default=8)
 export hostnamelength="8"
-maxlen=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | awk '{if (length($1)>maxlen) maxlen=length($1)} END {print maxlen}'`
+maxlen=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | $my_awk '{if (length($1)>maxlen) maxlen=length($1)} END {print maxlen}'`
 if [[ $maxlen -gt $hostnamelength ]]
 then
 	if [[ $maxlen -gt 20 ]]		# Truncate maxlen to max 20 chars
