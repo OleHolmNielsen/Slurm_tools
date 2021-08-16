@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Slurm: Add nice level to jobs, or list jobs with non-zero nice level.
-# Requires also the helper script "joblistformat".
+# Requires also the helper script "joblist".
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Usage:
@@ -9,11 +9,11 @@
 # Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
 # Jobs should be comma or space separated.
 
-# Requires also the helper script "joblistformat".
-JOBLISTFORMAT=`which joblistformat`
+# Requires also the helper script "joblist".
+JOBLISTFORMAT=`which joblist`
 if test $? -ne 0
 then
-	echo ERROR: The joblistformat script cannot be found
+	echo ERROR: The joblist script cannot be found
 	exit 1
 fi
 # List or set nice values:
