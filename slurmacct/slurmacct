@@ -123,11 +123,11 @@ then
 	for p in `echo $partition | sed 's/,/ /g'`
 	do
 		# echo "Check partition $p"
-		if test -z "`sinfo -h -p $p -o %R`" 
-		then
+	if test -z "`sinfo -h -p $p -O PartitionName`" 
+	then
 			echo "ERROR: Invalid partition name $p"
-			echo "Valid partition names are:"
-			sinfo -o "%R"
+			# echo "Valid partition names are:"
+			# sinfo -O "PartitionName"
 			exit -1
 		fi
 	done
