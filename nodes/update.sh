@@ -37,7 +37,11 @@ function dell_update()
 	options="$3"
 	echo
 	echo Dell $1 update file $file with option $options
-	if test -x $file
+	# Check for the .BIN extension
+	if [[ ${file: -4} != ".BIN" ]]
+	then
+		echo ERROR: File $file does not have the .BIN extension
+	elif test -x $file
 	then
 		# Execute the update package in quick-mode
 		$file -q $options
