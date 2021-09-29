@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# Print a simple node status
+
+sinfo -N --long -n $*
+echo
+scontrol show node $*
