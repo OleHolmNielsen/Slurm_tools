@@ -9,6 +9,8 @@ A partition may be selected as well.
 The ```Limit CPUs``` column displays the users' CPU limits from the Slurm database. 
 In this way you can quickly judge whether users and accounts are above or below their CPU limits.
 
+Prerequisite: GNU gawk version 4.0 or later is required for handling arrays of arrays.
+
 Usage
 -----
 
