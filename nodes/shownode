@@ -2,6 +2,7 @@
 
 # Print a simple node status
 
-sinfo -N --long -n $*
+# Omit the 1st line (timestamp) from sinfo
+sinfo -N --long -n $* | tail -n +2
 echo
 scontrol show node $*
