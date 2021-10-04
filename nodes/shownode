@@ -5,4 +5,9 @@
 # Omit the 1st line (timestamp) from sinfo
 sinfo -N --long -n $* | tail -n +2
 echo
+# Node job information
+unset SLURM_TIME_FORMAT
+squeue -O JobID:10,Partition:15,UserName:12,StartTime,EndTime -w $*
+echo
+echo NODE CONFIGURATION:
 scontrol show node $*
