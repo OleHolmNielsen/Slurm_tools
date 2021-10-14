@@ -49,7 +49,6 @@ export month="last"
 while getopts "p:u:g:s:e:r:m:cwGhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
-			export partitionselect="--partition $OPTARG"
 			echo Print only accounting in Slurm partition $OPTARG
 			;;
 		u )     export username=$OPTARG
@@ -155,7 +154,7 @@ fi
 
 #####################################################################################
 #
-# Print a heading
+# Print a heading, and make selection for sacct report
 #
 # First report overall statistics including nicely formatted start/end date:
 # Change the date/time format in report header for readibility (formats in "man strftime")
@@ -163,6 +162,9 @@ fi
 REPORT=${REPORT_PREFIX}${REPORT_NAME}
 
 export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
+
+# Selections for sacct:
+selection=""
 
 if test $printheader -gt 0
 then
@@ -172,6 +174,7 @@ then
 	then
 		echo >> $REPORT
 		echo Partition selected: $partition >> $REPORT
+		selection="--partition $partition $selection"
 	fi
 fi
 
@@ -184,10 +187,12 @@ then
 	if test -n "$username"
 	then
 		echo "User name selected: $username" >> $REPORT
+		selection="--user $username $selection"
 	fi
 	if test -n "$groupname"
 	then
 		echo "Group name selected: $groupname" >> $REPORT
+		selection="--group $groupname $selection"
 	fi
 	echo "                             Wallclock          Average Average" >> $REPORT
 	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
@@ -206,7 +211,7 @@ fi
 #
 # Get and process Slurm accounting records
 
-# Get length of selection strings for sacct formatting
+# Get length of strings for sacct formatting
 if test -n "$usernamelength"
 then
 	ulen="%${#username}"
@@ -224,7 +229,7 @@ export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Sub
 export STATE="ca,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
-sacct $partitionselect -np -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
+sacct $selection -np -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
 BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
