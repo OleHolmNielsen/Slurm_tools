@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Slurm: use scontrol to reboot nodes
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+ACTION=resume
+
+if test $# -eq 1
+then
+	NODES="$1"
+	echo Reboot nodes $NODES with nextstate=$ACTION 
+else
+	echo Usage: $0 nodename-list
+	exit 1
+fi
+
+/usr/bin/scontrol reboot asap nextstate=$ACTION $NODES 
+/usr/bin/sinfo -N -n $NODES
