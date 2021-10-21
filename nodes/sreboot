@@ -3,16 +3,22 @@
 # Slurm: use scontrol to reboot nodes
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
+NODES="$1"
 ACTION=resume
 
-if test $# -eq 1
+if test $# -ne 1
 then
-	NODES="$1"
-	echo Reboot nodes $NODES with nextstate=$ACTION 
-else
 	echo Usage: $0 nodename-list
 	exit 1
 fi
 
-/usr/bin/scontrol reboot asap nextstate=$ACTION $NODES 
-/usr/bin/sinfo -N -n $NODES
+# Check the node list
+if [[ "`sinfo -hN -n $NODES`" = "" ]]
+then
+	echo ERROR: Nodelist $NODES does not exist
+	exit 1
+fi
+
+echo Reboot nodes $NODES with nextstate=$ACTION 
+scontrol reboot asap nextstate=$ACTION $NODES 
+sinfo -N -n $NODES
