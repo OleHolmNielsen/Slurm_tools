@@ -107,6 +107,7 @@ jobstats tool
 The ```jobstats``` tool prints information for all jobs using Slurm sacct accounting records.
 One line per jobs is printed,
 and this may be used as input to other tools which produce Slurm statistics.
+The output is a Tab-separated .csv file.
 
 ```
 Usage: jobstats [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-r report-prefix] [-n] [-h]
