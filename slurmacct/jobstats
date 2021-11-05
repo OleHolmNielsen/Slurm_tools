@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Print job statistics information from Slurm sacct accounting records
+# Print information for all jobs using Slurm sacct accounting records
 # Author:	Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 

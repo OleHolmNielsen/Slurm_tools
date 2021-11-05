@@ -7,13 +7,14 @@ The tools are:
 ```
 slurmacct
 topreports
+jobstats
 ```
 
 slurmacct tool
 --------------
 
 Specific start and end Time/Date for the report may be specified.
-The default period is last month.
+The default period is the last full month.
 
 The -c option selects the current month until today, and -w selects the last week.
 
@@ -97,16 +98,16 @@ You have to configure two items in the script:
 
 * Directory and report file name prefix: PREFIX
 
-* Partion list: similar, overlapping partitions are comma-separated
+* Partition list: overlapping partitions are comma-separated so they are reported together.
 
 
 jobstats tool
 -------------
 
-The ```jobstats``` tool prints job statistics information from Slurm sacct accounting records.
+The ```jobstats``` tool prints information for all jobs using Slurm sacct accounting records.
 
 ```
-Usage: ./jobstats [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-r report-prefix] [-n] [-h]
+Usage: jobstats [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-r report-prefix] [-n] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
@@ -121,4 +122,12 @@ The Start_time and End_time values specify the date/time interval of
 job completion/termination (see "man sacct").
 
 Hint: Specify Start/End time as MMDD (Month and Date)
+```
+The output contains 1 line per job like in this example:
+
+```
+JobID   user    ncpus   wall    nodes   ngpus
+4110745 user001 8       123.993 1       1
+4111047 user001 8       95.720  1       1
+...
 ```
