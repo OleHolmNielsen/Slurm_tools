@@ -221,7 +221,7 @@ BEGIN {
 } END {
 	# Partition column output format string:
 	# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
-	columnfmt = "%*s %5s %5d %s%5d%s %6d %s%6d%s %s%6d%s %6d %5.5s %5.5s %10s %5.5s %8s"
+	columnfmt = "%*s %5.5s %5d %s%5d%s %6d %s%6d%s %s%6d%s %6d %5.5s %5.5s %10s %5.5s %8s"
 
 	# Column header lines
 	header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
