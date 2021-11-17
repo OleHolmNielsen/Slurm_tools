@@ -36,7 +36,7 @@ EOF
 #####################################################################################
 
 # Report file prefix
-REPORT_PREFIX=/tmp/Slurm_report_acct
+REPORT_PREFIX=/tmp/Slurm_report_acct_
 export partition=""
 export username=""
 export groupname=""
