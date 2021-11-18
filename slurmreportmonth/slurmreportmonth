@@ -9,7 +9,7 @@
 export SEND_EMAIL=0
 SUBSCRIBERS=root@localhost
 # Report file prefix
-REPORT_PREFIX=/tmp/Slurm_report
+REPORT_PREFIX=/tmp/Slurm_report_month_
 # Change the date/time format in report header for readability (formats in "man strftime")
 export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 # End of CONFIGURE lines
