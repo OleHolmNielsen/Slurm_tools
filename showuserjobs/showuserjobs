@@ -225,7 +225,7 @@ BEGIN {
 	}
 }'
 
-squeue $partition $qoslist -h -O "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason" | awk '
+squeue $all_partitions $partition $qoslist -h -O "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]
