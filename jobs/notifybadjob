@@ -66,6 +66,7 @@ reason06="Your job is not using all of the CPU cores that you have requested."
 reason07="Your job is not laid out correctly for xeon8 multi-CPU nodes - you MUST use the xeon8 partition correctly."
 reason08="Your job is not laid out correctly for xeon16 multi-CPU nodes - you MUST use the xeon16 partition correctly."
 reason09="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly."
+reason97="Your job is not laid out correctly for xeon56 multi-CPU nodes - you MUST use the xeon56 partition correctly."
 reason98="Your job is not laid out correctly for sm3090 multi-CPU nodes - you MUST use the sm3090 partition correctly."
 reason99="Your job is not laid out correctly for xeon40 multi-CPU nodes - you MUST use the xeon40 partition correctly."
 reason10="Your job is unfortunately running on a node that has a hardware or electrical error."
@@ -79,6 +80,7 @@ reason17="Your GPAW job has grossly exceeded the available physical RAM memory a
 reason18="Job failed due to exceeded disk quota - please provide $ADMINMAIL with an estimation of your necessary disk space."
 reason19="Your job requests resources that cannot be satisfied or do not exist."
 reason20="Please ask $ADMINMAIL for the reason."
+reason21="Your MPI job uses 1 Gbit Ethernet in stead of the fast OPA/IB, please correct your MPI command."
 ANS=-1
 while test $ANS -le 0
 do
@@ -93,6 +95,7 @@ do
 	echo "  7. $reason07"
 	echo "  8. $reason08"
 	echo "  9. $reason09"
+	echo " 97. $reason97"
 	echo " 98. $reason98"
 	echo " 99. $reason99"
 	echo " 10. $reason10"
@@ -106,6 +109,7 @@ do
 	echo " 18. $reason18"
 	echo " 19. $reason19"
 	echo " 20. $reason20"
+	echo " 21. $reason21"
 	read -p "Please enter reason (no default): " ANS
 	case $ANS in
 		1) action_reason=$reason01;;
@@ -117,6 +121,7 @@ do
 		7) action_reason=$reason07;;
 		8) action_reason=$reason08;;
 		9) action_reason=$reason09;;
+	       97) action_reason=$reason97;;
 	       98) action_reason=$reason98;;
 	       99) action_reason=$reason99;;
 	       10) action_reason=$reason10;;
@@ -130,6 +135,7 @@ do
 	       18) action_reason=$reason18;;
 	       19) action_reason=$reason19;;
 	       20) action_reason=$reason20;;
+	       21) action_reason=$reason21;;
 		*) ANS=-1;;
 	esac
 done
