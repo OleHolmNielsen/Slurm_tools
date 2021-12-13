@@ -418,10 +418,15 @@ BEGIN {
 			split (TresAlloc, treslist, ",")
 			for (i in treslist) {
 				# Additional tres-alloc values could be extracted here if desired
-				if (index(treslist[i], "gres/gpu:") > 0)
-					# Omit the "gres/gpu:" string and start at char 10:
-					GRES = substr(treslist[i],10)
-					continue
+				if (index(treslist[i], "gres/gpu=") > 0) {
+					# The "generic" GPU field "gres/gpu="
+					# Omit the "gres/" string and start at char 6:
+					GRES = substr(treslist[i],6)
+				} else if (index(treslist[i], "gres/gpu:") > 0) {
+					# The "specific" GPU field "gres/gpu:" overrides the "generic" GPU field
+					# Omit the "gres/" string and start at char 6:
+					GRES = substr(treslist[i],6)
+				}
 			}
 			JobInfo = JobInfo GRES " "
 			# Job GRES width for formatting the width below:
@@ -489,7 +494,7 @@ BEGIN {
 		JobInfo = "JobID User"
 	else
 		JobInfo = "JobID(JobArrayID) User"
-	if (printgres == 1) JobInfo = JobInfo " GRES_gpu/job"
+	if (printgres == 1) JobInfo = JobInfo " GRES/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
