@@ -101,8 +101,6 @@ export omitdown=0
 
 # Controls whether GRES (Generic Resources) will be printed
 export printgres=0
-# Set width of the GRES/node column
-export greswidth=12
 # Controls whether JobName will be printed
 export printjobname=0
 # Controls whether job StartTime and EndTime will be printed
@@ -301,23 +299,23 @@ fi
 # Determine the longest hostname length in the cluster
 # The sinfo header NODELIST will set the minimum to 8 chars
 
-# Variable width of the hostname column (default=8)
-export hostnamelength="8"
-nodelist=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30`
+# Variable width of the hostname column 
+hostnamelength=`sinfo -h -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | tr -d '[:blank:]' | wc --max-line-length`
+# Trap any errors from sinfo
 if [[ "$?" -ne 0 ]]
 then
 	exit -1
 fi
-maxlen=`echo $nodelist | $my_awk '{if (length($1)>maxlen) maxlen=length($1)} END {print maxlen}'`
-if [[ $maxlen -gt $hostnamelength ]]
+# Truncate hostnamelength to max 20 chars
+if [[ $hostnamelength -gt 20 ]]	
 then
-	if [[ $maxlen -gt 20 ]]		# Truncate maxlen to max 20 chars
-	then
-		maxlen = 20
-	fi
-	# echo "Longest hostname length is set to $maxlen"
-	export hostnamelength=$maxlen
+	export hostnamelength = 20
+	echo "Longest hostname length is truncated to $hostnamelength"
 fi
+
+# Determine the longest node GRES (gres/gpu) string length
+export nodegreswidth=`sinfo -h -N $all_partitions $partition $hostlist $statelist -O Gres:30 | sort | uniq | tr -d '[:blank:]' | wc --max-line-length`
+# echo nodegreswidth is $nodegreswidth
 
 #####################################################################################
 #
@@ -349,7 +347,8 @@ BEGIN {
 	omitdown=ENVIRON["omitdown"]
 	statedown=ENVIRON["statedown"]
 	printgres=ENVIRON["printgres"]
-	greswidth=ENVIRON["greswidth"]
+	nodegreswidth=ENVIRON["nodegreswidth"]
+	jobgreswidth=0
 	printjobname=ENVIRON["printjobname"]
 	printjobstarttime=ENVIRON["printjobstarttime"]
 	printjobendtime=ENVIRON["printjobendtime"]
@@ -386,7 +385,7 @@ BEGIN {
 	# Column size(width)=30 hopefully suffices to separate columns
 	# The -O output fields must be space-separated, so use :(space) "sufix" and enclose -O fields in '' (octal 047)
 	# Older Slurm versions before 20.02 do not support the "sufix" after -O and may thus not work correctly
-	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,JobArrayID: ,UserName: ,GroupName: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-per-node: ,NodeList: ,Name:\047 " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,JobArrayID: ,UserName: ,GroupName: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-alloc: ,NodeList: ,Name:\047 " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		JobID=$2
@@ -398,7 +397,7 @@ BEGIN {
 		TimeUsed=$8
 		Partition=$9
 		NumNodes=$10
-		GRES=$11
+		TresAlloc=$11
 		NodeList=$12
 		JobName=$13
 		if (JobName=="") JobName="(None)"
@@ -411,9 +410,19 @@ BEGIN {
 			JobInfo = JobID "(" JobArrayID ") " User " "
 		}
 		if (printgres == 1) {
+			GRES = "(null)"	# Default is null GRES
+			# Parse the tres-alloc (TresAlloc) list to extract only GPU gres/gpu:
+			split (TresAlloc, treslist, ",")
+			for (i in treslist) {
+				# Additional tres-alloc values could be extracted here if desired
+				if (index(treslist[i], "gres/gpu:") > 0)
+					# Omit the "gres/gpu:" string and start at char 10:
+					GRES = substr(treslist[i],10)
+					continue
+			}
 			JobInfo = JobInfo GRES " "
 			# Job GRES width for formatting the width below:
-			if (length(GRES) > greswidth) greswidth = length(GRES)
+			if (length(GRES) > jobgreswidth) jobgreswidth = length(GRES)
 		}
 		if (printjobname == 1) JobInfo = JobInfo JobName " "
 		if (printjobstarttime == 1) JobInfo = JobInfo StartTime " "
@@ -477,7 +486,7 @@ BEGIN {
 		JobInfo = "JobID User"
 	else
 		JobInfo = "JobID(JobArrayID) User"
-	if (printgres == 1) JobInfo = JobInfo " GRES/job"
+	if (printgres == 1) JobInfo = JobInfo " GRES_gpu/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
@@ -485,8 +494,8 @@ BEGIN {
 	JobInfo = JobInfo " ..."
 	# Print a header line (variable hostnamelength)
 	if (printgres == 1) {	# Print GRES column (if requested)
-		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", greswidth, "GRES/node", "Joblist")
-		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", greswidth, "", JobInfo)
+		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", nodegreswidth, "GRES/node", "Joblist")
+		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", nodegreswidth, "", JobInfo)
 	} else {
 		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
 		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", JobInfo)
@@ -626,7 +635,7 @@ BEGIN {
 		printf("%s%3d%s %3d ", cpucolor, allocated_cores, NORMAL, total_cores)
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
 		printf("%s%8d %s%8d%1s%s ", memcolor, memory, freememcolor, freemem, memflag, NORMAL)
-		if (printgres == 1) printf("%*-s ", greswidth, nodegres)
+		if (printgres == 1) printf("%*-s ", nodegreswidth, nodegres)
 		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
 		printf("\n")
 	}
