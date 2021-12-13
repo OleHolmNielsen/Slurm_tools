@@ -306,10 +306,13 @@ if [[ "$?" -ne 0 ]]
 then
 	exit -1
 fi
-# Truncate hostnamelength to max 20 chars
-if [[ $hostnamelength -gt 20 ]]	
+# Sanity checks of hostnamelength
+if [[ $hostnamelength -lt 8 ]]	
 then
-	export hostnamelength = 20
+	export hostnamelength=8
+elif [[ $hostnamelength -gt 20 ]]	
+then
+	export hostnamelength=20
 	echo "Longest hostname length is truncated to $hostnamelength"
 fi
 
