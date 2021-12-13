@@ -23,7 +23,7 @@ where:
         -s statelist: Print only nodes with state in <statelist>
         -n/-w hostlist: Print only nodes in hostlist
         -j joblist: Print only nodes in job <joblist>
-        -G: Print GRES (Generic Resources) in addition to JobId
+        -G: Print GRES/GPU (Generic Resources for GPUs) in addition to JobId
         -N: Print JobName in addition to JobId
         -f: Print only nodes that are flagged by * (unexpected load etc.)
         -F: Like -f, but only nodes flagged in RED are printed.
