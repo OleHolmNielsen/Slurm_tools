@@ -220,7 +220,7 @@ while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 			hostlist="-n `$prefix/squeue -j $joblist -t running -h -O NodeList: | (readarray -t ARRAY; IFS=','; echo "${ARRAY[*]}")`"
 			;;
 		G )	export printgres=1
-			echo "GRES (Generic Resource) is printed after each jobid"
+			echo "GPU GRES (Generic Resource) is printed after each jobid"
 			;;
 		N )	export printjobname=1
 			echo "JobName is printed after each jobid"
@@ -300,7 +300,7 @@ fi
 # The sinfo header NODELIST will set the minimum to 8 chars
 
 # Variable width of the hostname (NODELIST) column 
-hostnamelength=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | tr -d '[:blank:]' | wc --max-line-length`
+export hostnamelength=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | tr -d '[:blank:]' | wc --max-line-length`
 # Trap any errors from sinfo
 if [[ "$?" -ne 0 ]]
 then
@@ -502,11 +502,11 @@ BEGIN {
 	JobInfo = JobInfo " ..."
 	# Print a header line (variable hostnamelength)
 	if (printgres == 1) {	# Print GRES column (if requested)
-		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", nodegreswidth, "GRES/node", "Joblist")
-		printf("%*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", nodegreswidth, "", JobInfo)
+		printf("%-*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", nodegreswidth, "GRES/node", "Joblist")
+		printf("%-*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", nodegreswidth, "", JobInfo)
 	} else {
-		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
-		printf("%*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", JobInfo)
+		printf("%-*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", "Joblist")
+		printf("%-*s %15s %8s %7s %8s %8s %8s  %s\n", hostnamelength, "", "", "State", "Use/Tot", "(15min)", "(MB)", "(MB)", JobInfo)
 	}
 }
 {
@@ -638,8 +638,8 @@ BEGIN {
 		
 	if (listnode > 0 && nodewasprinted[node] == 0) {
 		if (uniquenodes > 0) nodewasprinted[node]++	# Count this node (node may be in multiple partitions)
-		printf("%*s %15s ", hostnamelength, node, partition)
-		printf("%s%8s%1s%s", statecolor, state, stateflag, NORMAL)
+		printf("%-*s %15s ", hostnamelength, node, partition)
+		printf("%s%7s%1s%s ", statecolor, state, stateflag, NORMAL)
 		printf("%s%3d%s %3d ", cpucolor, allocated_cores, NORMAL, total_cores)
 		printf("%s%7.2f%1s%s ", loadcolor, cpuload, loadflag, NORMAL)
 		printf("%s%8d %s%8d%1s%s ", memcolor, memory, freememcolor, freemem, memflag, NORMAL)
