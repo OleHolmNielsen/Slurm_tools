@@ -413,7 +413,7 @@ BEGIN {
 			JobInfo = JobID "(" JobArrayID ") " User " "
 		}
 		if (printgres == 1) {
-			GRES = "(null)"	# Default is null GRES
+			GRES = RED "(null)" NORMAL	# Default is null GRES in RED color
 			# Parse the tres-alloc (TresAlloc) list to extract only GPU gres/gpu:
 			split (TresAlloc, treslist, ",")
 			for (i in treslist) {
