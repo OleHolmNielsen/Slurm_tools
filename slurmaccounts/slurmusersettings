@@ -536,18 +536,10 @@ $3 >= MINUID {
 	# Compare config and current settings, print out any changes in COMMAND
 	if (isarray(setting[u][config])) {
 		for (i in setting[u][config]) {
-			if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config " setting[u][config][i]
+			if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config=" setting[u][config][i]
 			if (setting[u][current][i] != setting[u][config][i]) {
 				if (setting[u][current][i] != "") {
-					# Determine if current setting is less than configuration setting
-					# Delete any cpu= string and make comparisons of the numbers
-					cu = setting[u][current][i]; sub("cpu=", "", cu); cu = strtonum(cu)
-					co = setting[u][config][i];  sub("cpu=", "", co); co = strtonum(co)
-					if (cu < co)
-						diff = "greater"
-					else
-						diff = "smaller"
-					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration " i "=" setting[u][config][i] " is " diff
+					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration " i "=" setting[u][config][i] " is different"
 				}
 				COMMAND = COMMAND " " i "=" setting[u][config][i]
 			}
