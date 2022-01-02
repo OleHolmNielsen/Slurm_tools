@@ -534,10 +534,31 @@ $3 >= MINUID {
 		}
 	}
 	# Compare config and current settings, print out any changes in COMMAND
-	if (isarray(setting[u][config])) {
+	# (skip users with dontcreate flag)
+	if (dontcreate[u] == 0 && isarray(setting[u][config])) {
 		for (i in setting[u][config]) {
+			# Note: The GrpTRES setting may have multiple comma-separated fields
 			if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " config=" setting[u][config][i]
-			if (setting[u][current][i] != setting[u][config][i]) {
+			# Handle the GrpTRES multi-valued parameter separately
+			if (i == "GrpTRES") {
+				# The GrpTRES= values may come in any order, so split the values into arrays 
+				split(setting[u][config][i],tresconf,",")
+				split(setting[u][current][i],trescurr,",")
+				# Lookup tresconf values in trescurr
+				tresdiff=0
+				for (t in tresconf)
+					if (!(t in trescurr)) tresdiff++
+				# Lookup trescurr values in tresconf
+				for (t in trescurr)
+					if (!(t in tresconf)) tresdiff++
+				delete tresconf
+				delete trescurr
+				if (tresdiff > 0) {
+					# Now set the configured GrpTRES values to override the current values
+					print "# User " u " currently has GrpTRES=" setting[u][current][i] " but configuration GrpTRES=" setting[u][config][i] " is different"
+					COMMAND = COMMAND " " i "=" setting[u][config][i]
+				}
+			} else if (setting[u][current][i] != setting[u][config][i]) {
 				if (setting[u][current][i] != "") {
 					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration " i "=" setting[u][config][i] " is different"
 				}
@@ -558,8 +579,9 @@ $3 >= MINUID {
 			if (jobcount > userminjobs) 
 				print sacctmgr " -i modify user where name=" u " set" COMMAND
 			else {
-				print "# User " u " will not be modified because job count " jobcount " is <=" userminjobs
-				print "# User " u " Command would be: sacctmgr -i modify user where name=" u " set" COMMAND
+				print "# User " u " should perhaps NOT be updated because job count " jobcount " is <=" userminjobs
+				# print "# User " u " Command would be: sacctmgr -i modify user where name=" u " set" COMMAND
+				print sacctmgr " -i modify user where name=" u " set" COMMAND
 			}
 			print ""
 		}
