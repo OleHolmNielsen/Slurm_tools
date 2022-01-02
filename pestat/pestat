@@ -384,7 +384,7 @@ BEGIN {
 	# Gather the list of running jobs with squeue
 	# Place JobName last, just in case it is a null string
 	# Place NodeList second before last because it may be very long
-	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-per-node,NodeList,Name " selection
+	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-alloc,NodeList,Name " selection
 	# Column size(width)=30 hopefully suffices to separate columns
 	# The -O output fields must be space-separated, so use :(space) "sufix" and enclose -O fields in '' (octal 047)
 	# Older Slurm versions before 20.02 do not support the "sufix" after -O and may thus not work correctly
