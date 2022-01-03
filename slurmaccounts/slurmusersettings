@@ -75,7 +75,7 @@ export accounts_conf=/etc/slurm/accounts.conf
 function usage()
 {
 	cat <<EOF
-Usage: $0 [-u username | -d | -n | -c | -h ]
+Usage: $0 [-u username] [-d] [-n] [-c] | [-h]
 where:
 	-u username: Select user <username> (Default is all users)
 	-d Print debugging output
