@@ -192,7 +192,7 @@ Examples:
 ```
 # The default fairshare, QOS and limits
 DEFAULT:fairshare:1
-DEFAULT:GrpTRES:cpu=1200
+DEFAULT:GrpTRES:cpu=1200,gres/gpu=20
 DEFAULT:GrpTRESRunMins:cpu=3000000
 DEFAULT:QOS:normal
 DEFAULT:MaxJobs:500
