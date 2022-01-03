@@ -296,16 +296,18 @@ then
 	exit 1
 fi
 
-# Determine the longest hostname length in the cluster
-# The sinfo header NODELIST will set the minimum to 8 chars
-
-# Variable width of the hostname (NODELIST) column 
-export hostnamelength=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | tr -d '[:blank:]' | wc --max-line-length`
+# Sanity check of arguments to sinfo
+sinfo $all_partitions $partition $hostlist $statelist > /dev/null
 # Trap any errors from sinfo
 if [[ "$?" -ne 0 ]]
 then
 	exit -1
 fi
+
+# Determine the longest hostname length in the cluster
+# The sinfo header NODELIST will set the minimum to 8 chars
+# Variable width of the hostname (NODELIST) column 
+export hostnamelength=`sinfo -N $all_partitions $partition $hostlist $statelist -O NodeList:30 | tr -d '[:blank:]' | wc --max-line-length`
 # Sanity checks of hostnamelength
 if [[ $hostnamelength -lt 8 ]]	
 then
