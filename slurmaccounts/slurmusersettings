@@ -75,9 +75,12 @@ export accounts_conf=/etc/slurm/accounts.conf
 function usage()
 {
 	cat <<EOF
-Usage: $0 [-u username | -h ]
+Usage: $0 [-u username | -d | -n | -c | -h ]
 where:
 	-u username: Select user <username> (Default is all users)
+	-d Print debugging output
+	-n Omit users with non-login shells (-d overrides this)
+	-c Do not print explanatory comments (-d overrides this)
 	-h Print help information
 EOF
 }
@@ -85,15 +88,28 @@ EOF
 #
 # Parse command options
 #
-while getopts "u:h" options; do
+export debugflag=0
+export omitnonlogin=0
+export commentsoff=0
+
+while getopts "u:hdnc" options; do
 	case $options in
-		u ) export username=$OPTARG    # Select user
+		u ) export username=$OPTARG	# Select user
 		    echo "### Select only user $username"
 		    if test -z "`$remote getent passwd $username`"
 		    then
 			echo "ERROR: User $username is not in the passwd database"
 			exit 1
 		    fi
+		;;
+		d ) export debugflag=1
+		    echo "### Print debugging output"
+		;;
+		n ) export omitnonlogin=1
+		    echo "### Omit users with non-login shells"
+		;;
+		c ) export commentsoff=1
+		    echo "### Do not print explanatory comments"
 		;;
 		h|*|? ) usage
 		exit 1;;
@@ -187,7 +203,13 @@ BEGIN {
 	newuserperiod	= ENVIRON["newuserperiod"]
 	userminjobs	= ENVIRON["userminjobs"]
 	newuserprint	= ENVIRON["newuserprint"]
-	debug = 0	# Debugging flag
+	debug		= ENVIRON["debugflag"]
+
+	comm=1	# Print comment lines
+	if (debug == "0") {
+		omitnonlogin = ENVIRON["omitnonlogin"]
+		if (ENVIRON["commentsoff"] == "1") comm=0	# Do not print comment lines
+	}
 
 	IGNORECASE = 1	# Make AWK case-insensitive string comparisons (for TRES comparisons)
 
@@ -235,11 +257,11 @@ BEGIN {
 		# Multiple UNIX comma-separated groups may be given, split them into separate items
 		n = split($5, grouplist, ",")
 		if (n == 0) 
-			print "### Slurm account " acct ": No UNIX group aliases given in field 5"
+			if (comm) print "### Slurm account " acct ": No UNIX group aliases given in field 5"
 		else if (n == 1)
-			print "### The UNIX group " $5 " is aliased to the Slurm account: " acct
+			if (comm) print "### The UNIX group " $5 " is aliased to the Slurm account: " acct
 		else
-			print "### The UNIX groups " $5 " are aliased to the Slurm account: " acct
+			if (comm) print "### The UNIX groups " $5 " are aliased to the Slurm account: " acct
 		if (n > 0) for (i in grouplist)
 			if (group2account[grouplist[i]] == "")
 				group2account[grouplist[i]] = acct	# Record that this UNIX group is an alias for acct
@@ -276,7 +298,7 @@ BEGIN {
 		newuserlist = newuserlist u "(" substr($2,0,10) ") "	# List of username(date)
 	}
 	close (newusers)
-	if (newuserprint == 1) print "### NEWUSER list user(date): " newuserlist
+	if (newuserprint == 1 && comm) print "### NEWUSER list user(date): " newuserlist
 
 	# Read list of existing accounts (parseable output)
 	# Header of sacctmgr -snorp show associations: See the "assocfmt" variable above.
@@ -296,12 +318,11 @@ BEGIN {
 			item = u	# User account
 			user[u]		= u
 			if (defaultaccount[u] == "") {
-				print ""
-				print "### NOTICE: No default account for user " u ", setting it to ", a
+				print "\n### NOTICE: No default account for user " u ", setting it to ", a
 				defaultaccount[u] = a
 			}
 			useraccount[u]	= defaultaccount[u]
-			if (debug > 1 && a != defaultaccount[u])
+			if (debug > 0 && a != defaultaccount[u])
 				print "### NOTICE: Default account for user " u "=" useraccount[u] ", cannot set it to " a
 		}
 		# Record the user/group settings
@@ -398,7 +419,7 @@ $3 >= MINUID {
 	g = unixgroup[GID]	# UNIX group
 	# Ignore users with per-user group: groupname==username
 	if (g == u) {
-		print "### Ignoring users with per-user group: User=" u " group=" g
+		if (comm) print "### Ignoring users with per-user group: User=" u " group=" g
 		userinformation[u] = "IGNORE"
 		next
 	}
@@ -413,6 +434,7 @@ $3 >= MINUID {
 	HOMEDIR		= $6
 	SHELL		= $7
 	if (SHELL == "/sbin/nologin" || SHELL == "/bin/false") {		# Skip non-login users
+		if (omitnonlogin == 1) usernonlogin[u] = 1	# Flag non-login users 
 		userinformation[u] = "User " u " UNIX account has non-login shell " SHELL
 		next
 	}
@@ -420,15 +442,15 @@ $3 >= MINUID {
 		userinformation[u] = "User " u " UNIX account in group " g ": The password is LOCKED"
 		next
 	}
-	if (debug > 0) print "User " u " group " g 
+	if (debug > 0) print "### User " u " with primary group " g 
 	# Check the user UNIX account
 	if (g == "") {
-		printf("### ERROR: User %s GID %d has no GROUPNAME\n", u, GID)
+		if (comm) printf("### ERROR: User %s GID %d has no GROUPNAME\n", u, GID)
 		next
 	}
 	# Check that the UNIX group exists as a Slurm account
 	if (ignore_primary_groups == 0 && !isarray(setting[acct])) {
-		printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, acct)
+		if (comm) printf("\n### WARNING for user %s with primary UNIX group %s: No Slurm account named %s\n", u, g, acct)
 		userinformation[u] = "User " u " has NO SLURM ACCOUNT " acct " for primary UNIX group " g
 		next
 	}
@@ -456,28 +478,28 @@ $3 >= MINUID {
 	if (newuserdefaultsinitialized == 0) delete newuser[u]	# Skip NEWUSER settings because no NEWUSER values are defined
 	if (newuserprint == 2 && newuser[u] != "") {
 		print ""
-		printf("### NOTICE: User %s is a NEWUSER account created on %s\n", u, newusertime[u])
-		printf("### Password entry: %s\n", $0)
+		if (comm) printf("### NOTICE: User %s is a NEWUSER account created on %s\n", u, newusertime[u])
+		if (comm) printf("### Password entry: %s\n", $0)
 	}
 
 	if (debug > 0) printf("### User %s exists under account=%s fairshare=%s\n", u, useraccount[u], setting[u][current]["fairshare"])
 	if (dontcreate[u] == 0 && ignore_primary_groups == 0 && useraccount[u] != acct) {
 		print ""
 		if (defaultaccount[u] == "") {
-			printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new Slurm user to be created\n", u)
-			printf("### Password entry: %s\n", $0)
+			if (comm) printf("### NOTICE: User %s has NO DEFAULT ACCOUNT. Assume that this is a new Slurm user to be created\n", u)
+			if (comm) printf("### Password entry: %s\n", $0)
 		}
-		printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], acct)
+		if (comm) printf("### NOTICE: User %s has default account=%s, add to new default account=%s (primary UNIX group)\n", u, defaultaccount[u], acct)
 		COMMAND = COMMAND " defaultaccount=" acct
 		# Add already existing user to his/her new account
 		if (useraccount[u] != "") {
 			if (isarray(setting[acct]) && isarray(setting[acct][config])) {
-				print "### Existing user " u " account " useraccount[u] " add to account " acct
+				if (comm) print "### Existing user " u " account " useraccount[u] " add to account " acct
 				print sacctmgr " -i add user " u " account=" acct
 			}
 		} else {
 			 # print "### WARNING: Account " acct " does not exist"
-			 print "### NOTICE: User " u " has account=" useraccount[u]
+			 if (comm) print "### NOTICE: User " u " has account=" useraccount[u]
 		}
 	}
 
@@ -488,7 +510,7 @@ $3 >= MINUID {
 			# Check if user secondary group gg equals primary group g (redundant and superfluous)
 			# Check if account already exists
 			if (gg != acct && useraccounts[u][gg] == "" && length(accountname[gg]) > 0) {
-				print "### User " u " with primary UNIX group " g " and account " acct " is a secondary member of the UNIX group " gg
+				if (comm) print "### User " u " with primary UNIX group " g " and account " acct " is a secondary member of the UNIX group " gg
 				print sacctmgr " -i add user " u " account=" gg
 			}
 		}
@@ -508,7 +530,7 @@ $3 >= MINUID {
 	# If user setting not explicitly given, then use the default setting
 	if (newuser[u] != "" || user[u] == "") {
 		if (isarray(newuserdefaults)) {
-			if (newuserprint == 2) print "### User " u " will get NEWUSER defaults"
+			if (newuserprint == 2 && comm) print "### User " u " will get NEWUSER defaults"
 			for (i in newuserdefaults) {
 				# Wipe any current settings
 				# setting[u][current][i] = ""
@@ -529,7 +551,7 @@ $3 >= MINUID {
 	if (username != "") {
 		if (u!= username) next
 		if (dontcreate[username] > 0) {
-			print "### NOTICE: The user " username " will not be created according to " user_settings_conf
+			if (comm) print "### NOTICE: The user " username " will not be created according to " user_settings_conf
 			next
 		}
 	}
@@ -538,7 +560,7 @@ $3 >= MINUID {
 	if (dontcreate[u] == 0 && isarray(setting[u][config])) {
 		for (i in setting[u][config]) {
 			# Note: The GrpTRES setting may have multiple comma-separated fields
-			if (debug > 0) print "# User " u " current " i "=" setting[u][current][i] " configuration " i "=" setting[u][config][i]
+			if (debug > 0) print "### User " u " current " i "=" setting[u][current][i] " configuration " i "=" setting[u][config][i]
 			# Handle the GrpTRES multi-valued parameter separately
 			if (i == "GrpTRES") {
 				# The GrpTRES= values may come in any order, so split the comma-separated values into arrays 
@@ -559,12 +581,12 @@ $3 >= MINUID {
 				delete trescurr
 				if (tresdiff > 0) {
 					# Set the configured GrpTRES values to override the current values
-					print "# User " u " currently has GrpTRES=" setting[u][current][i] " but configuration GrpTRES=" setting[u][config][i] " is different"
+					if (comm) print "### User " u " currently has GrpTRES=" setting[u][current][i] " but configuration GrpTRES=" setting[u][config][i] " is different"
 					COMMAND = COMMAND " " i "=" setting[u][config][i]
 				}
 			} else if (setting[u][current][i] != setting[u][config][i]) {
 				if (setting[u][current][i] != "") {
-					print "# User " u " currently has " i "=" setting[u][current][i] " but configuration " i "=" setting[u][config][i] " is different"
+					if (comm) print "### User " u " currently has " i "=" setting[u][current][i] " but configuration " i "=" setting[u][config][i] " is different"
 				}
 				COMMAND = COMMAND " " i "=" setting[u][config][i]
 			}
@@ -572,26 +594,26 @@ $3 >= MINUID {
 	}
 
 	if (user[u] != "") {
-		# Modify existing user, only if the jobcount is sufficient
+		# Modify existing user, checking if the jobcount is sufficiently high
 		if (COMMAND != "") {
 			# Print user information
-			print "# User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
+			if (comm) print "### User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
 			# Get the number of jobs submitted by this user
 			cmd = "sacct -nX -S \"now-" newuserperiod "\" -b -u " u " | wc -l"
 			cmd | getline jobcount
-			print "# User " u " has submitted " jobcount " jobs in the last " newuserperiod
+			if (comm) print "### User " u " has submitted " jobcount " jobs in the last " newuserperiod
 			if (jobcount > userminjobs) 
 				print sacctmgr " -i modify user where name=" u " set" COMMAND
 			else {
-				print "# User " u " should perhaps NOT be updated because job count " jobcount " is <=" userminjobs
-				# print "# User " u " Command would be: sacctmgr -i modify user where name=" u " set" COMMAND
+				if (comm) print "### User " u " should perhaps NOT be updated because job count " jobcount " is <=" userminjobs
+				# print "### User " u " Command would be: sacctmgr -i modify user where name=" u " set" COMMAND
 				print sacctmgr " -i modify user where name=" u " set" COMMAND
 			}
 			print ""
 		}
 	} else if (dontcreate[u] == 0) {
 		# New user: command for creating this account
-		print "# User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
+		if (comm) print "### User " u " group=" unixgroup[GID] " homedir=" HOMEDIR " name=" FULLNAME
 		print sacctmgr " -i create user name=" u COMMAND
 		print ""
 	}
@@ -601,15 +623,16 @@ END {
 	for (u in user) {
 		# Process only the selected username:
 		if (username != "" && u!= username) continue
-		if (userinformation[u] == u) continue
-		if (userinformation[u] == "IGNORE") { printf("\n### IGNORE this username: %s\n", u); continue}
+		if (usernonlogin[u] == 1) continue	# Non-login user
+		if (userinformation[u] == u) continue	# No changes to this user
+		if (userinformation[u] == "IGNORE") { if (comm) printf("\n### IGNORE this username: %s\n", u); continue}
 		if (userinformation[u] == "") userinformation[u] = "No password entry"
-		printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
-		# First delete non-default accounts for this user
+		if (comm) printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
+		if (comm) print "### First delete any non-default accounts for this user"
 		if (isarray(useraccounts[u]))
 			for (a in useraccounts[u])
 				print sacctmgr " -i delete user " u " account=" useraccounts[u][a]
-		# The delete the user
+		if (comm) print "### Then delete the user"
 		print sacctmgr " -i delete user " u
 	}
 }'
