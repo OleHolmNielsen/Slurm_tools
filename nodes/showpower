@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Print the nodes power values CurrentWatts and AveWatts
+# Usage: showpower [nodelist]
+# Default: all nodes
+
+# Several AcctGatherEnergyType types are defined in the slurm.conf manual page.
+# RAPL data gathering can be enabled in Slurm by:
+# AcctGatherEnergyType=acct_gather_energy/rapl
+# AcctGatherNodeFreq=30
+# and do an "scontrol reconfig".
+
+# The sinfo command cannot print power values, so we have to use scontrol
+scontrol -o show node $1 | awk '{
+	for (i=1; i<NF; i++) {
+		split($i,array,"=")
+		if (array[1] == "NodeName") {
+			n = array[2]
+			NodeName[n] = n
+		} else if (array[1] == "CurrentWatts")
+			CurrentWatts[n] = array[2]
+		else if (array[1] == "AveWatts")
+			AveWatts[n] = array[2]
+		else if (array[1] == "CPUTot")
+			CPUTot[n] = array[2]
+		else if (array[1] == "CPULoad")
+			CPULoad[n] = array[2]
+	}
+} END {
+	PROCINFO["sorted_in"] = "@ind_str_asc"
+	print "Nodename	CPUTot	CPULoad	CurrentWatts	AveWatts"
+	for (n in NodeName)
+		printf("%s		%d	%.1f	%.1f		%.1f\n",
+			NodeName[n], CPUTot[n], CPULoad[n], CurrentWatts[n], AveWatts[n])
+}'
