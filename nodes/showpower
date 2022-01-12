@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Print the nodes power values from scontrol show node (CurrentWatts etc.)
-# Usage: showpower < -w nodelist | -p partition(s) | -a | -h >
+# Usage: showpower < -w nodelist | -p partition(s) | -a | -h > [ -S sorting-variable ]
 #
 # The sinfo command cannot print power values, so we have to use scontrol.
 
@@ -16,10 +16,11 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 < -w nodelist | -p partition(s) | -a | -h >
+Usage: $0 < -w nodelist | -p partition(s) | -a | -h > [ -S sorting-variable ]
 where:
 	-a: All nodes in the cluster
 	-h: Print help information
+	-S: Sort output by this column (e.g. CurrentWatts)
 EOF
 }
 
@@ -30,7 +31,10 @@ then
 	exit -1
 fi
 
-while getopts "p:w:ah" options; do
+# Default output sorting variable
+export sortvar="NodeName"
+
+while getopts "p:w:S:ah" options; do
 	case $options in
 		p ) 	export nodelist="`sinfo -h -p $OPTARG -O NodeList:`"
 			if [[ -z $nodelist ]]
@@ -43,6 +47,7 @@ while getopts "p:w:ah" options; do
 		a ) 	export nodelist="`sinfo -h --all -O NodeList:`"
 			;;
 		w )	export nodelist=$OPTARG ;;
+		S )	export sortvar="$OPTARG" ;;
 		h|? ) 	usage
 			exit 1 ;;
 	esac
@@ -65,28 +70,37 @@ then
 fi
 
 scontrol -o show node $nodelist | awk '
+BEGIN {
+	# Read environment variables
+        sortvar=ENVIRON["sortvar"]
+}
 {
-	# Get the NodeName from $1
+	# Get the NodeName n from $1
 	split($1,array,"=")
 	n = array[2]
-	NodeName[n] = n
-	for (i=2; i<=NF; i++) {
+	for (i=1; i<=NF; i++) {
 		# Get variable=value pairs
 		split($i,array,"=")
-		value[array[1],n] = array[2]
+		value[array[1]][n] = array[2]
 	}
 } END {
-	PROCINFO["sorted_in"] = "@ind_str_asc"
+	PROCINFO["sorted_in"] = "@val_num_asc"
+	# Check that the sortvar index exists in the array variables
+	if (!isarray(value[sortvar])) {
+		print "ERROR: Unknown sorting variable=" sortvar
+		exit -1
+	}
+	# Print selected variables for all nodes
 	print "Nodename\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
-	for (n in NodeName)
+	for (n in value[sortvar])
 		printf("%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n",
-			NodeName[n],
-			value["CPUTot",n],
-			value["CPULoad",n],
-			value["CurrentWatts",n],
-			value["AveWatts",n],
-			value["CapWatts",n],
-			value["ExtSensorsWatts",n],
-			value["ExtSensorsJoules",n],
-			value["ExtSensorsTemp",n])
+			value["NodeName"][n],
+			value["CPUTot"][n],
+			value["CPULoad"][n],
+			value["CurrentWatts"][n],
+			value["AveWatts"][n],
+			value["CapWatts"][n],
+			value["ExtSensorsWatts"][n],
+			value["ExtSensorsJoules"][n],
+			value["ExtSensorsTemp"][n])
 }'
