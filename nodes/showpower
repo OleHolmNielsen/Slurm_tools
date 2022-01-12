@@ -13,12 +13,13 @@
 
 # The sinfo command cannot print power values, so we have to use scontrol
 scontrol -o show node $1 | awk '{
-	for (i=1; i<NF; i++) {
+	# Get the NodeName from $1
+	split($1,array,"=")
+	n = array[2]
+	NodeName[n] = n
+	for (i=2; i<NF; i++) {
 		split($i,array,"=")
-		if (array[1] == "NodeName") {
-			n = array[2]
-			NodeName[n] = n
-		} else if (array[1] == "CurrentWatts")
+		if (array[1] == "CurrentWatts")
 			CurrentWatts[n] = array[2]
 		else if (array[1] == "AveWatts")
 			AveWatts[n] = array[2]
