@@ -1,9 +1,10 @@
 #!/bin/sh
 
-# Print the nodes power values CurrentWatts and AveWatts
+# Print the nodes power values from scontrol show node (CurrentWatts etc.)
 # Usage: showpower [nodelist]
 # Default: all nodes
 
+# To enable power monitoring:
 # Several AcctGatherEnergyType types are defined in the slurm.conf manual page.
 # RAPL data gathering can be enabled in Slurm by:
 # AcctGatherEnergyType=acct_gather_energy/rapl
@@ -21,6 +22,14 @@ scontrol -o show node $1 | awk '{
 			CurrentWatts[n] = array[2]
 		else if (array[1] == "AveWatts")
 			AveWatts[n] = array[2]
+		else if (array[1] == "CapWatts")
+			CapWatts[n] = array[2]
+		else if (array[1] == "ExtSensorsWatts")
+			ExtSensorsWatts[n] = array[2]
+		else if (array[1] == "ExtSensorsJoules")
+			ExtSensorsJoules[n] = array[2]
+		else if (array[1] == "ExtSensorsTemp")
+			ExtSensorsTemp[n] = array[2]
 		else if (array[1] == "CPUTot")
 			CPUTot[n] = array[2]
 		else if (array[1] == "CPULoad")
@@ -28,8 +37,9 @@ scontrol -o show node $1 | awk '{
 	}
 } END {
 	PROCINFO["sorted_in"] = "@ind_str_asc"
-	print "Nodename	CPUTot	CPULoad	CurrentWatts	AveWatts"
+	print "Nodename	CPUTot	CPULoad	CurrentWatts	AveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
 	for (n in NodeName)
-		printf("%s		%d	%.1f	%.1f		%.1f\n",
-			NodeName[n], CPUTot[n], CPULoad[n], CurrentWatts[n], AveWatts[n])
+		printf("%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n",
+			NodeName[n], CPUTot[n], CPULoad[n], CurrentWatts[n], AveWatts[n],
+			CapWatts[n], ExtSensorsWatts[n], ExtSensorsJoules[n], ExtSensorsTemp[n])
 }'
