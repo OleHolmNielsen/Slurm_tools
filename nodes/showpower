@@ -1,18 +1,70 @@
 #!/bin/sh
 
 # Print the nodes power values from scontrol show node (CurrentWatts etc.)
-# Usage: showpower [nodelist]
-# Default: all nodes
+# Usage: showpower < -w nodelist | -p partition(s) | -a | -h >
+#
+# The sinfo command cannot print power values, so we have to use scontrol.
 
-# To enable power monitoring:
+# To enable Slurm power monitoring:
 # Several AcctGatherEnergyType types are defined in the slurm.conf manual page.
 # RAPL data gathering can be enabled in Slurm by:
 # AcctGatherEnergyType=acct_gather_energy/rapl
 # AcctGatherNodeFreq=30
 # and do an "scontrol reconfig".
 
-# The sinfo command cannot print power values, so we have to use scontrol
-scontrol -o show node $1 | awk '{
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 [ -w nodelist | -p partition(s) | -a | -h ]
+where:
+	-a: All nodes in the cluster
+	-h: Print help information
+EOF
+}
+
+if [[ $# = 0 ]]
+then
+	echo "ERROR: No arguments given"
+	usage
+	exit -1
+fi
+
+while getopts "p:w:ah" options; do
+	case $options in
+		p ) 	export nodelist="`sinfo -h -p $OPTARG -O NodeList:`"
+			if [[ -z $nodelist ]]
+			then
+				echo "ERROR: Partition $OPTARG does not exist on this cluster"
+				usage
+				exit 1
+			fi
+			;;
+		a ) 	export nodelist="`sinfo -h --all -O NodeList:`"
+			;;
+		w )	export nodelist=$OPTARG ;;
+		h|? ) 	usage
+			exit 1 ;;
+	esac
+done
+
+# Test for extraneous command line arguments
+if test $# -gt $(($OPTIND-1))
+then
+        echo ERROR: Too many command line arguments: $*
+        usage
+        exit 1
+fi
+
+# Sanity check of nodelist
+if [[ -z "`sinfo -h -N -n $nodelist -O NodeList:`" ]]
+then
+	echo "ERROR: Nodelist $nodelist does not exist on this cluster"
+	usage
+	exit -1
+fi
+
+scontrol -o show node $nodelist | awk '{
 	# Get the NodeName from $1
 	split($1,array,"=")
 	n = array[2]
