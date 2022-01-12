@@ -7,7 +7,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Resume a node-list: ```sresume node-list```.
 * Reboot and resume a node-list: ```sreboot node-list```.
 * Show node status: ```shownode <nodelist>```.
-* Show node CPU+memory power: ```showpower [nodelist]```.
+* Show node power values: ```showpower [nodelist]```.
 * Do a ```ps``` process status on a node-list, but exclude system processes: ```psnode [-c columns | -h] node-list```.
 * Print Slurm version on a node-list: ```sversion node-list```. Requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
 * Check consistency of /etc/slurm/topology.conf with nodelist in /etc/slurm/slurm.conf: ```checktopology```
