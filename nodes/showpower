@@ -16,7 +16,7 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [ -w nodelist | -p partition(s) | -a | -h ]
+Usage: $0 < -w nodelist | -p partition(s) | -a | -h >
 where:
 	-a: All nodes in the cluster
 	-h: Print help information
@@ -64,35 +64,29 @@ then
 	exit -1
 fi
 
-scontrol -o show node $nodelist | awk '{
+scontrol -o show node $nodelist | awk '
+{
 	# Get the NodeName from $1
 	split($1,array,"=")
 	n = array[2]
 	NodeName[n] = n
-	for (i=2; i<NF; i++) {
+	for (i=2; i<=NF; i++) {
+		# Get variable=value pairs
 		split($i,array,"=")
-		if (array[1] == "CurrentWatts")
-			CurrentWatts[n] = array[2]
-		else if (array[1] == "AveWatts")
-			AveWatts[n] = array[2]
-		else if (array[1] == "CapWatts")
-			CapWatts[n] = array[2]
-		else if (array[1] == "ExtSensorsWatts")
-			ExtSensorsWatts[n] = array[2]
-		else if (array[1] == "ExtSensorsJoules")
-			ExtSensorsJoules[n] = array[2]
-		else if (array[1] == "ExtSensorsTemp")
-			ExtSensorsTemp[n] = array[2]
-		else if (array[1] == "CPUTot")
-			CPUTot[n] = array[2]
-		else if (array[1] == "CPULoad")
-			CPULoad[n] = array[2]
+		value[array[1],n] = array[2]
 	}
 } END {
 	PROCINFO["sorted_in"] = "@ind_str_asc"
-	print "Nodename	CPUTot	CPULoad	CurrentWatts	AveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
+	print "Nodename\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
 	for (n in NodeName)
 		printf("%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n",
-			NodeName[n], CPUTot[n], CPULoad[n], CurrentWatts[n], AveWatts[n],
-			CapWatts[n], ExtSensorsWatts[n], ExtSensorsJoules[n], ExtSensorsTemp[n])
+			NodeName[n],
+			value["CPUTot",n],
+			value["CPULoad",n],
+			value["CurrentWatts",n],
+			value["AveWatts",n],
+			value["CapWatts",n],
+			value["ExtSensorsWatts",n],
+			value["ExtSensorsJoules",n],
+			value["ExtSensorsTemp",n])
 }'
