@@ -28,7 +28,7 @@ if [[ $# = 0 ]]
 then
 	echo "ERROR: No arguments given"
 	usage
-	exit -1
+	exit 1
 fi
 
 # Default output sorting variable
@@ -49,7 +49,7 @@ while getopts "p:w:S:ah" options; do
 		w )	export nodelist=$OPTARG ;;
 		S )	export sortvar="$OPTARG" ;;
 		h|? ) 	usage
-			exit 1 ;;
+			exit 0 ;;
 	esac
 done
 
@@ -66,7 +66,7 @@ if [[ -z "`sinfo -h -N -n $nodelist -O NodeList:`" ]]
 then
 	echo "ERROR: Nodelist $nodelist does not exist on this cluster"
 	usage
-	exit -1
+	exit 1
 fi
 
 scontrol -o show node $nodelist | awk '
@@ -84,14 +84,14 @@ BEGIN {
 		value[array[1]][n] = array[2]
 	}
 } END {
-	PROCINFO["sorted_in"] = "@val_num_asc"
 	# Check that the sortvar index exists in the array variables
 	if (!isarray(value[sortvar])) {
 		print "ERROR: Unknown sorting variable=" sortvar
 		exit -1
 	}
-	# Print selected variables for all nodes
-	print "Nodename\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
+	# Print selected variables for all nodes (ascending values)
+	PROCINFO["sorted_in"] = "@val_num_asc"
+	print "NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
 	for (n in value[sortvar])
 		printf("%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n",
 			value["NodeName"][n],
