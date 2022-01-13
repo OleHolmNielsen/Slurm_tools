@@ -80,27 +80,32 @@ BEGIN {
 	n = array[2]
 	for (i=1; i<=NF; i++) {
 		# Get variable=value pairs
-		split($i,array,"=")
-		value[array[1]][n] = array[2]
+		if (split($i,array,"=") == 2)
+			value[array[1]][n] = array[2]
 	}
 } END {
-	# Check that the sortvar index exists in the array variables
-	if (!isarray(value[sortvar])) {
+	# Check that the sortvar index exists in the value array
+	if (sortvar in value) {
+		# Print selected variables for all nodes (ascending values)
+		PROCINFO["sorted_in"] = "@val_num_asc"
+		print "NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
+		for (n in value[sortvar])
+			printf("%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n",
+				value["NodeName"][n],
+				value["CPUTot"][n],
+				value["CPULoad"][n],
+				value["CurrentWatts"][n],
+				value["AveWatts"][n],
+				value["CapWatts"][n],
+				value["ExtSensorsWatts"][n],
+				value["ExtSensorsJoules"][n],
+				value["ExtSensorsTemp"][n])
+	} else {
 		print "ERROR: Unknown sorting variable=" sortvar
+		PROCINFO["sorted_in"] = "@ind_str_asc"
+		printf("Available sorting variables:\n")
+		for (i in value) printf("%s ", i)
+		print ""
 		exit -1
 	}
-	# Print selected variables for all nodes (ascending values)
-	PROCINFO["sorted_in"] = "@val_num_asc"
-	print "NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
-	for (n in value[sortvar])
-		printf("%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n",
-			value["NodeName"][n],
-			value["CPUTot"][n],
-			value["CPULoad"][n],
-			value["CurrentWatts"][n],
-			value["AveWatts"][n],
-			value["CapWatts"][n],
-			value["ExtSensorsWatts"][n],
-			value["ExtSensorsJoules"][n],
-			value["ExtSensorsTemp"][n])
 }'
