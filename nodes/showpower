@@ -76,7 +76,17 @@ BEGIN {
 }
 {
 	# Get the NodeName n from $1
-	split($1,array,"=")
+	if (split($1,array,"=") != 2) {
+		print "Failed to read NodeName=<name> from field: " $1 " in line:"
+		print $0
+		exit -1
+	}
+	if (array[1] != "NodeName") {
+		print "Failed to read NodeName from field: " $1 " in line:"
+		print $0
+		exit -1
+	}
+	# Set this NodeName to n
 	n = array[2]
 	for (i=1; i<=NF; i++) {
 		# Get variable=value pairs
