@@ -100,10 +100,12 @@ BEGIN {
 	if (sortvar in value) {
 		# Print selected variables for all nodes (ascending values)
 		PROCINFO["sorted_in"] = "@val_num_asc"
-		print "NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
+		heading="NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
+		print heading
 		# format = "%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
 		format = "%s\t\t%d\t%.1f\t%d\t\t%d\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
 		for (n in value[sortvar]) {
+			nodecount++
 			printf(format,
 				value["NodeName"][n],
 				value["CPUTot"][n],
@@ -123,8 +125,11 @@ BEGIN {
 			ExtSensorsJoules	+= value["ExtSensorsJoules"][n]
 			ExtSensorsTemp		+= value["ExtSensorsTemp"][n]
 		}
-		printf(format, "TOTAL", CPUTot, CPULoad, CurrentWatts, AveWatts, CapWatts,
-			ExtSensorsWatts, ExtSensorsJoules, ExtSensorsTemp)
+		if (nodecount > 1) {
+			print heading
+			printf(format, "TOTAL", CPUTot, CPULoad, CurrentWatts, AveWatts, CapWatts,
+				ExtSensorsWatts, ExtSensorsJoules, ExtSensorsTemp)
+		}
 	} else {
 		print "ERROR: Unknown sorting variable=" sortvar
 		PROCINFO["sorted_in"] = "@ind_str_asc"
