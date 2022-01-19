@@ -102,7 +102,7 @@ BEGIN {
 		PROCINFO["sorted_in"] = "@val_num_asc"
 		print "NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
 		# format = "%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
-		format = "%s\t\t%d\t%d\t%d\t\t%d\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
+		format = "%s\t\t%d\t%.1f\t%d\t\t%d\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
 		for (n in value[sortvar]) {
 			printf(format,
 				value["NodeName"][n],
