@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # Print the nodes power values from scontrol show node (CurrentWatts etc.)
-# Usage: showpower < -w nodelist | -p partition(s) | -a | -h > [ -S sorting-variable ]
+# Usage: showpower < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ]
 #
-# The sinfo command cannot print power values, so we have to use scontrol.
+# Note: The sinfo command cannot print power values, so we have to use scontrol.
 
 # To enable Slurm power monitoring:
 # Several AcctGatherEnergyType types are defined in the slurm.conf manual page.
@@ -16,8 +16,10 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 < -w nodelist | -p partition(s) | -a | -h > [ -S sorting-variable ]
+Usage: $0 < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ]
 where:
+	-w node-list: Print this node-list
+	-p partition(s): Print this partition
 	-a: All nodes in the cluster
 	-h: Print help information
 	-S: Sort output by this column (e.g. CurrentWatts)
@@ -64,7 +66,7 @@ fi
 # Sanity check of nodelist
 if [[ -z "`sinfo -h -N -n $nodelist -O NodeList:`" ]]
 then
-	echo "ERROR: Nodelist $nodelist does not exist on this cluster"
+	echo "ERROR: Node-list $nodelist does not exist on this cluster"
 	usage
 	exit 1
 fi
@@ -77,7 +79,7 @@ BEGIN {
 {
 	# Get the NodeName n from $1
 	if (split($1,array,"=") != 2) {
-		print "Failed to read NodeName=<name> from field: " $1 " in line:"
+		print "Failed to read values from field: " $1 " in line:"
 		print $0
 		exit -1
 	}
@@ -86,10 +88,10 @@ BEGIN {
 		print $0
 		exit -1
 	}
-	# Set this NodeName to n
+	# The current NodeName is assigned to n
 	n = array[2]
 	for (i=1; i<=NF; i++) {
-		# Get variable=value pairs
+		# Get variable=value pairs (omit fields with spaces)
 		if (split($i,array,"=") == 2)
 			value[array[1]][n] = array[2]
 	}
@@ -114,7 +116,8 @@ BEGIN {
 		print "ERROR: Unknown sorting variable=" sortvar
 		PROCINFO["sorted_in"] = "@ind_str_asc"
 		printf("Available sorting variables:\n")
-		for (i in value) printf("%s ", i)
+		for (i in value)
+			printf("%s ", i)
 		print ""
 		exit -1
 	}
