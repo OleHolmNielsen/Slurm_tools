@@ -98,7 +98,7 @@ BEGIN {
 }
 function printheading(   fmtheading)
 {
-	fmtheading = "%-8s %6s %8s %8s %8s %9.9s %9.9s %9.9s\n" 
+	fmtheading = "%-8s %6s %8s %8s %8s %9.9s %9.9s %9.9s %9.9s\n" 
 	printf(fmtheading, "NodeName", "#CPUs", "CPU-", "Current", "Average", "Cap", "ExtSensors", "ExtSensors", "ExtSensors")
 	printf(fmtheading, "", "", "load", "Watts", "Watts", "Watts", "Watts", "Joules", "Temp")
 }
@@ -108,7 +108,7 @@ END {
 		printheading()
 		# Print selected variables for all nodes (ascending values)
 		PROCINFO["sorted_in"] = "@val_num_asc"
-		format = "%-8s %6d %8.1f %8d %8d %8s %8s %8s\n" 
+		format = "%-8s %6d %8.1f %8d %8d %9s %9s %9s %9s\n" 
 		for (n in value[sortvar]) {
 			nodecount++
 			printf(format,
