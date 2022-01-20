@@ -95,15 +95,20 @@ BEGIN {
 		if (split($i,array,"=") == 2)
 			value[array[1]][n] = array[2]
 	}
-} END {
+}
+function printheading(   fmtheading)
+{
+	fmtheading = "%-8s %6s %8s %8s %8s %9.9s %9.9s %9.9s\n" 
+	printf(fmtheading, "NodeName", "#CPUs", "CPU-", "Current", "Average", "Cap", "ExtSensors", "ExtSensors", "ExtSensors")
+	printf(fmtheading, "", "", "load", "Watts", "Watts", "Watts", "Watts", "Joules", "Temp")
+}
+END {
 	# Check that the sortvar index exists in the value array
 	if (sortvar in value) {
+		printheading()
 		# Print selected variables for all nodes (ascending values)
 		PROCINFO["sorted_in"] = "@val_num_asc"
-		heading="NodeName\tCPUTot\tCPULoad\tCurrentWatts\tAveWatts\tCapWatts\tExtSensorsWatts\tExtSensorsJoules\tExtSensorsTemp"
-		print heading
-		# format = "%s\t\t%d\t%.1f\t%.1f\t\t%.1f\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
-		format = "%s\t\t%d\t%.1f\t%d\t\t%d\t\t%s\t\t%s\t\t%s\t\t\t%s\n"
+		format = "%-8s %6d %8.1f %8d %8d %8s %8s %8s\n" 
 		for (n in value[sortvar]) {
 			nodecount++
 			printf(format,
@@ -127,7 +132,8 @@ BEGIN {
 		}
 		if (nodecount > 1) {
 			n = nodecount
-			print heading
+			print ""
+			printheading()
 			printf(format, "TOTAL", CPUTot, CPULoad, CurrentWatts, AveWatts, CapWatts,
 				ExtSensorsWatts, ExtSensorsJoules, ExtSensorsTemp)
 			printf(format, "Average", CPUTot/n, CPULoad/n, CurrentWatts/n, AveWatts/n, CapWatts/n,
