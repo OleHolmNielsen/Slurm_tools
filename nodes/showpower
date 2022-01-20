@@ -126,9 +126,12 @@ BEGIN {
 			ExtSensorsTemp		+= value["ExtSensorsTemp"][n]
 		}
 		if (nodecount > 1) {
+			n = nodecount
 			print heading
 			printf(format, "TOTAL", CPUTot, CPULoad, CurrentWatts, AveWatts, CapWatts,
 				ExtSensorsWatts, ExtSensorsJoules, ExtSensorsTemp)
+			printf(format, "Average", CPUTot/n, CPULoad/n, CurrentWatts/n, AveWatts/n, CapWatts/n,
+				ExtSensorsWatts/n, ExtSensorsJoules/n, ExtSensorsTemp/n)
 		}
 	} else {
 		print "ERROR: Unknown sorting variable=" sortvar
