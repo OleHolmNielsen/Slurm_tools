@@ -109,7 +109,8 @@ while getopts "u:hdnc" options; do
 		    echo "### Omit users with non-login shells"
 		;;
 		c ) export commentsoff=1
-		    echo "### Do not print explanatory comments"
+		    # Silence this comment:
+		    # echo "### Do not print explanatory comments"
 		;;
 		h|*|? ) usage
 		exit 1;;
@@ -130,17 +131,6 @@ then
 	awk --version | head -1
 	exit 1
 fi
-
-# Print a header
-cat <<EOF
-###
-### Create, update or delete Slurm users in the database from passwd file $PASSWD
-### Users are created under the same account name as their Groupname (GID).
-### Minimum UID considered is $MINUID.
-### Account settings configuration file for UNIX groups is 
-### `ls -l $user_settings_conf`
-###
-EOF
 
 # Process all users in the system passwd database
 
@@ -171,7 +161,21 @@ if test $(version $SLURM_VERSION) -ge $(version 18.08)
 then
 	assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
 fi
-echo "### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt"
+
+# Print a header
+if [[ $commentsoff == 0 ]]
+then
+	cat <<EOF
+###
+### Create, update or delete Slurm users in the database from passwd file $PASSWD
+### Users are created under the same account name as their Groupname (GID).
+### Minimum UID considered is $MINUID.
+### Account settings configuration file for UNIX groups is 
+### `ls -l $user_settings_conf`
+###
+### Slurm $SLURM_VERSION sacctmgr Format=$assocfmt
+EOF
+fi
 
 # Read the associations
 $remote sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
@@ -549,7 +553,7 @@ $3 >= MINUID {
 
 	# Process only the selected username:
 	if (username != "") {
-		if (u!= username) next
+		if (u != username) next
 		if (dontcreate[username] > 0) {
 			if (comm) print "### NOTICE: The user " username " will not be created according to " user_settings_conf
 			next
