@@ -437,6 +437,14 @@ $3 >= MINUID {
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
+	# Process only the selected username:
+	if (username != "") {
+		if (u != username) next
+		if (dontcreate[username] > 0) {
+			if (comm) print "### NOTICE: The user " username " will not be created according to " user_settings_conf
+			next
+		}
+	}
 	if (SHELL == "/sbin/nologin" || SHELL == "/bin/false") {		# Skip non-login users
 		if (omitnonlogin == 1) usernonlogin[u] = 1	# Flag non-login users 
 		userinformation[u] = "User " u " UNIX account has non-login shell " SHELL
@@ -471,7 +479,9 @@ $3 >= MINUID {
 		}
 		next
 	}
-	userinformation[u] = u	# Record existing valid users
+
+	# Record existing valid users:
+	userinformation[u] = u
 
 	# Gather arguments for the sacctmgr command
 	COMMAND = ""		# We are going to append a number of variables to COMMAND below
@@ -551,14 +561,6 @@ $3 >= MINUID {
 		}
 	}
 
-	# Process only the selected username:
-	if (username != "") {
-		if (u != username) next
-		if (dontcreate[username] > 0) {
-			if (comm) print "### NOTICE: The user " username " will not be created according to " user_settings_conf
-			next
-		}
-	}
 	# Compare config and current settings, print out any changes in COMMAND
 	# (skip users with dontcreate flag)
 	if (dontcreate[u] == 0 && isarray(setting[u][config])) {
