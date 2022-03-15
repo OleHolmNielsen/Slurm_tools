@@ -6,10 +6,11 @@
 
 # CONFIGURE THIS for your local environment:
 # People who will receive the report (default: Off)
-export SEND_EMAIL=0
-SUBSCRIBERS=root@localhost
+SEND_EMAIL=${SEND_EMAIL:-0}
+SUBSCRIBERS=${SUBSCRIBERS:-root@localhost}
+
 # Report file prefix
-REPORT_PREFIX=/tmp/Slurm_report_month_
+REPORT_PREFIX=/tmp/Slurm_report_month
 # Change the date/time format in report header for readability (formats in "man strftime")
 export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 # End of CONFIGURE lines
@@ -36,7 +37,7 @@ where:
 	-w: Select the last week
 	-r: Copy the report to a specified directory as well
 
-Date format: MMDD
+Date format: MMDDYY
 
 EOF
 }
@@ -46,7 +47,7 @@ EOF
 # Parse command options
 #
 
-while getopts "a:s:e:r:mcwh" options; do
+while getopts "a:s:e:r:mcwh?" options; do
 	case $options in
 		a )	export accountlist="Accounts=$OPTARG"
 			echo Select accounts $OPTARG
@@ -76,10 +77,8 @@ while getopts "a:s:e:r:mcwh" options; do
 		m )	export SEND_EMAIL=1
 			echo Send report by E-mail to $SUBSCRIBERS
 			;;
-		V ) echo $my_version
-			exit 1;;
 		h|? ) usage
-			exit 1;;
+			exit 0;;
 		* ) usage
 			exit 1;;
 	esac
@@ -99,9 +98,9 @@ fi
 # Test if either START or END are empty strings
 if test -z "$START" -o -z "$END"
 then
-	MONTH=`date -d "last month" +%B`
+	MONTH=`date -d "last month" +%m`
 	YEAR=`date -d "last month" +%Y`
-	REPORT_NAME=${MONTH}_${YEAR}
+	REPORT_NAME=${YEAR}_${MONTH}
 	# START=`date -d "-1 month -$(($(date +%-d)-1)) day" +%m%d%y`
 	START=`date -d "last month" +%m01%y`
 	# END=`date -d "-$(date +%d) day" +%D`
@@ -109,10 +108,8 @@ then
 fi
 
 # Generate accounting report
-
 export SYSTEMNAME=`scontrol show config | grep ClusterName`
-
-REPORT=$REPORT_PREFIX.$REPORT_NAME
+REPORT=$REPORT_PREFIX.$REPORT_NAME.txt
 
 # First report overall statistics 
 sreport $TRES cluster utilization Start=$START End=$END -t percent > $REPORT
