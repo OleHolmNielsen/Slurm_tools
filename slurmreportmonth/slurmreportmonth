@@ -17,7 +17,8 @@ export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
 #
 # Specify the accounting reports
 #
-FLAGS="-t hourper --tres=cpu,gpu"
+TRES="--tres=cpu,gres/gpu"
+FLAGS="-t hourper"
 TYPE="AccountUtilizationByUser"
 OPTIONS="format=Accounts,Cluster,Login,Proper%30,TresName,Used tree"
 
@@ -114,11 +115,10 @@ export SYSTEMNAME=`scontrol show config | grep ClusterName`
 REPORT=$REPORT_PREFIX.$REPORT_NAME
 
 # First report overall statistics 
-sreport cluster utilization Start=$START End=$END -t percent > $REPORT
+sreport $TRES cluster utilization Start=$START End=$END -t percent > $REPORT
 # Report account usage
 echo >> $REPORT
-sreport $FLAGS cluster $TYPE $accountlist Start=$START End=$END $OPTIONS >> $REPORT
-
+sreport $FLAGS $TRES cluster $TYPE $accountlist Start=$START End=$END $OPTIONS >> $REPORT
 echo Report generated to file $REPORT
 
 # Mail monthly report to a list of users (acct_list in /etc/aliases)
