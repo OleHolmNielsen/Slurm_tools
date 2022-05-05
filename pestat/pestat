@@ -301,6 +301,7 @@ sinfo $all_partitions $partition $hostlist $statelist > /dev/null
 # Trap any errors from sinfo
 if [[ "$?" -ne 0 ]]
 then
+	echo "ERROR: sinfo returned with an error message"
 	exit -1
 fi
 
