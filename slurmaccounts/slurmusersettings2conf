@@ -45,7 +45,7 @@ fi
 
 $remote $sacctmgr -snorp show associations format=$assocfmt | awk '
 BEGIN {
-	debug = 0	# Debugging flag
+	debug = 0	# Debugging flag, set to 1 for debug output
 	# IGNORECASE = 1	# Make case-insensitive string comparisons (for TRES comparisons)
 
 	# Create an array of Slurm factors
@@ -157,6 +157,9 @@ BEGIN {
 			# Print the value if it differs from the global default
 			if (defaultvalue[a][sf] != globaldefaultvalue[sf])
 				printf("%s:%s:%s\n", a, sf, defaultvalue[a][sf])
+			else if (debug > 0)
+				printf("%s:%s:%s equals global default value %s\n",
+					a, sf, defaultvalue[a][sf], globaldefaultvalue[sf])
 		}
 	}
 	print "###"
