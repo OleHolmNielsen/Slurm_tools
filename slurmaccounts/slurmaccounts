@@ -33,10 +33,6 @@ cat <<EOF
 ### The optional field 5 is a comma-separated list of UNIX groups which are aliased to the Slurm account_name,
 ### and this list must be added manually.
 ### 
-### It is possible to add also a fake account_name=NOACCOUNT where the UNIX groups listed in field 5 will be ignored from further processing, for example:
-### 
-### NOACCOUNT:::We ignore these groups:group3,group4
-###
 EOF
 
 cat $ACCOUNTS_CONF | awk '
@@ -60,12 +56,13 @@ BEGIN {
 }
 {
 	if (index($1,"#") >= 1) next	# Skip lines with # comments
+	if ($1 == "NOACCOUNT") next	# Ignore NOACCOUNT lines in this script
 	if (NF < 4) next		# Skip lines which have less than 4 fields (incl. empty lines)
 	ACC=tolower($1)
 	PARENT=tolower($2)
 	FAIRSHARE=$3
 	DESC=tolower($4)
-	if (NF >= 5) {
+	if (NF >= 5 && length($5)>0) {
 		print "### Slurm account " ACC " is just an alias for the UNIX group " $5
 		if ($5 in account)
 			print "### Slurm account for UNIX group " $5 " is " account[$5]
