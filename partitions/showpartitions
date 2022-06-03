@@ -149,7 +149,11 @@ BEGIN {
 	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
 	freecores[p] += cpus[2]
 	totalcores[p] += cpus[4]
-	cpn = cpus[4] / $3
+	# Empty partitions have #nodes ($3)==0
+	if ($3 > 0)
+		cpn = cpus[4] / $3
+	else
+		cpn = 0
 	if (corespernode[p] == 0 || cpn < corespernode[p])	# Select the lowest count of cores per node
 		corespernode[p] = cpn
 	if (minmax > 0) {
