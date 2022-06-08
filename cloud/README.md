@@ -33,6 +33,13 @@ The ```azure_nodes``` script logs actions in this file:
 LOGFILE=/var/log/slurm/power_save.log
 ```
 
+IPsec VPN tunnel
+----------------
+
+The files ```azure_nodes``` and ```azure_nodes``` are examples for use with an IPsec VPN tunnel.
+A detailed description is in the Wiki page 
+https://wiki.fysik.dtu.dk/it/Libreswan_IPsec_VPN
+
 ToDo
 ----
 
