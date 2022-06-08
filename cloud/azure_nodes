@@ -45,9 +45,8 @@ then
 	exit 1
 fi
 
+# Redirect stdout and stderr to $LOGFILE
 export LOGFILE=/var/log/slurm/power_save.log
-
-# Redirect stdout and stderr to $LOG_FILE
 exec &>> $LOGFILE
 
 echo "=================================================" 
