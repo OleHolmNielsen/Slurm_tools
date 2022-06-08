@@ -45,7 +45,7 @@ LOGFILE=/var/log/slurm/power_save.log
 slurm.conf configuration
 ------------------------
 
-* In ```slurm.conf``` all cloud nodes should be configured with ```State=CLOUD``` and a cloud-specific ```Feature```:
+* In ```slurm.conf``` all cloud nodes should be configured with ```State=CLOUD``` and a cloud-specific ```Feature```, for example:
 
 ```
 NodeName=cloud[001-002] ... State=CLOUD Feature=xxx,Azure
@@ -64,7 +64,10 @@ ResumeProgram=/usr/local/bin/cloudresume
 SuspendProgram=/usr/local/bin/cloudsuspend
 DebugFlags=Power
 TreeWidth=1000
-# Workaround: Make cloud nodes visible to sinfo:
+```
+
+In https://bugs.schedmd.com/show_bug.cgi?id=14270 there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
+```
 PrivateData=cloud
 ```
 
