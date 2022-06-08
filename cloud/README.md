@@ -33,6 +33,32 @@ The ```azure_nodes``` script logs actions in this file:
 LOGFILE=/var/log/slurm/power_save.log
 ```
 
+slurm.conf configuration
+------------------------
+
+Slurm configurations related to cloud nodes are described in these pages:
+
+* https://slurm.schedmd.com/elastic_computing.html
+* https://slurm.schedmd.com/power_save.html
+
+There are some additional configurations which may be used when the cluster contains cloud node partitions:
+
+```
+# Exceptions to the node suspend/resume logic (partitions):
+SuspendExcParts=xeon8,xeon16,xeon24
+SuspendExcNodes=onprem[001-002]
+SlurmctldParameters=idle_on_node_suspend,cloud_dns
+ResumeTimeout=600
+SuspendTimeout=120
+ResumeProgram=/usr/local/bin/cloudresume
+SuspendProgram=/usr/local/bin/cloudsuspend
+DebugFlags=Power
+TreeWidth=1000
+# Workaround: Make cloud nodes visible to sinfo:
+PrivateData=cloud
+```
+
+
 IPsec VPN tunnel
 ----------------
 
