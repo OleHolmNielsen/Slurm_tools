@@ -13,6 +13,8 @@ Some convenient scripts for working with cloud nodes:
 * ```azure_nodes```: Handle Azure cloud nodes.
 
 The ```cloud*``` scripts simply execute the ```azure_nodes``` script for nodes in the Azure cloud.
+It is recommended that the Azure CLI command ```az``` should be used to login the ```slurm``` user to an Azure subscription.
+Otherwise you must insert suitable  ```sudo``` commands for running Azure CLI commands.
 
 We have a Wiki page including some Azure documentation:
 

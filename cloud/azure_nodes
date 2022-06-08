@@ -12,6 +12,10 @@
 # 2. azure-cli RPM package
 # See https://wiki.fysik.dtu.dk/niflheim/Slurm_cloud_bursting#azure-cli
 
+# It is recommended that the Azure CLI command az should be used to login the slurm user to an Azure subscription.
+# Otherwise you must insert suitable sudo commands for running Azure CLI commands.
+
+
 # Command usage:
 function usage()
 {
@@ -20,22 +24,22 @@ Usage: $0 [-r|-s|-h]
 where:
 	-r: Resume (start) cloud nodes
 	-s: Suspend (stop/deallocate) cloud nodes
-        -h: Print this help information
+	-h: Print this help information
 EOF
 }
 
 export action=""
 while getopts "rsh" options; do
-        case $options in
-                r )     export action="start"
-                        ;;
-                s )     export action="deallocate"
-                        ;;
-                h|? ) usage
-                        exit 1;;
-                * ) usage
-                        exit 1;;
-        esac
+	case $options in
+		r )	export action="start"
+			;;
+		s )	export action="deallocate"
+			;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
 done
 shift $((OPTIND-1))
 
