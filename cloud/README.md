@@ -12,7 +12,10 @@ The ```cloud*``` scripts simply execute the ```azure_nodes``` script for nodes i
 Usage
 -----
 
-Copy these scripts to ```/usr/local/bin/```.
+Copy these scripts to ```/usr/local/bin/```:
+```
+cp cloudresume cloudsuspend azure_nodes /usr/local/bin/
+```
 
 Configure ```slurm.conf``` with:
 ```
@@ -29,3 +32,9 @@ The ```azure_nodes``` script logs actions in this file:
 ```
 LOGFILE=/var/log/slurm/power_save.log
 ```
+
+ToDo
+----
+
+* ```cloudresume``` and ```cloudsuspend``` should use ```sinfo``` to detect 
+  various cloud providers and call special script for each type of cloud.
