@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Cloud VM nodes resume script
+
+# Identify cloud nodes by node features (in slurm.conf)
+# For example: Feature=Azure
+# and use the appropriate cloud commands to start and stop VMs.
+
+# The environment variables from slurmctld do not include USER etc.
+export USER=`whoami`
+export PATH=/usr/local/bin:$PATH
+
+# Execute Azure VM nodes resume/start (helper script with -r flag)
+azure_nodes -r $*
