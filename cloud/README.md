@@ -36,5 +36,11 @@ LOGFILE=/var/log/slurm/power_save.log
 ToDo
 ----
 
+* In ```slurm.conf``` all cloud nodes should be configured with ```State=CLOUD``` and a cloud-specific ```Feature```:
+
+```
+NodeName=cloud[001-002] ... State=CLOUD Feature=xxx,Azure
+```
+
 * ```cloudresume``` and ```cloudsuspend``` should use ```sinfo``` to detect 
-  various cloud providers and call special script for each type of cloud.
+  various cloud providers and call a special script for each type of cloud.
