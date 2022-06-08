@@ -58,8 +58,7 @@ echo "Invoking userid is: " $USER `id`
 
 if [[ ! -x /usr/bin/az ]]
 then
-	echo ERROR: The azure-cli RPM is not installed
-	echo "`date` ERROR: The azure-cli RPM is not installed" 
+	echo "ERROR: The azure-cli RPM is not installed"
 	rpm -q azure-cli
 	exit -1
 fi
@@ -67,7 +66,7 @@ fi
 echo Check that the invoking user is logged in to an Azure account
 if test ! "`az account show --query '{tenantId:tenantId,subscriptionid:id}'`"
 then
-	echo "`date` ERROR: Invoking user $USER is not logged in to Azure CLI" 
+	echo "ERROR: Invoking user $USER is not logged in to Azure CLI" 
 	echo "See https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli"
 	exit 1
 fi
@@ -92,7 +91,7 @@ then
 	cat $VM_LIST_IDS 
 	az vm $action --ids `cat $VM_LIST_IDS` 
 	# Check if nodes are running and slurmd started
-	echo Check Slurm nodes:
+	echo "Check Slurm nodes:"
 	scontrol show node $* | grep Node
 else
 	echo "No VMs found" 
