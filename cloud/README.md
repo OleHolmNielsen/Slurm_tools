@@ -14,6 +14,10 @@ Some convenient scripts for working with cloud nodes:
 
 The ```cloud*``` scripts simply execute the ```azure_nodes``` script for nodes in the Azure cloud.
 
+We have a Wiki page including some Azure documentation:
+
+* https://wiki.fysik.dtu.dk/niflheim/Slurm_cloud_bursting
+
 Usage
 -----
 
