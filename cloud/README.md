@@ -1,6 +1,11 @@
 Slurm cloud node scripts
 ------------------------
 
+Slurm configurations related to cloud nodes are described in these pages:
+
+* https://slurm.schedmd.com/elastic_computing.html
+* https://slurm.schedmd.com/power_save.html
+
 Some convenient scripts for working with cloud nodes:
 
 * ```cloudresume```: ResumeProgram configured in ```slurm.conf```.
@@ -35,11 +40,6 @@ LOGFILE=/var/log/slurm/power_save.log
 
 slurm.conf configuration
 ------------------------
-
-Slurm configurations related to cloud nodes are described in these pages:
-
-* https://slurm.schedmd.com/elastic_computing.html
-* https://slurm.schedmd.com/power_save.html
 
 There are some additional configurations which may be used when the cluster contains cloud node partitions:
 
