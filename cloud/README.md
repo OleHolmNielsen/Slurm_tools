@@ -66,7 +66,7 @@ PrivateData=cloud
 IPsec VPN tunnel
 ----------------
 
-The files ```azure_nodes``` and ```azure_nodes``` are examples for use with an IPsec VPN tunnel.
+The files ```azure.conf``` and ```azure.secrets``` are examples for use with an IPsec VPN tunnel.
 A detailed description is in the Wiki page 
 https://wiki.fysik.dtu.dk/it/Libreswan_IPsec_VPN
 
