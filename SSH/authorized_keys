@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 PASSPHRASE=""
-KEYTYPES="rsa dsa ecdsa"
+KEYTYPES="rsa dsa ecdsa ed25519"
 AUTHORIZEDKEYS=$HOME/.ssh/authorized_keys
 
 echo Creating the user SSH v2 $AUTHORIZEDKEYS file for user $USER
