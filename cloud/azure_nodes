@@ -54,10 +54,11 @@ export LOGFILE=/var/log/slurm/power_save.log
 exec &>> $LOGFILE
 
 echo "=================================================" 
-echo "`date` Invoked $0 to $action nodes $*" 
+echo "`date` Invoked $0"
+echo "$action the Azure nodes $*" 
 # The environment variables from slurmctld do not include USER etc.
 export USER=`whoami`
-echo "Invoking userid is: " $USER `id` 
+echo "Invoking userid is: " $USER `id $USER` 
 
 if [[ ! -x /usr/bin/az ]]
 then
@@ -75,7 +76,7 @@ then
 fi
 
 
-# List VM nodes (name, resourcegroup, id)
+# List VM nodes (name, id)
 export VM_LIST=`mktemp`
 az vm list --query "[].{VMName:name, objectID:id}" -o tsv > $VM_LIST 
 
