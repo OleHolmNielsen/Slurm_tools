@@ -40,7 +40,7 @@ Then reconfigure Slurm:
 scontrol reconfig
 ```
 
-The ```azure_nodes``` script logs actions in this file:
+The ```azure_nodes``` script logs actions in this file in the Slurm log directory:
 ```
 LOGFILE=/var/log/slurm/power_save.log
 ```
@@ -66,7 +66,7 @@ SuspendTimeout=120
 ResumeProgram=/usr/local/bin/cloudresume
 SuspendProgram=/usr/local/bin/cloudsuspend
 DebugFlags=Power
-TreeWidth=1000
+TreeWidth=65536
 ```
 
 In https://bugs.schedmd.com/show_bug.cgi?id=14270 there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
