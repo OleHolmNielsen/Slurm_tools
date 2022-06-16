@@ -30,7 +30,7 @@ function my_tasks() {
 	# Print node info
 	sinfo -lRN
 	# Select nodes with Reason="Kill task failed" and reboot those nodes
-	nodelist=`sinfo -h -t drain -O Reason:32,NodeList | grep -i "Kill task failed" | awk '{print $NF}' | paste -d ,`
+	nodelist=`sinfo -h -t drain -O NodeList,Reason:40 | grep -i "Kill task failed" | awk '{print $1}' | paste -d ,`
 	echo Now rebooting and resuming nodes $nodelist
 	scontrol reboot nextstate=resume $nodelist
 	# Submit trigger for next event ($0 = this script)
