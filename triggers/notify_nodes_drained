@@ -29,12 +29,12 @@ fi
 function my_tasks() {
 	# Print node info
 	sinfo -lRN
-	if test -x $pestat
-	then
-		$pestat -t $my_state
-	fi
+	# Select nodes with Reason="Kill task failed" and reboot those nodes
+	nodelist=`sinfo -h -t drain -O Reason:32,NodeList | grep -i "Kill task failed" | awk '{print $NF}' | paste -d ,`
+	echo Now rebooting and resuming nodes $nodelist
+	scontrol reboot nextstate=resume $nodelist
 	# Submit trigger for next event ($0 = this script)
-	echo Setting new trigger  --node --$my_state --program=$0
+	echo Setting new trigger --node --$my_state --program=$0
 	strigger --set --node --$my_state --program=$0 $my_flags
 }
 
