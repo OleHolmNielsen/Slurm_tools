@@ -102,6 +102,8 @@ export omitdown=0
 
 # Controls whether GRES (Generic Resources) will be printed
 export printgres=0
+# Controls whether User(Account) will be printed after each JobID
+export printaccount=0
 # Controls whether JobName will be printed
 export printjobname=0
 # Controls whether job StartTime and EndTime will be printed
@@ -415,11 +417,16 @@ BEGIN {
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
 		if (JobArrayID == JobID) 
-			JobInfo = JobID " " User "(" Account ") "
+			JobInfo = JobID 
 		else {
 			# Identify array jobs
 			arrayjobs++
-			JobInfo = JobID "(" JobArrayID ") " User "(" Account ") "
+			JobInfo = JobID 
+		}
+		if (printaccount == 0) 
+			JobInfo = JobInfo " " User " "
+		else {
+			JobInfo = JobInfo " " User "(" Account ") "
 		}
 		if (printgres == 1) {
 			GRES = RED "(null)" NORMAL	# Default is null GRES in RED color
