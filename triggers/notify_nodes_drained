@@ -10,7 +10,6 @@
 slurm_user=slurm
 slurm_notify=root
 my_mail=/usr/bin/mailx
-pestat=/usr/local/bin/pestat
 
 # Select the node state as one of: down,drained,fail,up (see "man strigger")
 my_state=drained
@@ -30,11 +29,12 @@ function my_tasks() {
 	# Print node info
 	sinfo -lRN
 	# Select nodes with Reason="Kill task failed" and reboot those nodes
+	# (the paste command is from the coreutils package)
 	nodelist=`sinfo -h -t drain -O NodeList,Reason:40 | grep -i "Kill task failed" | awk '{print $1}' | paste -d ,`
 	if [[ -n "$nodelist" ]]
 	then
 		echo
-		echo "Now rebooting and resuming nodes $nodelist"
+		echo "Now reboot and resume nodes $nodelist"
 		scontrol reboot nextstate=resume $nodelist
 	fi
 	# Submit trigger for next event ($0 = this script)
