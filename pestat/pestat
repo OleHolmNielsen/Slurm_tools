@@ -32,7 +32,7 @@ export statedown="down drain drng resv maint boot"
 function usage()
 {
 	cat <<EOF
-Usage: pestat [-p partition(s)] [-P] [-u username] [-g groupname] [-a accountname]
+Usage: pestat [-p partition(s)] [-P] [-u username] [-g groupname] [-A accountname] [-a]
 	[-q qoslist] [-s/-t statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
 	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-S] [-E] [-T] [-C|-c] [-V] [-h]
 where:
@@ -40,11 +40,12 @@ where:
         -P: Include all partitions, including hidden and unavailable ones
 	-u username: Print only jobs of a single user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
-	-a accountname: Print only jobs in Slurm account <accountname>
+	-A accountname: Print only jobs in Slurm account <accountname>
+	-a: Print User(Account) information after each JobID
 	-q qoslist: Print only QOS in the qoslist <qoslist>
 	-R reservationlist: Print only node reservations <reservationlist>
-	-s/-t statelist: Print only nodes with state in <statelist> 
-	-n/-w hostlist: Print only nodes in hostlist
+	-s|-t statelist: Print only nodes with state in <statelist> 
+	-n|-w hostlist: Print only nodes in hostlist
 	-j joblist: Print only nodes in job <joblist>
 	-G: Print GRES (Generic Resources) in addition to JobID
 	-N: Print JobName in addition to JobID
@@ -55,9 +56,9 @@ where:
 	-d: Omit nodes with states: $statedown
 	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
 	-2: 2..N lines per node which participates in multiple partitions 
-	-S: Job StartTime is printed after each jobid/user
-	-E: Job EndTime is printed after each jobid/user
-	-T: Job TimeUsed is printed after each jobid/user
+	-S: Job StartTime is printed after each JobID/user
+	-E: Job EndTime is printed after each JobID/user
+	-T: Job TimeUsed is printed after each JobID/user
 	-C: Color output is forced ON
 	-c: Color output is forced OFF
 	-h: Print this help information
@@ -143,7 +144,7 @@ fi
 # Parse command options
 #
 
-while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
+while getopts "p:Pu:g:A:q:s:t:n:j:w:m:M:R:aCcdhVFf12SETNG" options; do
 	case $options in
 		p )	export partition="-p $OPTARG"
 			echo Print only nodes in partition $OPTARG
@@ -174,7 +175,7 @@ while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 				exit -1
 			fi
 			;;
-		a )	export accountlist=$OPTARG
+		A )	export accountlist=$OPTARG
 			if test "`$prefix/sacctmgr -n -p show account $accountlist`"
 			then
 				echo Select only Slurm account=$accountlist
@@ -183,6 +184,9 @@ while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 				echo Print all available accounts by: sacctmgr show account
 				exit -1
 			fi
+			;;
+		a )	export printaccount=1
+			echo "Print User(Account) after each JobID"
 			;;
 		q )	export qoslist=$OPTARG
 			if test "`$prefix/sacctmgr -n -p show qos $qoslist`"
@@ -220,10 +224,10 @@ while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 			hostlist="-n `$prefix/squeue -j $joblist -t running -h -O NodeList: | (readarray -t ARRAY; IFS=','; echo "${ARRAY[*]}")`"
 			;;
 		G )	export printgres=1
-			echo "GPU GRES (Generic Resource) is printed after each jobid"
+			echo "GPU GRES (Generic Resource) is printed after each JobID"
 			;;
 		N )	export printjobname=1
-			echo "JobName is printed after each jobid"
+			echo "JobName is printed after each JobID"
 			;;
 		f|F )	export flaglevel=1
 			flag_color="(RED and MAGENTA nodes)"
@@ -265,13 +269,13 @@ while getopts "p:Pu:g:a:q:s:t:n:j:w:m:M:R:CcdhVFf12SETNG" options; do
 			echo "2..N lines per node which participates in multiple partitions"
 			;;
 		S )	export printjobstarttime=1
-			echo "Job StartTime is printed after each jobid/user"
+			echo "Job StartTime is printed after each JobID/user"
 			;;
 		E )	export printjobendtime=1
-			echo "Job EndTime is printed after each jobid/user"
+			echo "Job EndTime is printed after each JobID/user"
 			;;
 		T )	export printtimeused=1
-			echo "Job TimeUsed is printed after each jobid/user"
+			echo "Job TimeUsed is printed after each JobID/user"
 			;;
 		C )	export colors=1
 			echo Force colors ON in output
@@ -342,6 +346,7 @@ BEGIN {
 	groupname=ENVIRON["groupname"]
 	qoslist=ENVIRON["qoslist"]
 	accountlist=ENVIRON["accountlist"]
+	printaccount=ENVIRON["printaccount"]
 	reservationlist=ENVIRON["reservationlist"]
 	free_mem_less=ENVIRON["free_mem_less"]
 	free_mem_more=ENVIRON["free_mem_more"]
@@ -387,33 +392,34 @@ BEGIN {
 	# Gather the list of running jobs with squeue
 	# Place JobName last, just in case it is a null string
 	# Place NodeList second before last because it may be very long
-	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-alloc,NodeList,Name " selection
+	# JOBLIST = prefix "/squeue -t RUNNING -h -O State,JobID,UserName,GroupName,Account,StartTime,EndTime,TimeUsed,Partition,NumNodes,tres-alloc,NodeList,Name " selection
 	# Column size(width)=30 hopefully suffices to separate columns
 	# The -O output fields must be space-separated, so use :(space) "sufix" and enclose -O fields in '' (octal 047)
 	# Older Slurm versions before 20.02 do not support the "sufix" after -O and may thus not work correctly
-	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,JobArrayID: ,UserName: ,GroupName: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-alloc: ,NodeList: ,Name:\047 " selection
+	JOBLIST = prefix "/squeue -t RUNNING -h -O \047State: ,JobID: ,JobArrayID: ,UserName: ,GroupName: ,Account: ,StartTime: ,EndTime: ,TimeUsed: ,Partition: ,NumNodes: ,tres-alloc: ,NodeList: ,Name:\047 " selection
 	while ((JOBLIST | getline) > 0) {
 		JobState=$1
 		JobID=$2
 		JobArrayID=$3
 		User=$4
 		Group=$5
-		StartTime=$6
-		EndTime=$7
-		TimeUsed=$8
-		Partition=$9
-		NumNodes=$10
-		TresAlloc=$11
-		NodeList=$12
-		JobName=$13
+		Account=$6
+		StartTime=$7
+		EndTime=$8
+		TimeUsed=$9
+		Partition=$10
+		NumNodes=$11
+		TresAlloc=$12
+		NodeList=$13
+		JobName=$14
 		if (JobName=="") JobName="(None)"
 		# Select job information to be printed for this job
 		if (JobArrayID == JobID) 
-			JobInfo = JobID " " User " "
+			JobInfo = JobID " " User "(" Account ") "
 		else {
 			# Identify array jobs
 			arrayjobs++
-			JobInfo = JobID "(" JobArrayID ") " User " "
+			JobInfo = JobID "(" JobArrayID ") " User "(" Account ") "
 		}
 		if (printgres == 1) {
 			GRES = RED "(null)" NORMAL	# Default is null GRES in RED color
@@ -494,9 +500,13 @@ BEGIN {
 	# Format the column header:
 	# The job information may include EndTime etc.
 	if (arrayjobs == 0)
-		JobInfo = "JobID User"
+		JobInfo = "JobID"
 	else
-		JobInfo = "JobID(JobArrayID) User"
+		JobInfo = "JobID(JobArrayID)"
+	if (printaccount == 0)
+		JobInfo = JobInfo " User"
+	else
+		JobInfo = JobInfo " User(Account)"
 	if (printgres == 1) JobInfo = JobInfo " GRES/job"
 	if (printjobname == 1) JobInfo = JobInfo " JobName"
 	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
