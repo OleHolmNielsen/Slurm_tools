@@ -9,37 +9,37 @@ Usage
 -----
 
 ```
-Usage: pestat [-p partition(s)] [-P] [-u username] [-g groupname] [-a accountname]
-        [-q qoslist] [-s statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
-        [-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-E] [-C|-c] [-V] [-h]
+Usage: pestat [-p partition(s)] [-P] [-u username] [-g groupname] [-A accountname] [-a]
+	[-q qoslist] [-s/-t statelist] [-n/-w hostlist] [-j joblist] [-G] [-N]
+	[-f | -F | -m free_mem | -M free_mem ] [-1|-2] [-d] [-S] [-E] [-T] [-C|-c] [-V] [-h]
 where:
-        -p partition: Select only partion <partition>
+	-p partition: Select only partion <partition>
         -P: Include all partitions, including hidden and unavailable ones
-        -u username: Print only jobs of a single user <username>
-        -g groupname: Print only users in UNIX group <groupname>
-	-a accountname: Print only jobs in Slurm account <accountname>
-        -q qoslist: Print only QOS in the qoslist <qoslist>
-        -R reservationlist: Print only node reservations <reservationlist>
-        -s statelist: Print only nodes with state in <statelist>
-        -n/-w hostlist: Print only nodes in hostlist
-        -j joblist: Print only nodes in job <joblist>
-        -G: Print GRES/GPU (Generic Resources for GPUs) in addition to JobId
-        -N: Print JobName in addition to JobId
-        -f: Print only nodes that are flagged by * (unexpected load etc.)
-        -F: Like -f, but only nodes flagged in RED are printed.
-        -m free_mem: Print only nodes with free memory LESS than free_mem MB
-        -M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
-        -d: Omit nodes with states: down drain drng resv maint boot
-        -1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
-        -2: 2..N lines per node which participates in multiple partitions
-        -S: Job StartTime is printed after each jobid/user
-        -E: Job EndTime is printed after each jobid/user.
-            Hint: Pipe output with "pestat -E | sort -k 11" to sort the ISO 8601 EndTimes.
-        -T: Job TimeUsed is printed after each jobid/user
-        -C: Color output is forced ON
-        -c: Color output is forced OFF
-        -h: Print this help information
-        -V: Version information
+	-u username: Print only jobs of a single user <username> 
+	-g groupname: Print only users in UNIX group <groupname>
+	-A accountname: Print only jobs in Slurm account <accountname>
+	-a: Print User(Account) information after each JobID
+	-q qoslist: Print only QOS in the qoslist <qoslist>
+	-R reservationlist: Print only node reservations <reservationlist>
+	-s|-t statelist: Print only nodes with state in <statelist> 
+	-n|-w hostlist: Print only nodes in hostlist
+	-j joblist: Print only nodes in job <joblist>
+	-G: Print GRES (Generic Resources) in addition to JobID
+	-N: Print JobName in addition to JobID
+	-f: Print only nodes that are flagged by * (unexpected load etc.)
+	-F: Like -f, but only nodes flagged in RED are printed.
+	-m free_mem: Print only nodes with free memory LESS than free_mem MB
+	-M free_mem: Print only nodes with free memory GREATER than free_mem MB (under-utilized)
+	-d: Omit nodes with states: down drain drng resv maint boot
+	-1: Default: Only 1 line per node (unique nodes in multiple partitions are printed once only)
+	-2: 2..N lines per node which participates in multiple partitions 
+	-S: Job StartTime is printed after each JobID/user
+	-E: Job EndTime is printed after each JobID/user
+	-T: Job TimeUsed is printed after each JobID/user
+	-C: Color output is forced ON
+	-c: Color output is forced OFF
+	-h: Print this help information
+	-V: Version information
 ```
 
 Notice: This version of pestat uses ```squeue -O``` flags to list jobs, and this may not work correctly for Slurm 19.05 and older.
