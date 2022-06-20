@@ -36,8 +36,10 @@ function my_tasks() {
 		echo
 		echo "Now reboot and resume nodes $nodelist"
 		scontrol reboot nextstate=resume $nodelist
+		sinfo -N -n $nodelist
 	fi
 	# Submit trigger for next event ($0 = this script)
+	echo
 	echo Setting new trigger --node --$my_state --program=$0
 	strigger --set --node --$my_state --program=$0 $my_flags
 }
