@@ -28,9 +28,9 @@ fi
 function my_tasks() {
 	# Print node info
 	sinfo -lRN
-	# Select nodes with Reason="Kill task failed" and reboot those nodes
+	# Select Nodelist with Reason="Kill task failed" and reboot those nodes
 	# (the paste command is from the coreutils package)
-	nodelist=`sinfo -h -t drain -O NodeList,Reason:40 | grep -i "Kill task failed" | awk '{print $1}' | paste -d ,`
+	nodelist=`sinfo -h -t drain -o "%N %E" | grep -i "Kill task failed" | awk '{print $1}' | paste -d ,`
 	if [[ -n "$nodelist" ]]
 	then
 		echo
