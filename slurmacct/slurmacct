@@ -11,7 +11,7 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
@@ -22,6 +22,7 @@ where:
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
+	-W directory: Print only jobs with this string in the job WorkDir
 	-r: Report name prefix
 	-n: No header information is printed
 	-h: Print this help information
@@ -40,13 +41,14 @@ REPORT_PREFIX=/tmp/Slurm_report_acct_
 export partition=""
 export username=""
 export groupname=""
+export workdir=""
 export ALLGROUPS=0
 export SORTCOLUMN=5
 export printheader=1
 export month="last"
 
 # Process options
-while getopts "p:u:g:s:e:r:m:cwGhn" options; do
+while getopts "p:u:g:s:e:r:m:W:cwGhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo Print only accounting in Slurm partition $OPTARG
@@ -89,6 +91,9 @@ while getopts "p:u:g:s:e:r:m:cwGhn" options; do
 			export end_time=`date +%m%d%y`
 			echo Select last week from $start_time until $end_time
 			REPORT_NAME=Last_week
+			;;
+		W )     export workdir=$OPTARG
+			echo Print only accounting data for jobs with working directory $workdir
 			;;
 		r )     export REPORT_PREFIX="$OPTARG"
 			echo Copy report to $OPTARG
@@ -186,6 +191,11 @@ if test $ALLGROUPS -eq 0
 then
 	# User statistics
 	echo >> $REPORT
+	if test -n "$workdir"
+	then
+		echo "Print only accounting data for jobs with working directory $workdir" >> $REPORT
+		echo >> $REPORT
+	fi
 	echo Usage sorted by top users: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if test -n "$username"
@@ -204,6 +214,11 @@ then
 else
 	# Group statistics
 	echo >> $REPORT
+	if test -n "$workdir"
+	then
+		echo "Print only accounting data for jobs with working directory $workdir" >> $REPORT
+		echo >> $REPORT
+	fi
 	echo Usage sorted by top groups: >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	echo "                    Wallclock          Average Average" >> $REPORT
@@ -228,7 +243,7 @@ fi
 # Report time in seconds:
 export SLURM_TIME_FORMAT="%s"
 # Request job data
-export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State"
+export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State,WorkDir"
 # Request job states: Cancelled, Completed, Failed, Timeout, Preempted, OUT_OF_MEMORY
 export STATE="ca,cd,f,to,pr,oom"
 
@@ -238,6 +253,7 @@ BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
 	ALLGROUPS=ENVIRON["ALLGROUPS"]
+	workdir=ENVIRON["workdir"]
 	totaljobs=0
 	# First get the list of user full names from /etc/passwd lines
 	COMMAND="getent passwd"
@@ -265,6 +281,7 @@ BEGIN {
 	state	= $12		# Job state
 	wall	= end - start
 	wait	= start - eligible
+	jobworkdir	= $13	# Job working directory
 
 	# For accounting by number of CPU cores in stead of number of nodes,
 	# uncomment the following line:
@@ -280,6 +297,7 @@ BEGIN {
 	# Check if this job matches selection criteria
 	if (userselect != "" && user != userselect) next
 	if (groupselect != "" && group != groupselect) next
+	if (workdir != "" && jobworkdir !~ workdir) next
 
 	# User accounting (a user may belong to several groups)
 	usernamegroup[user,group] = user

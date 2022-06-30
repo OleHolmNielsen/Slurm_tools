@@ -39,18 +39,19 @@ but there are some advantages of ```slurmacct```  over the ```sreport``` command
 * User full name is printed (useful to managers).
 
 ```
-Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-r report-directory] [-n] [-h]
+Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
-	-m monthyear: Select month and year (like "november2019")
 	-c: Current month
 	-w: Last week
+	-m monthyear: Select month and year (like "november2019")
 	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
-	-r: Copy the report to a specified directory as well
+	-W directory: Print only jobs with this string in the job WorkDir
+	-r: Report name prefix
 	-n: No header information is printed
 	-h: Print this help information
 
