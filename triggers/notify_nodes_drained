@@ -34,6 +34,9 @@ function my_tasks() {
 	if [[ -n "$nodelist" ]]
 	then
 		echo
+		echo "Recent jobs running on nodes $nodelist"
+		sacct --nodelist=$nodelist -S now-600
+		echo
 		echo "Now reboot and resume nodes $nodelist"
 		scontrol reboot nextstate=resume $nodelist
 		sinfo -N -n $nodelist
