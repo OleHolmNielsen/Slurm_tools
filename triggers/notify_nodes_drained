@@ -35,7 +35,7 @@ function my_tasks() {
 	then
 		echo
 		echo "Recent jobs running on nodes $nodelist"
-		sacct --nodelist=$nodelist -S now-600
+		sacct -o JobID,JobName,Partition,User,Account,NodeList,State,ExitCode --nodelist=$nodelist -S now-600
 		echo
 		echo "Now reboot and resume nodes $nodelist"
 		scontrol reboot nextstate=resume $nodelist
