@@ -17,6 +17,9 @@ my_state=down
 # This will make the trigger permanent:
 # my_flags="--flags=PERM"
 
+# sacct output fields
+export SACCT_FORMAT="JobID,JobName,Partition,User,Account,NodeList,State,ExitCode"
+
 # Check that we run as the slurm user
 if test "`id -nu`" != "$slurm_user"
 then
@@ -28,6 +31,16 @@ fi
 function my_tasks() {
 	# Print node info
 	sinfo -lRN
+	# Select Nodelist with state $my_state
+	# (the paste command is from the coreutils package)
+	nodelist=`sinfo -h -t $my_state -o "%N" | paste -d ,`
+	if [[ -n "$nodelist" ]]
+	then
+		echo
+		echo "Recent jobs running on nodes $nodelist"
+		sacct --nodelist=$nodelist -S now-600
+		sinfo -N -n $nodelist
+	fi
 	# Submit trigger for next event ($0 = this script)
 	echo Setting new trigger  --node --$my_state --program=$0
 	strigger --set --node --$my_state --program=$0 $my_flags
