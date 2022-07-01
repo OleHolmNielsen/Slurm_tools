@@ -14,6 +14,9 @@ my_mail=/usr/bin/mailx
 # Select the node state as one of: down,drained,fail,up (see "man strigger")
 my_state=drained
 
+# sacct output fields
+export SACCT_FORMAT="JobID,JobName,Partition,User,Account,NodeList,State,ExitCode"
+
 # This will make the trigger permanent:
 # my_flags="--flags=PERM"
 
@@ -35,7 +38,7 @@ function my_tasks() {
 	then
 		echo
 		echo "Recent jobs running on nodes $nodelist"
-		sacct -o JobID,JobName,Partition,User,Account,NodeList,State,ExitCode --nodelist=$nodelist -S now-600
+		sacct --nodelist=$nodelist -S now-600
 		echo
 		echo "Now reboot and resume nodes $nodelist"
 		scontrol reboot nextstate=resume $nodelist
