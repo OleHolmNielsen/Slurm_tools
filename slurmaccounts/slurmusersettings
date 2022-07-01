@@ -631,7 +631,7 @@ END {
 		if (username != "" && u!= username) continue
 		if (usernonlogin[u] == 1) continue	# Non-login user
 		if (userinformation[u] == u) continue	# No changes to this user
-		if (userinformation[u] == "IGNORE") { if (comm) prinf("\n### IGNORE this username: %s\n", u); continue}
+		if (userinformation[u] == "IGNORE") { if (comm) printf("\n### IGNORE this username: %s\n", u); continue}
 		if (userinformation[u] == "") userinformation[u] = "No password entry"
 		if (comm) printf("\n### Slurm account %s error: %s\n", u, userinformation[u])
 		if (comm) print "### First delete any non-default accounts for this user"
