@@ -8,6 +8,7 @@
 # People who will receive the report (default: Off)
 SEND_EMAIL=${SEND_EMAIL:-0}
 SUBSCRIBERS=${SUBSCRIBERS:-root@localhost}
+export prefix=/usr/bin
 
 # Report file prefix
 REPORT_PREFIX=/tmp/Slurm_report_month
@@ -92,6 +93,16 @@ then
 	exit 1
 fi
 
+# Check Slurm commands path
+if test -x /usr/local/bin/sreport
+then
+	export prefix=/usr/local/bin
+elif ! test -x $prefix/sacct
+then
+	echo "ERROR: Slurm commands not found in '$prefix/' (Set 'prefix=')"
+	exit 1
+fi
+
 #
 # Default period: last month 
 #
@@ -108,14 +119,14 @@ then
 fi
 
 # Generate accounting report
-export SYSTEMNAME=`scontrol show config | grep ClusterName`
+export SYSTEMNAME=`$prefix/scontrol show config | grep ClusterName`
 REPORT=$REPORT_PREFIX.$REPORT_NAME.txt
 
 # First report overall statistics 
-sreport $TRES cluster utilization Start=$START End=$END -t percent > $REPORT
+$prefix/sreport $TRES cluster utilization Start=$START End=$END -t percent > $REPORT
 # Report account usage
 echo >> $REPORT
-sreport $FLAGS $TRES cluster $TYPE $accountlist Start=$START End=$END $OPTIONS >> $REPORT
+$prefix/sreport $FLAGS $TRES cluster $TYPE $accountlist Start=$START End=$END $OPTIONS >> $REPORT
 echo Report generated to file $REPORT
 
 # Mail monthly report to a list of users (acct_list in /etc/aliases)
