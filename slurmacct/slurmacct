@@ -44,6 +44,7 @@ export groupname=""
 export workdir=""
 export ALLGROUPS=0
 export SORTCOLUMN=5
+export prefix=/usr/bin
 export printheader=1
 export month="last"
 
@@ -108,6 +109,16 @@ while getopts "p:u:g:s:e:r:m:W:cwGhn" options; do
 done
 shift $((OPTIND-1))
 
+# Check Slurm commands path
+if test -x /usr/local/bin/sacct
+then
+	export prefix=/usr/local/bin
+elif ! test -x $prefix/sacct
+then
+	echo "ERROR: Slurm commands not found in '$prefix/' (Set 'prefix=')"
+	exit 1
+fi
+
 #
 # Default period: last month 
 #
@@ -140,7 +151,7 @@ fi
 # Test username
 if test -n "$username" 
 then
-	if test -z "`sacctmgr -p -n show assoc where users=$username`"
+	if test -z "`$prefix/sacctmgr -p -n show assoc where users=$username`"
 	then
 		echo Error selecting Slurm username $username 
 		exit -1
@@ -176,7 +187,7 @@ selection=""
 if test $printheader -gt 0
 then
 	# Print a sreport header (overwrite any existing file)
-	sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
+	$prefix/sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
 fi
 
 # Request of a specific partition
@@ -244,11 +255,11 @@ fi
 export SLURM_TIME_FORMAT="%s"
 # Request job data
 export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State,WorkDir"
-# Request job states: Cancelled, Completed, Failed, Timeout, Preempted, OUT_OF_MEMORY
-export STATE="ca,cd,f,to,pr,oom"
+# Request job states: CAncelled, ReQueued, CompleteD, Failed, TimeOut, PReempted, Out_Of_Memory
+export STATE="ca,rq,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
-sacct $selection -np -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
+$prefix/sacct $selection -np -D -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
 BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]

@@ -57,7 +57,7 @@ while getopts "p:u:g:s:e:r:m:cwhn" options; do
 			end_time=`date -d "1$OPTARG + 1 month" +%m01%y`
 			MONTH=`date -d "1$OPTARG" +%B`
 			YEAR=`date -d "1$OPTARG" +%Y`
-			REPORT_NAME=${MONTH}_${YEAR}
+			REPORT_NAME=${YEAR}_${MONTH}
 			;;
 		c )     export start_time=`date +%m01%y`
 			export end_time=`date +%m%d%y`
@@ -86,9 +86,9 @@ shift $((OPTIND-1))
 # Test if either start_time or end_time are empty strings
 if test -z "$start_time" -o -z "$end_time"
 then
-	MONTH=`date -d "last month" +%B`
+	MONTH=`date -d "last month" +%m`
 	YEAR=`date -d "last month" +%Y`
-	REPORT_NAME=${MONTH}_${YEAR}
+	REPORT_NAME=${YEAR}_${MONTH}
 	start_time=`date -d "last month" +%m01%y`
 	end_time=`date -d "last month + 1 month" +%m01%y`
 fi
