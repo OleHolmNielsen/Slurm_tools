@@ -130,7 +130,7 @@ $prefix/sreport $FLAGS $TRES cluster $TYPE $accountlist Start=$START End=$END $O
 # Report top users
 echo >> $REPORT
 OPTIONS="format=Cluster%12,Login%12,Proper%25,Accounts%10,TresName,Used"
-$prefix/sreport $FLAGS $TRES user TopUsage $accountlist Start=$START End=$END $OPTIONS >> $REPORT
+$prefix/sreport $FLAGS $TRES user TopUsage TopCount=20 $accountlist Start=$START End=$END $OPTIONS >> $REPORT
 
 echo Report generated to file $REPORT
 
