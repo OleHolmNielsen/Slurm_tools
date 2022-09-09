@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Print the nodes power values from nodes with an Nvidia GPU.
+# Print the node power values from nodes with an Nvidia GPU.
 # The ClusterShell (clush) tool is required.
 # An SSH command executes the nvidia-smi tool on the nodes and extracts the power values.
 
@@ -15,7 +15,7 @@ where:
 	-a: All nodes in the cluster
 	-s: Summarize total power only
 	-h: Print help information
-
+	Default node-list: All nodes with a GRES value of "gpu"
 EOF
 }
 
