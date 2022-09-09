@@ -9,12 +9,13 @@
 function usage()
 {
         cat <<EOF
-Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-l limit] [-s sub-limit] [-n] | -h ]
+Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-q qos] [-l limit] [-s sub-limit] [-n] | -h ]
 where:
         -u username: Print user <username> (Default is current user)
         -A accountname: Print only account <accountname>
         -p partition: Print only Slurm partition <partition>
         -M cluster: Print only cluster <cluster>
+        -q Print only QOS=<qos>
         -l Print selected limits only
         -s Print selected sub-limits only
 	-n Print also limits with value None
@@ -22,14 +23,18 @@ where:
 EOF
 }
 
-# Default: Current user
+# Defaults:
+# assoc_mgr flags
+flags="Assoc"
+qosarg=""
+# Current user
 username="$USER"
 printNone=0
 
 #
 # Parse command options
 #
-while getopts "u:A:p:M:l:s:hn" options; do
+while getopts "u:A:p:M:q:l:s:hn" options; do
 	case $options in
 		u ) username=$OPTARG	# Select user
 	    	;;
@@ -39,6 +44,10 @@ while getopts "u:A:p:M:l:s:hn" options; do
 	    	;;
 		M ) export cluster=$OPTARG	# Select cluster
 		    clusterarg="-M $OPTARG"
+	    	;;
+		q ) export flags="QOS"		# Select flags=QOS
+		    export qos=$OPTARG
+		    qosarg="qos=$OPTARG"
 	    	;;
 		l ) export limits=$OPTARG	# Select limits to display
 	    	;;
@@ -105,10 +114,12 @@ then
 fi
 # Get Current Association Manager state Association Records
 # Valid assoc_mgr flags are 'Assoc, QOS, and/or Users'
-scontrol -o show assoc_mgr users=$username $selectedaccount flags=Assoc | awk '
+echo scontrol -o show assoc_mgr users=$username $selectedaccount $qosarg flags=$flags 
+scontrol -o show assoc_mgr users=$username $selectedaccount $qosarg flags=$flags | awk '
 BEGIN {
 	partition	= ENVIRON["partition"]
 	cluster		= ENVIRON["cluster"]
+	qos		= ENVIRON["qos"]
 	limits		= ENVIRON["limits"]
 	printNone	= ENVIRON["printNone"]
 	# Add some aliases for limits:
