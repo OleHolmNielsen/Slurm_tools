@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 
 # Print a simple node status
+# Use default time format:
+unset SLURM_TIME_FORMAT
 
 # Omit the 1st line (timestamp) from sinfo
 sinfo -N --long -n $* | tail -n +2
+
+# Node job information 
 echo
-# Node job information
-unset SLURM_TIME_FORMAT
 squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime -w $*
-echo
-echo NODE CONFIGURATION:
-scontrol show node $*
+
+# Check if squeue returned without error
+if [[ "$?" == 0 ]]
+then
+	echo
+	echo NODE CONFIGURATION:
+	scontrol show node $*
+fi
