@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Print the nodes power values from scontrol show node (CurrentWatts etc.)
 # Usage: showpower < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ]
