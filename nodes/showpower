@@ -16,11 +16,12 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ]
+Usage: $0 < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ] -s
 where:
 	-w node-list: Print this node-list
 	-p partition(s): Print this partition
 	-a: All nodes in the cluster
+	-s: Summarize total power only
 	-h: Print help information
 	-S: Sort output by this column (e.g. CurrentWatts)
 EOF
@@ -35,8 +36,9 @@ fi
 
 # Default output sorting variable
 export sortvar="NodeName"
+export summarize=0
 
-while getopts "p:w:S:ah" options; do
+while getopts "p:w:S:ash" options; do
 	case $options in
 		p ) 	export nodelist="`sinfo -h -p $OPTARG -O NodeList:`"
 			if [[ -z $nodelist ]]
@@ -50,6 +52,7 @@ while getopts "p:w:S:ah" options; do
 			;;
 		w )	export nodelist=$OPTARG ;;
 		S )	export sortvar="$OPTARG" ;;
+		s )	export summarize=1 ;;
 		h|? ) 	usage
 			exit 0 ;;
 	esac
@@ -75,6 +78,11 @@ scontrol -o show node $nodelist | awk '
 BEGIN {
 	# Read environment variables
         sortvar=ENVIRON["sortvar"]
+        summarize=ENVIRON["summarize"]
+	if (summarize > 0)
+		printnodes=0
+	else
+		printnodes=1
 }
 {
 	# Get the NodeName n from $1
@@ -105,13 +113,13 @@ function printheading(   fmtheading)
 END {
 	# Check that the sortvar index exists in the value array
 	if (sortvar in value) {
-		printheading()
+		if (printnodes > 0) printheading()
 		# Print selected variables for all nodes (ascending values)
 		PROCINFO["sorted_in"] = "@val_num_asc"
 		format = "%-8s %6d %8.1f %8d %8d %10s %10s %10s %10s\n" 
 		for (n in value[sortvar]) {
 			nodecount++
-			printf(format,
+			if (printnodes > 0) printf(format,
 				value["NodeName"][n],
 				value["CPUTot"][n],
 				value["CPULoad"][n],
@@ -130,7 +138,7 @@ END {
 			ExtSensorsJoules	+= value["ExtSensorsJoules"][n]
 			ExtSensorsTemp		+= value["ExtSensorsTemp"][n]
 		}
-		if (nodecount > 1) {
+		if (nodecount > 1 || printnodes == 0) {
 			n = nodecount
 			print ""
 			printheading()
