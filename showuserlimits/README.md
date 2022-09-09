@@ -36,15 +36,16 @@ Specific limits (such as ```GrpTRESRunMins```) and even sub-limits (such as ```c
 Usage:
 
 ```
-Usage: showuserlimits [-u username [-A account] [-p partition] [-M cluster] [-l limit] [-s sub-limit] [-n] | -h ]
+Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-q qos] [-l limit] [-s sub-limit] [-n] | -h ]
 where:
         -u username: Print user <username> (Default is current user)
         -A accountname: Print only account <accountname>
         -p partition: Print only Slurm partition <partition>
         -M cluster: Print only cluster <cluster>
+        -q Print only QOS=<qos>
         -l Print selected limits only
         -s Print selected sub-limits only
-	-n Print also limits with value None
+        -n Print also limits with value None
         -h Print help information
 ```
 
