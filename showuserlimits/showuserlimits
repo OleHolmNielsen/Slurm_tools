@@ -219,3 +219,8 @@ function split_parenthesis (string, array) {
 		}
 	}
 }'
+
+# Print also the Slurm share information
+echo
+echo "Slurm share information:"
+sshare -U -u $username
