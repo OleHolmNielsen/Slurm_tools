@@ -10,7 +10,8 @@ HOST=localhost
 USER=root
 PWD='set-the-database-password'
 # Database dump file name (a backup .BAK will be made)
-BACKUPFILE=/root/mysqldump_slurm_acct_db
+mkdir -v /var/log/mariadb
+BACKUPFILE=/var/log/mariadb/mysqldump_slurm_acct_db
 
 # mysqldump options recommended by SchedMD in https://bugs.schedmd.com/show_bug.cgi?id=10295
 # Do not change unless you know what you are doing!
