@@ -8,6 +8,8 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```showjob```: Show status of Slurm job(s). Both queue information and accounting information is printed.
 
+* ```showjobreasons```: Show list of non-resource reasons for pending jobs, such as AssocGrpCpuLimit and AssocGrpNodeLimit
+
 * ```jobqos```: Set Quality of Service (QOS) of jobs, or list jobs with the given QOS.
 
 * ```jobnice```: Add nice level to jobs, or list jobs with non-zero nice level.

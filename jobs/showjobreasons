@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Slurm batch queue: Show list of reasons for pending jobs
+# Only job reasons other than "Resources" and "Dependency" are shown.
+
+squeue -h -t pending -O "Username,Account,Partition,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c | awk '
+{
+	jobcount=$1	# The jobcount comes from "uniq -c"
+	username=$2
+	account=$3
+	partition=$4
+	numcpus=$5
+	numnodes=$6
+	reason=$7
+	if (reason !~ "Resources" && reason !~ "Dependency")
+		printf("User %12s(%s) partition=%-12s reason=%-20s nodes=%d cpus=%d\n",
+			username, account, partition, reason, numnodes*jobcount, numcpus*jobcount)
+}'
