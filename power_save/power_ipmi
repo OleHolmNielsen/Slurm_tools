@@ -10,8 +10,12 @@
 # so the slurm user must have credentials for suspending and resuming nodes.
 
 # MODIFY THIS:
+# Add these lines (uncommented) to the users' .bashrc file which should export variables like:
+# export IPMI_USER=root
+# export IPMI_PASSWORD=verysecretpassword
 # Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
-BMC_SUFFIX="b"
+# BMC_SUFFIX="b"
+
 # Logfile for IPMI suspend/resume actions
 # N.B.: Make sure this file is writable by SlurmUser
 export LOGFILE=/var/log/slurm/power_ipmi.log
@@ -77,6 +81,7 @@ fi
 
 # Loop over nodelist that performs ipmitool actions
 function nodeloop () {
+	# Usage: nodeloop cmd nodelist
 	cmd=$1	# The ipmitool chassis power cmd
 	# Expand the nodelist $2 as individual node names 
 	for node in `nodeset --expand $2`

@@ -22,13 +22,24 @@ Copy these scripts to ```/usr/local/bin/```:
 cp noderesume nodefailresume nodesuspend power_ipmi power_azure /usr/local/bin/
 ```
 
+power_ipmi script variables
+---------------------------
+
+Add these lines (uncommented) to the slurm user's ```.bashrc``` file which should export variables for ```power_ipmi```, for example:
+```
+export IPMI_USER=root
+export IPMI_PASSWORD=verysecretpassword
+# Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
+export BMC_SUFFIX="b"
+```
+
 Adding node features
 --------------------
 
 The ```nodesuspend``` and ```noderesume``` scripts require the addition of *node features*
 in [slurm.conf](https://slurm.schedmd.com/slurm.conf.html#SECTION_NODE-CONFIGURATION).
 
-We define some node features ``power_xxx``, for example:
+We must define some node features ```power_xxx```, for example:
 
 ```
 NodeName=node[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
