@@ -61,8 +61,7 @@ then
 	usage
 	exit 1
 fi
-# Expand the nodelist as individual node names 
-nodelist=`nodeset --expand $1`
+export nodelist=$1
 
 # Source the users' .bashrc file which should export variables like:
 # export IPMI_USER=root
@@ -78,10 +77,10 @@ fi
 
 # Loop over nodelist that performs ipmitool actions
 function nodeloop () {
-	cmd=$1	# The ipmitool chassis power cmd
-	list=$2	# The nodelist
 	export DATE=`date`
-	for node in $list
+	cmd=$1	# The ipmitool chassis power cmd
+	# Expand the nodelist $2 as individual node names 
+	for node in `nodeset --expand $2`
 	do
 		# BMC DNS-name is the node name plus the string $BMC_SUFFIX
 		nodebmc=${node}${BMC_SUFFIX}
@@ -124,7 +123,7 @@ then
 	exit 1
 fi
 # Display $action in UPPER case (see the bash man-page under Case modification)
-echo "$DATE POWER ${action^^} the IPMI based nodelist $*" 
+echo "$DATE POWER ${action^^} the IPMI based nodelist $nodelist" 
 
 if [[ "$action" = "off" ]]
 then
