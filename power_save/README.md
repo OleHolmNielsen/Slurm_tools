@@ -29,14 +29,17 @@ scontrol show config | grep SlurmUser
 Adding node features
 --------------------
 
-The ``nodesuspend`` and ``noderesume`` scripts require the addition of *node features*
+The ```nodesuspend``` and ```noderesume``` scripts require the addition of *node features*
 in [slurm.conf](https://slurm.schedmd.com/slurm.conf.html#SECTION_NODE-CONFIGURATION).
 
-We defines some node features ``power_xxx``, for example:
+We define some node features ``power_xxx``, for example:
 
 ```
 NodeName=x[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
 ```
+
+The features are used by the ```nodesuspend``` and ```noderesume``` scripts
+to identify the power management features associated with each node.
 
 The scripts currently handle ``power_ipmi`` and ``power_azure`` features,
 but other features may be added.
