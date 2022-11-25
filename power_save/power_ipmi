@@ -84,7 +84,7 @@ function nodeloop () {
 	do
 		# BMC DNS-name is the node name plus the string $BMC_SUFFIX
 		nodebmc=${node}${BMC_SUFFIX}
-		if $PING ${nodebmc} 2>&1 > /dev/null
+		if $PING ${nodebmc} >/dev/null 2>&1 
 		then
 			echo -n "$DATE node $node ipmitool "
 			ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd
