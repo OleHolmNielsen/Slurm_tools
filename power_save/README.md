@@ -23,7 +23,7 @@ The power saving script logs actions in files in the Slurm log directory:
 The log files must be writable by the slurm user, see:
 
 ```
-  scontrol show config | grep SlurmUser
+scontrol show config | grep SlurmUser
 ```
 
 Adding node features
@@ -32,9 +32,11 @@ Adding node features
 The ``nodesuspend`` and ``noderesume`` scripts require the addition of *node features*
 in [slurm.conf](https://slurm.schedmd.com/slurm.conf.html#SECTION_NODE-CONFIGURATION).
 
-We defines some node features ``power_xxx``, for example::
+We defines some node features ``power_xxx``, for example:
 
-  NodeName=x[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
+```
+NodeName=x[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
+```
 
 The scripts currently handle ``power_ipmi`` and ``power_azure`` features,
 but other features may be added.
