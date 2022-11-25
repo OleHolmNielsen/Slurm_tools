@@ -16,6 +16,10 @@ BMC_SUFFIX="b"
 # N.B.: Make sure this file is writable by SlurmUser
 export LOGFILE=/var/log/slurm/power_ipmi.log
 
+# We require the "nodeset" command from the ClusterShell package.  Install it by:
+# yum install epel-release
+# yum install clustershell
+
 # Check if BMC is reachable by ping
 PING="/bin/ping -c 1 -w 3"
 
@@ -57,15 +61,8 @@ then
 	usage
 	exit 1
 fi
-
-# Get the Slurm node list as individual nodes (unknown nodenames will simply be ignored by sinfo)
-nodelist=`sinfo -h -N -O NodeList: -n $1 | sort | uniq`
-if [[ "$nodelist" == "" ]]
-then
-	echo "ERROR: The nodelist is unknown to Slurm: $1"
-	usage
-	exit 1
-fi
+# Expand the nodelist as individual node names 
+nodelist=`nodeset --expand $1`
 
 # Source the users' .bashrc file which should export variables like:
 # export IPMI_USER=root
