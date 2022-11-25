@@ -72,18 +72,18 @@ fi
 # export IPMI_PASSWORD=verysecretpassword
 # Note: The environment variables set by slurmctld do NOT include USER, HOME etc.
 source ~/.bashrc
+export USER=`whoami`
 if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
 then
 	echo "ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set in ~/.bashrc"
 	exit 1
 fi
-export USER=`whoami`
-export DATE=`date`
 
 # Loop over nodelist that performs ipmitool actions
 function nodeloop () {
 	cmd=$1	# The ipmitool chassis power cmd
 	list=$2	# The nodelist
+	export DATE=`date`
 	for node in $list
 	do
 		# BMC DNS-name is the node name plus the string $BMC_SUFFIX
@@ -110,7 +110,7 @@ then
 	exit 0		# Exit - command completed
 fi
 
-# Make sure the LOGFILE s owned by SlurmUser and has correct permissions
+# Make sure the LOGFILE is owned by SlurmUser and has correct permissions
 touch $LOGFILE
 chown slurm: $LOGFILE
 chmod 644 $LOGFILE
@@ -119,6 +119,7 @@ chmod 644 $LOGFILE
 # Redirect stdout and stderr to $LOGFILE
 exec &>> $LOGFILE
 
+export DATE=`date`
 echo "$DATE Invoked $0" by `id $USER`
 if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
 then
