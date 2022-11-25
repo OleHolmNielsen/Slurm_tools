@@ -40,7 +40,6 @@ NodeName=x[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
 
 The features are used by the ```nodesuspend``` and ```noderesume``` scripts
 to identify the power management features associated with each node.
-
 The scripts currently handle ``power_ipmi`` and ``power_azure`` features,
 but other features may be added.
 
@@ -74,9 +73,9 @@ PrivateData=cloud
 
 A very important point:
 
-* If you set ```SuspendTime``` to anything but INFINITE (or -1), power saving shutdown of nodes will commence!
+* If you set ```SuspendTime``` to anything but INFINITE (or -1), power saving shutdown of nodes will commence as soon as you reconfigure Slurm!
 
-* It may be preferable to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.
+* It may be preferable to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.   
   In stead define it only on any relevant partitions, for example:
 
 ```
