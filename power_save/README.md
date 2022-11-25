@@ -82,7 +82,7 @@ A very important point:
     PartitionName=my_partition SuspendTime=300
 ```
 
-Then reconfigure Slurm:
+Then reconfigure the Slurm controller:
 ```
 scontrol reconfig
 ```
