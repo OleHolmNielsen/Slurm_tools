@@ -85,10 +85,10 @@ function nodeloop () {
 		nodebmc=${node}${BMC_SUFFIX}
 		if $PING ${nodebmc} >/dev/null 2>&1 
 		then
-			echo -n "`date` node $node ipmitool "
+			echo -n "`date +'%b %d %T'` node $node ipmitool "
 			ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd
 		else
-			echo "`date` Cannot ping node ${node} BMC hostname ${nodebmc} !"
+			echo "`date +'%b %d %T'` Cannot ping node ${node} BMC hostname ${nodebmc} !"
 		fi
 	done
 }
@@ -114,7 +114,7 @@ chmod 644 $LOGFILE
 # Redirect stdout and stderr to $LOGFILE
 exec &>> $LOGFILE
 
-export DATE=`date`
+export DATE=`date +'%b %d %T'`
 echo "$DATE Invoked $0" by `id $USER`
 if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
 then

@@ -62,7 +62,7 @@ chmod 644 $LOGFILE
 exec &>> $LOGFILE
 
 echo "=================================================" 
-echo "`date` Invoked $0"
+echo "`date +'%b %d %T'` Invoked $0"
 # Display $action in UPPER case (see the bash man-page under Case modification)
 echo "${action^^} the Azure nodes $*" 
 # The environment variables set by slurmctld do not include USER etc.
@@ -109,8 +109,6 @@ then
 else
 	echo "No VMs found" 
 fi 
-
-# echo "`date` End of script $0" 
 
 # Cleanup
 rm -f $VM_LIST $VM_LIST_IDS
