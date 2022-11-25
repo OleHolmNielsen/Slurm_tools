@@ -9,9 +9,8 @@ The power management type for each node set is configured as *node features* in 
 
 General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
 
-We also have a Wiki page including some Azure cloud documentation describing power saving:
-
-* https://wiki.fysik.dtu.dk/niflheim/Slurm_cloud_bursting
+We also have a Wiki page including documentation of 
+[Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
 
 Usage
 -----
