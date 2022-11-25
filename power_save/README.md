@@ -20,9 +20,11 @@ The power saving script logs actions in files in the Slurm log directory:
 /var/log/slurm/power_ipmi.log
 /var/log/slurm/power_azure.log
 ```
-The log files must be writable by the slurm user, see::
+The log files must be writable by the slurm user, see:
 
+```
   scontrol show config | grep SlurmUser
+```
 
 Adding node features
 --------------------
