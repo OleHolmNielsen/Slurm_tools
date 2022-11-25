@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+# Slurm utility: Handle Azure cloud nodes
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# Use with ResumeProgram and SuspendProgram in slurm.conf
+# NOTE: The slurmctld will execute this script as user "slurm"
+# see https://slurm.schedmd.com/power_save.html
+# Prerequisites for Azure nodes:
+# 1. An Azure subscription to create cloud nodes
+# 2. azure-cli RPM package
+# See https://wiki.fysik.dtu.dk/niflheim/Slurm_cloud_bursting#azure-cli
+
+# Logfile for Azure suspend/resume actions
+# N.B.: Make sure this file is writable by user slurm
+export LOGFILE=/var/log/slurm/power_azure.log
+
+# It is recommended that the Azure CLI command az should be used to login the slurm user to an Azure subscription.
+# Otherwise you must insert suitable sudo commands for running Azure CLI commands.
+
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 [-r|-s|-h]
+where:
+	-r: Resume (start) cloud nodes
+	-s: Suspend (stop/deallocate) cloud nodes
+	-h: Print this help information
+EOF
+}
+
+export action=""
+while getopts "rsh" options; do
+	case $options in
+		r )	export action="start"
+			;;
+		s )	export action="deallocate"
+			;;
+		h|? ) usage
+			exit 1;;
+		* ) usage
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
+if [[ -z "$action" ]]
+then
+	usage
+	exit 1
+fi
+
+# Make sure the LOGFILE has correct permissions
+touch $LOGFILE
+chown slurm: $LOGFILE
+chmod 644 $LOGFILE
+
+# Redirect stdout and stderr to $LOGFILE
+exec &>> $LOGFILE
+
+echo "=================================================" 
+echo "`date` Invoked $0"
+# Display $action in UPPER case (see the bash man-page under Case modification)
+echo "${action^^} the Azure nodes $*" 
+# The environment variables set by slurmctld do not include USER etc.
+export USER=`whoami`
+echo "The invoking user is $USER:" `id $USER`
+
+if [[ ! -x /usr/bin/az ]]
+then
+	echo "ERROR: The azure-cli RPM is not installed"
+	rpm -q azure-cli
+	exit -1
+fi
+
+echo Check that the invoking user is logged in to an Azure account
+if test ! "`az account show --query '{tenantId:tenantId,subscriptionid:id}'`"
+then
+	echo "ERROR: Invoking user $USER is not logged in to Azure CLI" 
+	echo "See https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli"
+	exit 1
+fi
+
+
+# List VM nodes (name, id)
+export VM_LIST=`mktemp`
+az vm list --query "[].{VMName:name, objectID:id}" -o tsv > $VM_LIST 
+
+# Generate Slurm node list, 1 line per node
+export VM_LIST_IDS=`mktemp`
+for node in "`scontrol show hostname $*`"
+do
+	grep "^$node" $VM_LIST | awk '{print $2}' >> $VM_LIST_IDS
+done
+
+# Handle multiple Azure VMs in one command
+# See https://build5nines.com/azure-cli-2-0-quickly-start-stop-all-vms/
+if [[ -s $VM_LIST_IDS ]]
+then
+	echo "Handle VM $action on list:" 
+	cat $VM_LIST_IDS 
+	az vm $action --ids `cat $VM_LIST_IDS` 
+	# Check if nodes are running and slurmd started
+	echo "Check Slurm nodes:"
+	scontrol show node $* | grep Node
+else
+	echo "No VMs found" 
+fi 
+
+# echo "`date` End of script $0" 
+
+# Cleanup
+rm -f $VM_LIST $VM_LIST_IDS

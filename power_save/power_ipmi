@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+
+# Suspend/resume IPMI-based Slurm nodes
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# Use with ResumeProgram and SuspendProgram in slurm.conf
+# NOTE: The slurmctld will execute this script as user "slurm"
+# (see https://slurm.schedmd.com/power_save.html)
+# so the slurm user must have credentials for suspending and resuming nodes.
+
+# MODIFY THIS:
+# Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
+BMC_SUFFIX="b"
+# Logfile for IPMI suspend/resume actions
+# N.B.: Make sure this file is writable by user slurm
+export LOGFILE=/var/log/slurm/power_ipmi.log
+
+# Check if BMC is reachable by ping
+PING="/bin/ping -c 1 -w 3"
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 [-r|-s|-q|-h] nodelist
+where the action is:
+	-r: Resume (start) nodes in nodelist
+	-s: Suspend (stop) nodes in nodelist
+	-q: Query power status of nodes in nodelist
+	-h: Print this help information
+EOF
+}
+
+# Set the ipmitool chassis power action
+export action=""
+while getopts "rsqh" options; do
+	case $options in
+		r )	export action="on"
+			;;
+		s )	export action="off"
+			;;
+		q )	export action="status"
+			;;
+		h|? ) usage
+			exit 0;;
+		* ) usage
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
+# Check the Slurm nodelist
+if [[ $# != 1 ]]
+then
+	echo "ERROR: No Slurm nodelist has been given"
+	usage
+	exit 1
+fi
+
+# Get the Slurm node list as individual nodes (unknown nodenames will simply be ignored by sinfo)
+nodelist=`sinfo -h -N -O NodeList: -n $1 | sort | uniq`
+if [[ "$nodelist" == "" ]]
+then
+	echo "ERROR: The nodelist is unknown to Slurm: $1"
+	usage
+	exit 1
+fi
+
+# Source the users' .bashrc file which should export variables like:
+# export IPMI_USER=root
+# export IPMI_PASSWORD=verysecretpassword
+# Note: The environment variables set by slurmctld do NOT include USER, HOME etc.
+source ~/.bashrc
+if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
+then
+	echo "ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set in ~/.bashrc"
+	exit 1
+fi
+export USER=`whoami`
+export DATE=`date`
+
+# Loop over nodelist that performs ipmitool actions
+function nodeloop () {
+	cmd=$1	# The ipmitool chassis power cmd
+	list=$2	# The nodelist
+	for node in $list
+	do
+		# BMC DNS-name is the node name plus the string $BMC_SUFFIX
+		nodebmc=${node}${BMC_SUFFIX}
+		if $PING ${nodebmc} 2>&1 > /dev/null
+		then
+			echo -n "$DATE node $node ipmitool "
+			ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd
+		else
+			echo "$DATE Cannot ping node ${node} BMC hostname ${nodebmc} !"
+		fi
+	done
+}
+
+if [[ -z "$action" ]]
+then
+	echo "ERROR: No action has been given"
+	usage
+	exit 1
+elif [[ "$action" = "status" ]]
+then
+	# Query power status of nodes (writes to stdout)
+	nodeloop $action $nodelist
+	exit 0		# Exit - command completed
+fi
+
+# Make sure the LOGFILE has correct permissions
+touch $LOGFILE
+chown slurm: $LOGFILE
+chmod 644 $LOGFILE
+
+# Do the resume or suspend action:
+# Redirect stdout and stderr to $LOGFILE
+exec &>> $LOGFILE
+
+echo "$DATE Invoked $0" by `id $USER`
+if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
+then
+	echo "$DATE ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set"
+	exit 1
+fi
+# Display $action in UPPER case (see the bash man-page under Case modification)
+echo "$DATE POWER ${action^^} the IPMI based nodelist $*" 
+
+if [[ "$action" = "off" ]]
+then
+	# First make a soft OS shutdown and wait some seconds for completion
+	nodeloop "soft" $nodelist
+	sleep 60
+fi
+
+# Power nodes on or off
+nodeloop $action $nodelist

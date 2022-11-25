@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# Slurm nodes suspend/resume script
+# Helper scripts required: power_ipmi power_azure
+
+# Identify IPMI or cloud nodes by node features (in slurm.conf)
+# and use the appropriate cloud commands to start and stop VMs.
+# For example: Feature=power_azure
+# Here we can get the node features using:
+#   sinfo -hN -O "Nodelist: ,Features:" --nodes=$* | uniq
+
+# Define the action
+action="-s"
+
+# The environment variables passed from slurmctld do not include USER etc.
+export USER=`whoami`
+export PATH=/usr/local/bin:$PATH
+
+# Check for empty argument list
+if [[ $# < 1 ]]
+then
+	exit 0
+fi
+
+# Get the node list including features (in a single call to minimize load on slurmctld)
+TMPFILE=`mktemp`
+sinfo -hN -O "Nodelist: ,Features:" --nodes=$* > $TMPFILE
+
+# We require the "nodeset" command from the ClusterShell package.  Install it by:
+# yum install epel-release
+# yum install clustershell
+
+# Node suspend/resume by IPMI
+# Select the nodelist with the "power_ipmi" feature
+nodelist=`grep power_ipmi $TMPFILE | uniq | awk '{print $1}' | nodeset --fold`
+if [[ -n "$nodelist" ]]
+then
+	power_ipmi $action $nodelist
+fi
+
+# Execute Azure VM nodes suspend/deallocate 
+# Select the nodelist with the "power_azure" feature
+nodelist=`grep power_azure $TMPFILE | uniq | awk '{print $1}' | nodeset --fold`
+if [[ -n "$nodelist" ]]
+then
+	power_azure $action $nodelist
+fi
+
+# Cleanup
+rm -f $TMPFILE
