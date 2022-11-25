@@ -1,9 +1,15 @@
 Slurm power saving scripts
 ==========================
 
-Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html
+The present Slurm power saving scripts have been designed to be called from the Slurm controller ```slurmctld```
+using the ```slurm.conf``` resume and suspend programs discussed below.
+These programs will call different helper scripts according to the type of power management relevant for different types of nodes.
 
-We have a Wiki page including some Azure cloud documentation describing also power saving:
+The power management type for each node set is configured as *node features* in ```slurm.conf```.
+
+General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
+
+We also have a Wiki page including some Azure cloud documentation describing power saving:
 
 * https://wiki.fysik.dtu.dk/niflheim/Slurm_cloud_bursting
 
