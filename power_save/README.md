@@ -21,17 +21,6 @@ Copy these scripts to ```/usr/local/bin/```:
 cp noderesume nodefailresume nodesuspend power_ipmi power_azure /usr/local/bin/
 ```
 
-The power saving script logs actions in files in the Slurm log directory:
-```
-/var/log/slurm/power_ipmi.log
-/var/log/slurm/power_azure.log
-```
-The log files must be writable by the slurm user, see:
-
-```
-scontrol show config | grep SlurmUser
-```
-
 Adding node features
 --------------------
 
@@ -48,6 +37,20 @@ The features are used by the ```nodesuspend``` and ```noderesume``` scripts
 to identify the power management features associated with each node.
 The scripts currently handle ``power_ipmi`` and ``power_azure`` features,
 but other features may be added.
+
+Logging of power savings
+------------------------
+
+The power saving script logs actions in files in the Slurm log directory:
+```
+/var/log/slurm/power_ipmi.log
+/var/log/slurm/power_azure.log
+```
+The log files must be writable by the slurm user, see:
+
+```
+scontrol show config | grep SlurmUser
+```
 
 slurm.conf configuration
 ------------------------
