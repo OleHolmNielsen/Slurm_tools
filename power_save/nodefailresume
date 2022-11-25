@@ -2,23 +2,18 @@
 
 # nodefailresume script
 
-# The environment variables from slurmctld do not include USER etc.
-export USER=`whoami`
-export PATH=/usr/local/bin:$PATH
-# Logfile for suspend/resume actions
+# Logfile for node resume failures
 # N.B.: Make sure this file is writable by user slurm
-export LOGFILE=/var/log/slurm/power_save.log
+export LOGFILE=/var/log/slurm/nodefailresume.log
 # Make sure the LOGFILE has correct permissions
 touch $LOGFILE
 chown slurm: $LOGFILE
 chmod 644 $LOGFILE
 
-export USER=`whoami`
 export DATE=`date`
-
 echo "$DATE nodefailresume nodes $@" >> $LOGFILE
 
-slurm_notify=niflheim@mail.fysik.dtu.dk
+slurm_notify=sysadmin@yoursite.com
 my_mail=/usr/bin/mailx
 
 # Notify Slurm administrator of failed node resume
