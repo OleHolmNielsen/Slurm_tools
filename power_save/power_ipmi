@@ -77,7 +77,6 @@ fi
 
 # Loop over nodelist that performs ipmitool actions
 function nodeloop () {
-	export DATE=`date`
 	cmd=$1	# The ipmitool chassis power cmd
 	# Expand the nodelist $2 as individual node names 
 	for node in `nodeset --expand $2`
@@ -86,10 +85,10 @@ function nodeloop () {
 		nodebmc=${node}${BMC_SUFFIX}
 		if $PING ${nodebmc} >/dev/null 2>&1 
 		then
-			echo -n "$DATE node $node ipmitool "
+			echo -n "`date` node $node ipmitool "
 			ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd
 		else
-			echo "$DATE Cannot ping node ${node} BMC hostname ${nodebmc} !"
+			echo "`date` Cannot ping node ${node} BMC hostname ${nodebmc} !"
 		fi
 	done
 }
