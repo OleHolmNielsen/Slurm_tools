@@ -51,6 +51,7 @@ The log files must be writable by the slurm user, verify by:
 
 ```
 scontrol show config | grep SlurmUser
+ls -la /var/log/slurm
 ```
 
 slurm.conf configuration
