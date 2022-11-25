@@ -13,7 +13,7 @@
 # Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
 BMC_SUFFIX="b"
 # Logfile for IPMI suspend/resume actions
-# N.B.: Make sure this file is writable by user slurm
+# N.B.: Make sure this file is writable by SlurmUser
 export LOGFILE=/var/log/slurm/power_ipmi.log
 
 # Check if BMC is reachable by ping
@@ -110,7 +110,7 @@ then
 	exit 0		# Exit - command completed
 fi
 
-# Make sure the LOGFILE has correct permissions
+# Make sure the LOGFILE s owned by SlurmUser and has correct permissions
 touch $LOGFILE
 chown slurm: $LOGFILE
 chmod 644 $LOGFILE

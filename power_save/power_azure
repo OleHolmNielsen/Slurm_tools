@@ -13,7 +13,7 @@
 # See https://wiki.fysik.dtu.dk/niflheim/Slurm_cloud_bursting#azure-cli
 
 # Logfile for Azure suspend/resume actions
-# N.B.: Make sure this file is writable by user slurm
+# N.B.: Make sure this file is writable by SlurmUser
 export LOGFILE=/var/log/slurm/power_azure.log
 
 # It is recommended that the Azure CLI command az should be used to login the slurm user to an Azure subscription.
@@ -53,7 +53,7 @@ then
 	exit 1
 fi
 
-# Make sure the LOGFILE has correct permissions
+# Make sure the LOGFILE is owned by SlurmUser and has correct permissions
 touch $LOGFILE
 chown slurm: $LOGFILE
 chmod 644 $LOGFILE
