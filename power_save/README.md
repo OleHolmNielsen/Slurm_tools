@@ -31,7 +31,8 @@ in [slurm.conf](https://slurm.schedmd.com/slurm.conf.html#SECTION_NODE-CONFIGURA
 We define some node features ``power_xxx``, for example:
 
 ```
-NodeName=x[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
+NodeName=node[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
+NodeName=cloud[001-100] Feature=xeon8272cl,power_azure
 ```
 
 The features are used by the ```nodesuspend``` and ```noderesume``` scripts
