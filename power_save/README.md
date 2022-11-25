@@ -9,8 +9,10 @@ The power management type for each node set is configured as *node features* in 
 
 General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
 
-We also have a Wiki page including documentation of 
+**Caveat:**
+Slurm's power saving (prior to version 22.05.6) requires Slurm to be built with JSON support as described in the Wiki page
 [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
+See also [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
 Usage
 -----
