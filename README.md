@@ -27,6 +27,8 @@ tools have been developed for management and monitoring of our cluster:
 
 11. Scripts for managing [Slurm accounts and users](slurmaccounts/).
 
+12. Scripts for managing [power_save](power_save/) of nodes.
+
 Slurm deployment HOWTO
 ----------------------
 
