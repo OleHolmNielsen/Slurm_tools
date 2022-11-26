@@ -3,19 +3,21 @@ Slurm power saving scripts
 
 The present Slurm power saving scripts have been designed to be called from the Slurm controller ```slurmctld```
 using the ```slurm.conf``` resume and suspend programs discussed below.
-These programs will call different helper scripts according to the type of power management relevant for different types of nodes.
+The programs can also be called directly from the command line.
+They will call different helper scripts according to the type of power management relevant for different types of nodes.
 
 The power management type for each node set is configured as *node features* in ```slurm.conf```.
 
 General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
 
-**Caveat:**
+Prerequisites
+-------------
+
 Slurm's power saving (prior to version 22.05.6) requires Slurm to be built with JSON support as described in the Wiki page
 [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
 See also [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-Note:
-The scripts require the ```nodeset``` command from the
+The scripts require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html#nodeset-tool) command from the
 [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
 install it as RPM packages by:
 ```
