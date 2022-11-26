@@ -85,7 +85,7 @@ ResumeFailProgram=/usr/local/bin/nodefailresume
 SuspendProgram=/usr/local/bin/nodesuspend
 ```
 
-There are some additional configurations which may be used when the cluster contains cloud node partitions:
+There are some additional configurations which are used when the cluster contains nodes using power saving (including cloud nodes):
 
 ```
 # Exceptions to the node suspend/resume logic (partitions):
@@ -95,7 +95,7 @@ SlurmctldParameters=idle_on_node_suspend,cloud_dns
 ResumeTimeout=600
 SuspendTimeout=120
 DebugFlags=Power
-TreeWidth=65536		# Necessary only when cloud nodes are used
+TreeWidth=65536		# Configure TreeWidth only when cloud nodes are used
 ```
 
 In https://bugs.schedmd.com/show_bug.cgi?id=14270 there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
@@ -105,9 +105,9 @@ PrivateData=cloud
 
 A very important point:
 
-* If you set ```SuspendTime``` to anything but INFINITE (or -1), power saving shutdown of nodes will commence as soon as you reconfigure Slurm!
+* If you set ```SuspendTime``` to anything but INFINITE (or -1), power saving shutdown of **all** nodes will commence as soon as you reconfigure Slurm!
 
-* It may be preferable to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.   
+* It may perhaps be preferable to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.   
   In stead define it only on any relevant partitions, for example:
 
 ```
