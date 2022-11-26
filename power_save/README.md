@@ -22,15 +22,23 @@ Copy these scripts to ```/usr/local/bin/```:
 cp noderesume nodefailresume nodesuspend power_ipmi power_azure /usr/local/bin/
 ```
 
-power_ipmi script variables
----------------------------
+Configure script variables
+--------------------------
 
-Add these lines (uncommented) to the slurm user's ```.bashrc``` file which should export variables for ```power_ipmi```, for example:
+We need to configure the BMC's DNS hostname as well as the IPMI administrator username and password for the ```ipmitool``` command.
+
+Add these lines (uncommented) to the slurm user's ```.bashrc``` file (and for other users who need to execute the script)
+which should export variables for ```power_ipmi```, for example:
 ```
 export IPMI_USER=root
 export IPMI_PASSWORD=verysecretpassword
 # Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
 export BMC_SUFFIX="b"
+```
+
+In the ```nodefailresume``` script configure the sysadmin E-mail address in this line:
+```
+slurm_notify=<sysadmin-email>
 ```
 
 Adding node features
