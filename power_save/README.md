@@ -14,6 +14,15 @@ Slurm's power saving (prior to version 22.05.6) requires Slurm to be built with 
 [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
 See also [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
+Note:
+The scripts require the ```nodeset``` command from the
+[ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
+install it as RPM packages by:
+```
+yum install epel-release
+yum install clustershell
+```
+
 Usage
 -----
 
@@ -114,7 +123,7 @@ A very important point:
     PartitionName=my_partition SuspendTime=300
 ```
 
-Then reconfigure the Slurm controller:
+Finally reconfigure the Slurm controller:
 ```
 scontrol reconfig
 ```
