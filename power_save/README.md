@@ -17,7 +17,7 @@ Slurm's power saving (prior to version 22.05.6) requires Slurm to be built with 
 [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
 See also [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-The scripts require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html#nodeset-tool) command from the
+The scripts require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
 [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
 install it as RPM packages by:
 ```
