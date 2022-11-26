@@ -16,7 +16,7 @@ chmod 644 $LOGFILE
 export DATE=`date +"%b %d %T"`
 echo "$DATE nodefailresume nodes $@" >> $LOGFILE
 
-slurm_notify=niflheim@mail.fysik.dtu.dk
+slurm_notify=<sysadmin-email>
 my_mail=/usr/bin/mailx
 
 # Notify Slurm administrator of failed node resume
