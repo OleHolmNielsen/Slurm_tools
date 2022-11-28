@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Helper script: Initial setup of IPMI login to be performed once on every server.
+
+# Configure the site IPMI login name and password
+IPMIUSER=root
+IPMIPWD='verysecretpassword'
+
+yum install OpenIPMI ipmitool dmidecode
+
+echo Set IPMI variables for each brand of servers:
+MANUFACTURER="`dmidecode -s system-manufacturer`"
+if [[ "$MANUFACTURER" = "Dell Inc." ]]
+then
+        echo "Dell PowerEdge server detected."
+	channel=1
+	userno=2
+elif [[ "$MANUFACTURER" = "HP" ]]
+then
+        echo "HP Gen6 to Gen9 server detected."
+	channel=2
+	userno=2
+elif [[ "$MANUFACTURER" = "HPE" ]]
+then
+        echo "HPE Gen10 server detected."
+	channel=2
+	userno=1
+elif [[ "$MANUFACTURER" = "Supermicro" ]]
+then
+        echo "Supermicro server detected."
+	channel=1
+	userno=2
+else
+	echo
+        echo "Unknown server detected - IPMI is not configured."
+	ipmitool bmc info
+	exit 0
+fi
+
+ipmitool user set name $userno $IPMIUSER
+ipmitool user set password $userno $IPMIPWD
+ipmitool user list $channel
+ipmitool lan print $channel
