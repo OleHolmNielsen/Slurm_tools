@@ -38,7 +38,7 @@ Configure script variables
 
 We need to configure the BMC's DNS hostname as well as the IPMI administrator username and password for the ```ipmitool``` command.
 For security reasons the username/password should be kept in a separate file which cannot be read by normal users.
-The helper script ```ipmi_setup``` may be useful for setting up IPMI on the server.
+The helper script ```ipmi_setup``` may be useful for setting up IPMI on every compute node.
 
 Add these lines (uncommented) to the slurm user's ```.bashrc``` file (and for other users who need to execute the script)
 which should export variables for ```power_ipmi```, for example:

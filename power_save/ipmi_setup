@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Helper script: Initial setup of IPMI login to be performed once on every server.
+# Helper script: Initial setup of IPMI login to be performed once on every compute node
 
 # Configure the site IPMI login name and password
 IPMIUSER=root
