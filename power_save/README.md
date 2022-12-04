@@ -40,11 +40,11 @@ We need to configure the BMC's DNS hostname as well as the IPMI administrator us
 For security reasons the username/password should be kept in a separate file which cannot be read by normal users.
 The helper script ```ipmi_setup``` may be useful for setting up IPMI on every compute node.
 
-Add these lines (uncommented) to the slurm user's ```.bashrc``` file (and for other users who need to execute the script)
+Add these lines to the slurm user's ```.bashrc``` file (and for other users who need to execute the script)
 which should export variables for ```power_ipmi```, for example:
 ```
 export IPMI_USER=root
-export IPMI_PASSWORD=verysecretpassword
+export IPMI_PASSWORD=<verysecretpassword>
 # Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
 export BMC_SUFFIX="b"
 ```
@@ -128,7 +128,11 @@ A very important point:
     PartitionName=my_partition SuspendTime=300
 ```
 
-Finally reconfigure the Slurm controller:
+Note that the Slurm control daemon, slurmctld, must be restarted to initially enable power saving mode:
+```
+systemctl restart slurmctld
+```
+When changes are made, it suffices to reconfigure the Slurm controller:
 ```
 scontrol reconfig
 ```
