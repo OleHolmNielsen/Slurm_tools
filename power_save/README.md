@@ -120,25 +120,25 @@ PrivateData=cloud
 **Note** some important points:
 
 * The Slurm control daemon must be restarted to initially enable power saving mode:
-```
-systemctl restart slurmctld
-```
-When changes are made subsequently, it suffices to reconfigure the Slurm controller:
-```
-scontrol reconfig
-```
-Enablement of the *power_save* module will be shown in ```slurmctld.log``` like:
-```
-<timestamp> power_save module, excluded nodes ...
-```
+  ```
+  systemctl restart slurmctld
+  ```
+  When changes are made subsequently, it suffices to reconfigure the Slurm controller:
+  ```
+  scontrol reconfig
+  ```
+  Enablement of the *power_save* module will be shown in ```slurmctld.log``` like:
+  ```
+  <timestamp> power_save module, excluded nodes ...
+  ```
 
 * If you set ```SuspendTime``` to anything but INFINITE (or -1), power saving shutdown of **all** nodes will commence as soon as you reconfigure Slurm!
 
 * It may perhaps be preferable to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.   
   In stead define it only on any relevant partitions, for example:
 
-```
-PartitionName=my_partition SuspendTime=300
-```
+  ```
+  PartitionName=my_partition SuspendTime=300
+  ```
 
 * Nodes that are in multiple partitions which have different ```SuspendTime``` values may not behave as expected.
