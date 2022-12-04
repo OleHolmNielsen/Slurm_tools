@@ -117,7 +117,20 @@ In https://bugs.schedmd.com/show_bug.cgi?id=14270 there is a workaround for ```s
 PrivateData=cloud
 ```
 
-A very important point:
+**Note** some important points:
+
+* The Slurm control daemon must be restarted to initially enable power saving mode:
+```
+systemctl restart slurmctld
+```
+When changes are made subsequently, it suffices to reconfigure the Slurm controller:
+```
+scontrol reconfig
+```
+Enablement of the *power_save* module will be shown in ```slurmctld.log``` like:
+```
+<timestamp> power_save module, excluded nodes ...
+```
 
 * If you set ```SuspendTime``` to anything but INFINITE (or -1), power saving shutdown of **all** nodes will commence as soon as you reconfigure Slurm!
 
@@ -127,17 +140,5 @@ A very important point:
 ```
 PartitionName=my_partition SuspendTime=300
 ```
-NOTE: Nodes that are in multiple partitions which have different ```SuspendTime``` values may not behave as expected.
 
-NOTE: The Slurm control daemon must be restarted to initially enable power saving mode:
-```
-systemctl restart slurmctld
-```
-When changes are made, it suffices to reconfigure the Slurm controller:
-```
-scontrol reconfig
-```
-Enablement of the *power_save* module will be shown in ```slurmctld.log``` like:
-```
-<timestamp> power_save module, excluded nodes ...
-```
+* Nodes that are in multiple partitions which have different ```SuspendTime``` values may not behave as expected.
