@@ -125,14 +125,19 @@ A very important point:
   In stead define it only on any relevant partitions, for example:
 
 ```
-    PartitionName=my_partition SuspendTime=300
+PartitionName=my_partition SuspendTime=300
 ```
+NOTE: Nodes that are in multiple partitions which have different ```SuspendTime``` values may not behave as expected.
 
-Note that the Slurm control daemon, slurmctld, must be restarted to initially enable power saving mode:
+NOTE: The Slurm control daemon must be restarted to initially enable power saving mode:
 ```
 systemctl restart slurmctld
 ```
 When changes are made, it suffices to reconfigure the Slurm controller:
 ```
 scontrol reconfig
+```
+Enablement of the *power_save* module will be shown in ```slurmctld.log``` like:
+```
+<timestamp> power_save module, excluded nodes ...
 ```
