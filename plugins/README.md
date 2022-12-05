@@ -1,6 +1,3 @@
-Slurm plugins
-=============
-
 Job_submit plugin
 =================
 
