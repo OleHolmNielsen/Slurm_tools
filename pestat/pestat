@@ -22,7 +22,7 @@ export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
 # Per-user configuration file for pestat
 export PESTAT_CONFIG=$HOME/.pestat.conf
 # Omit nodes with these states (list separated by spaces):
-export statedown="down drain drng resv maint boot"
+export statedown="down down~ idle~ drain drng resv maint boot"
 # End of CONFIGURE lines
 
 #####################################################################################
@@ -557,6 +557,7 @@ BEGIN {
 	memory=$5
 	freemem=$6
 	state=$7
+	if (state == "idle~") next	# Skip nodes that are powered down (idle~)
 	gsub("$", "", state)	# Strip "$" for state=maintenance
 	gsub("@", "", state)	# Strip "@" for pending reboot nodes
 	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
@@ -580,7 +581,7 @@ BEGIN {
 		# Free memory on the node GREATER than free_mem_more
 		if (freemem > free_mem_more) listnode++
 	} else {
-		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "error" || state == "comp" || state == "maint" || state == "boot") {
+		if (state == "drain" || state == "drng" || state == "resv" || state == "down" || state == "down~" || state == "error" || state == "comp" || state == "maint" || state == "boot") {
 			# Flag nodes with status down, drain etc.
 			stateflag="*"
 			statecolor=RED
