@@ -12,15 +12,14 @@ functionlist = { check_arg_list, forbid_reserved_name, check_partition, check_nu
 ```
 
 See the Niflheim Wiki page https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#job-submit-plugins 
-about building and enabling job_submit plugins.
+about building and enabling [job submit plugins]( https://slurm.schedmd.com/job_submit_plugins.html).
 
 NOTES:
 
 * Some variables in the script should be adjusted for your cluster setup:
 
-  - badstring="BAD:"
-  - partitions
-  - default_partition
+  - partitions=...
+  - default_partition=...
   - default_nodes=1
   - default_tasks=1
 
@@ -39,7 +38,7 @@ NOTES:
 
 
 * The ```slurm.log_info()``` function logs to the slurmctld.log
-  We print the "badstring" string to identify bad job submissions, for example:
+  We print the "badstring" ```BAD:``` string to identify bad job submissions, for example:
   ```
   $ grep BAD: /var/log/slurm/slurmctld.log
   lua: slurm_job_submit: user aaaa(UID=245729) job_name=job_0.4 BAD: Invalid partition xeon8 specified
