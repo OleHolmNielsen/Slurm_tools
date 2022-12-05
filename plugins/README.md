@@ -37,7 +37,7 @@ NOTES:
   - num_gpus: number of gpus in each node.
 
 
-* The ```slurm.log_info()``` function logs to the slurmctld.log
+* The ```slurm.log_info()``` function logs to the ```slurmctld.log```.   
   We print the "badstring" ```BAD:``` string to identify bad job submissions, for example:
   ```
   $ grep BAD: /var/log/slurm/slurmctld.log
