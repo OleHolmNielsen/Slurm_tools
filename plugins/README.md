@@ -24,11 +24,32 @@ NOTES:
   - default_nodes=1
   - default_tasks=1
 
+* Define your partitions and usage policies:
+  ```
+  { partition="xeon24", numcores=24, entirenode=1, num_gpus=0 }
+  ```
+  where the variables mean:
+
+  - partition name: a **substring** which begins the name.   
+    Multiple partitions can be lumped together, for example, xeon24, xeon24_512, xeon24_1024 as ```xeon24```.
+  - numcores: number of CPU cores in each node.
+  - entirenode: **A site policy:** 1 if jobs **must** occupire the entire node, 0 otherwise.
+  - num_gpus: number of gpus in each node.
+
+
 * The ```slurm.log_info()``` function logs to the slurmctld.log
   We print the "badstring" string to identify bad job submissions, for example:
   ```
-  grep BAD: /var/log/slurm/slurmctld.log
+  $ grep BAD: /var/log/slurm/slurmctld.log
+  lua: slurm_job_submit: user aaaa(UID=245729) job_name=job_0.4 BAD: Invalid partition xeon8 specified
+  lua: slurm_job_submit: user bbbb(UID=226995) job_name=x16_old for 1 nodes in partition xeon24 BAD: num_tasks=4 cpus_per_task=1
+  lua: slurm_job_submit: user bbbb(UID=226995) job_name=x16_inner_B_3_outer_B_0 for 1 nodes in partition xeon24 BAD: num_tasks=4 cpus_per_task=1
+  lua: slurm_job_submit: user cccc(UID=288886) job_name=F_desp_cadena BAD: Invalid partition xeon25 specified
+  lua: slurm_job_submit: user dddd(UID=216593) job_name=gpaw BAD: Invalid partition pluto specified
+
   ```
+
+
 * The ```slurm.log_user()``` function prints an error message to the user's terminal.    
   This currently doesn't work in the ```slurm_job_modify()``` function, 
   see [bug 14539](https://bugs.schedmd.com/show_bug.cgi?id=14539) but this will be fixed in Slurm 23.02.
