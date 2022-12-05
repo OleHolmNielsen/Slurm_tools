@@ -128,7 +128,8 @@ PrivateData=cloud
   PartitionName=my_partition SuspendTime=300
   ```
 
-* Nodes that are in multiple partitions which have different ```SuspendTime``` values may not behave as expected.
+* Nodes that are in multiple partitions which have different ```SuspendTime``` values,
+  the power saving may behave unexpectedly.
 
 * The Slurm control daemon must be restarted to initially enable power saving mode:
   ```
