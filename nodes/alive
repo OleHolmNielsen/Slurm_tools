@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#
+# Check all nodes in a Slurm cluster by pinging each one
+#
+# Author: Ole Holm Nielsen, Ole.H.Nielsen@fysik.dtu.dk
+#
+
+# Exit the script in case of control-C etc.
+trap "exit -1" SIGTERM SIGINT SIGQUIT
+
+PING="/bin/ping -c 1 -w 3"
+# PING="/bin/ping -c 1 -w 10"
+# The Slurm server nodes list: Check only dead nodes (--dead)
+SINFO="/usr/bin/sinfo -N -h --dead"
+# SINFO="/usr/bin/sinfo -N -h"
+NODELIST=`$SINFO -O NodeList | sort | uniq`
+
+STOPFILEDIR=/var/lib/alive
+if test ! -d $STOPFILEDIR
+then
+	mkdir -v $STOPFILEDIR
+fi
+
+for node in $NODELIST
+do
+	STOPFILE=$STOPFILEDIR/alive.${node}
+	if $PING $node >/dev/null 2>&1
+	then
+		if [ -f $STOPFILE ]
+		then
+			echo Host ${node} is up again
+			$SINFO -n $node
+			rm -f $STOPFILE
+		fi
+	else
+		if [ ! -f $STOPFILE ]
+		then
+			echo Cannot ping host ${node} !
+			$SINFO -n $node
+			touch $STOPFILE
+		fi
+
+	fi
+done

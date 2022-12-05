@@ -8,6 +8,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Reboot and resume a node-list: ```sreboot node-list```.
 * Show node status: ```shownode <node-list>```.
 * Show node power values: ```showpower < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ] -s```.
+* Check dead nodes with a ping: ```alive``` (may be run from crontab every 10 minutes)
 * Show Nvidia GPU power values: ```showpower_nvidia < -w node-list | -p partition(s) | -a | -h > -s```
 * Do a ```ps``` process status on a node-list, but exclude system processes: ```psnode [-c columns | -h] node-list```.
 * Print Slurm version on a node-list: ```sversion node-list```. Requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
