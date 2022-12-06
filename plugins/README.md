@@ -48,8 +48,9 @@ Notes about the plugin
   ```
 * The ```slurm.log_user()``` function prints an error message to the user's terminal.    
   This currently doesn't work in the ```slurm_job_modify()``` function, 
-  see [bug 14539](https://bugs.schedmd.com/show_bug.cgi?id=14539) but this will be fixed in Slurm 23.02.
-* Slurm Error numbers are defined in the source file ```slurm/slurm_errno.h```
+  see [bug 14539](https://bugs.schedmd.com/show_bug.cgi?id=14539),
+  but this will be fixed in Slurm 23.02.
+* Slurm Error numbers are defined in the source file ```slurm/slurm_errno.h``` as well as ```/usr/include/slurm/slurm_errno.h```.
 * For the list of available Lua ```slurm.*``` fields check the job_desc variable in the source file
   ```src/plugins/job_submit/lua/job_submit_lua.c```.
 
