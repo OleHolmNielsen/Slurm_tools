@@ -143,3 +143,5 @@ PrivateData=cloud
   ```
   <timestamp> power_save module, excluded nodes ...
   ```
+* Compute nodes that are drained for maintenance purposes will be suspended and then resumed.
+  This [bug 14989](https://bugs.schedmd.com/show_bug.cgi?id=14989) has been resolved in Slurm 22.05.
