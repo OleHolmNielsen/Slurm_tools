@@ -30,13 +30,12 @@ Notes about the plugin
   ```
   where the variables mean:
 
-  - partition name: a **substring** which begins the name.   
+  - ```partition``` name: a **substring** which begins the name.   
     Multiple partitions can be lumped together, for example, xeon24, xeon24_512, xeon24_1024 as ```xeon24```.
-  - numcores: number of CPU cores in each node.
-  - entirenode: **A site policy:** 1 if jobs **must** be submitted for entire nodes, 0 otherwise.   
+  - ```numcores```: number of CPU cores in each node in the partition.
+  - ```num_gpus```: number of gpus in each node in the partition.
+  - ```entirenode```: **A site policy:** 1 if jobs **must** be submitted for entire nodes, 0 otherwise.   
     Obviously such policies will have to be configured for each site.
-  - num_gpus: number of gpus in each node.
-
 
 * The ```slurm.log_info()``` function logs to the ```slurmctld.log```.   
   We log the ```BAD:``` "badstring" to identify bad job submissions, example outputs may be:
