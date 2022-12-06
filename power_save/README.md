@@ -145,3 +145,4 @@ PrivateData=cloud
   ```
 * Compute nodes that are drained for maintenance purposes will be suspended and then resumed.
   This [bug 14989](https://bugs.schedmd.com/show_bug.cgi?id=14989) has been resolved in Slurm 22.05.
+  We have also opened another [bug 15561](https://bugs.schedmd.com/show_bug.cgi?id=15561) regarding this.
