@@ -18,12 +18,12 @@ Notes about the plugin
 ----------------------
 
 * Some variables in the script should be adjusted for your cluster setup:
-
-  - partitions=...
-  - default_partition=...
-  - default_nodes=1
-  - default_tasks=1
-
+  ```
+  partitions=...
+  default_partition=...
+  default_nodes=1
+  default_tasks=1
+  ```
 * Define your partitions and usage policies:
   ```
   { partition="xeon24", numcores=24, entirenode=1, num_gpus=0 }
@@ -36,7 +36,6 @@ Notes about the plugin
   - ```num_gpus```: number of gpus in each node in the partition.
   - ```entirenode```: **A site policy:** 1 if jobs **must** be submitted for entire nodes, 0 otherwise.   
     Obviously such policies will have to be configured for each site.
-
 * The ```slurm.log_info()``` function logs to the ```slurmctld.log```.   
   We log the ```BAD:``` "badstring" to identify bad job submissions, example outputs may be:
   ```
