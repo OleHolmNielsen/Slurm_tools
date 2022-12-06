@@ -1,17 +1,17 @@
 Job_submit plugin
 =================
 
-Read about [job submit plugins]( https://slurm.schedmd.com/job_submit_plugins.html).
+Read the documentation of Slurm [job submit plugins]( https://slurm.schedmd.com/job_submit_plugins.html).
 
-The ```job_submit.lua``` script can be copied to the ```/etc/slurm/``` directory.
-The script is structured as a number of self-contained functions that perform very specific tasks.
+The present ```job_submit.lua``` script can be copied to the ```/etc/slurm/``` directory.
+The script is structured as a number of self-contained sub-functions that perform very specific tasks.
 The functions ```slurm_job_submit()``` and ```slurm_job_modify()``` are called by ```slurmctld```,
-and simply loop over the desired functions in the present script:
+and these functions simply loop over the desired sub-functions in the present script:
 ```
 functionlist = { check_arg_list, forbid_reserved_name, check_partition, check_num_nodes, check_num_tasks, forbid_memory_eq_0, check_cpus_tasks, check_gpus }
 ```
 
-See the Niflheim Wiki page https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#job-submit-plugins 
+See the [Niflheim Wiki page on job submit plugins](https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#job-submit-plugins)
 about building and enabling [job submit plugins]( https://slurm.schedmd.com/job_submit_plugins.html).
 
 NOTES:
