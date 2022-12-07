@@ -13,9 +13,8 @@
 # Add these lines (uncommented) to the users' .bashrc file which should export variables like:
 # export IPMI_USER=root
 # export IPMI_PASSWORD=verysecretpassword
-# Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
-# BMC_SUFFIX="b"
-
+# Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix, for example:
+BMC_SUFFIX="b"
 # Logfile for IPMI suspend/resume actions
 # N.B.: Make sure this file is writable by SlurmUser
 export LOGFILE=/var/log/slurm/power_ipmi.log
@@ -35,6 +34,7 @@ Usage: $0 [-r|-s|-q|-h] nodelist
 where the action is:
 	-r: Resume (start) nodes in nodelist
 	-s: Suspend (stop) nodes in nodelist
+	-c: Power cycle nodes in nodelist
 	-q: Query power status of nodes in nodelist
 	-h: Print this help information
 EOF
@@ -42,11 +42,13 @@ EOF
 
 # Set the ipmitool chassis power action
 export action=""
-while getopts "rsqh" options; do
+while getopts "rscqh" options; do
 	case $options in
 		r )	export action="on"
 			;;
 		s )	export action="off"
+			;;
+		c )	export action="cycle"
 			;;
 		q )	export action="status"
 			;;
@@ -90,8 +92,8 @@ function nodeloop () {
 		nodebmc=${node}${BMC_SUFFIX}
 		if $PING ${nodebmc} >/dev/null 2>&1 
 		then
-			echo -n "`date +'%b %d %T'` node $node ipmitool "
-			ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd
+			# Make sure to get output as a single command:
+			echo "`date +'%b %d %T'` node $node ipmitool `ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd`"
 		else
 			echo "`date +'%b %d %T'` Cannot ping node ${node} BMC hostname ${nodebmc} !"
 		fi
