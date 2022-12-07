@@ -68,6 +68,7 @@ then
 	exit 1
 fi
 export nodelist=$1
+export nodecount=`nodeset --count $1`
 
 # Source the users' .bashrc file which should export variables like:
 # export IPMI_USER=root
@@ -107,6 +108,9 @@ then
 	exit 1
 elif [[ "$action" = "status" ]]
 then
+	export DATE=`date +'%b %d %T'`
+	# Display $action in UPPER case (see the bash man-page under Case modification)
+	echo "$DATE POWER ${action^^} for the IPMI based nodelist $nodelist ($nodecount nodes)" 
 	# Query power status of nodes (writes to stdout)
 	nodeloop $action $nodelist
 	exit 0		# Exit - command completed
@@ -129,7 +133,7 @@ then
 	exit 1
 fi
 # Display $action in UPPER case (see the bash man-page under Case modification)
-echo "$DATE POWER ${action^^} the IPMI based nodelist $nodelist" 
+echo "$DATE POWER ${action^^} the IPMI based nodelist $nodelist ($nodecount nodes)" 
 
 if [[ "$action" = "off" ]]
 then
