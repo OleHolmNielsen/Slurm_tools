@@ -94,7 +94,7 @@ function nodeloop () {
 		if $PING ${nodebmc} >/dev/null 2>&1 
 		then
 			# Make sure to get output as a single command:
-			echo "`date +'%b %d %T'` node $node ipmitool `ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd`"
+			echo "`date +'%b %d %T'` node $node ipmitool `ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power $cmd 2>&1`"
 		else
 			echo "`date +'%b %d %T'` Cannot ping node ${node} BMC hostname ${nodebmc} !"
 		fi
