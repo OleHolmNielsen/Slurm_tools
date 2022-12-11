@@ -47,7 +47,7 @@ export SORT_SEP=""
 export reason_print=0
 export account=""
 
-while getopts "u:a:Pp:q:ACrh" options; do
+while getopts "u:a:Pp:q:ACrhG" options; do
 	case $options in
 		u ) 	export username=$OPTARG
 			echo Select only user $username >> $TMPFILE
@@ -85,6 +85,8 @@ while getopts "u:a:Pp:q:ACrh" options; do
 			echo "    Dependency: Waiting for a dependent job to complete" >> $TMPFILE
 			echo "    CpuLimit:   AssocGrpCpuLimit, AssocGrpCPURunMinutesLimit" >> $TMPFILE
 			echo "    Held:       JobHeldUser, JobHeldAdmin" >> $TMPFILE
+			;;
+		G ) 	export gpuprint=1
 			;;
 		h|? ) usage
 			exit 1;;
@@ -138,7 +140,7 @@ sinfo --noheader -N $all_partitions $partition -O NodeList,CPUs,Partition,StateL
 } END {
 	print " "
 	print "Node states summary:"
-	format = "%-10s %5d nodes (%6.2f%%) %6d CPUs (%6.2f%%)\n"
+	format = "%-10s %5d nodes (%6.2f%%) %6d CPUs (%6.2f%%) %s\n"
 
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
@@ -146,9 +148,26 @@ sinfo --noheader -N $all_partitions $partition -O NodeList,CPUs,Partition,StateL
 
 	for (i in nodestates) {
 		s =  nodestates[i]
-		printf(format, s, nodecount[s], (100*nodecount[s]/total_node),  cpucount[s], (100*cpucount[s]/total_cpus))
+		if (index(s,"~") > 0) {
+			comment="Powered off"
+		} else if (index(s,"%") > 0) {
+			comment="Powering down"
+		} else if (index(s,"#") > 0) {
+			comment="Powering up"
+		} else if (index(s,"!") > 0) {
+			comment="Pending power down"
+		} else if (index(s,"*") > 0) {
+			comment="Not responding"
+		} else if (index(s,"$") > 0) {
+			comment="Reservation for maintenance"
+		} else if (index(s,"^") > 0) {
+			comment="Pending reboot"
+		} else {
+			comment=""
+		}
+		printf(format, s, nodecount[s], (100*nodecount[s]/total_node),  cpucount[s], (100*cpucount[s]/total_cpus), comment)
 	}
-	printf(format, "Total", total_node, 100.0, total_cpus, 100.0)
+	printf(format, "Total", total_node, 100.0, total_cpus, 100.0, "")
 }' >> $TMPFILE
 
 #
@@ -178,7 +197,10 @@ BEGIN {
 	print "export maxla=" maxla
 }'`
 
+#
 # Print a header
+#
+
 if test $comma_separated -ne 1
 then
 	cat $TMPFILE
@@ -191,6 +213,7 @@ BEGIN {
 	maxla=ENVIRON["maxla"]
 	comma_separated=ENVIRON["comma_separated"]
 	reason_print=ENVIRON["reason_print"]
+	gpuprint=ENVIRON["gpuprint"]
 	line="============================="
 	if (comma_separated!=1)
 		print " "
@@ -225,7 +248,7 @@ BEGIN {
 	}
 }'
 
-squeue $all_partitions $partition $qoslist -h -O "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason" | awk '
+squeue $all_partitions $partition $qoslist -h -O "UserName,Account,State:10 ,NumNodes:6 ,NumCPUs:6 ,Partition,Reason,tres-alloc:" | awk '
 BEGIN {
 	uname=ENVIRON["username"]
 	gname=ENVIRON["account"]
@@ -234,6 +257,7 @@ BEGIN {
 	comma_separated=ENVIRON["comma_separated"]
 	account_totals_only=ENVIRON["account_totals_only"]
 	reason_print=ENVIRON["reason_print"]
+	gpuprint=ENVIRON["gpuprint"]
 	# Then get the list of user full names from passwd lines
 	while ("getent passwd" | getline ) {
 		split($0,b,":")		# Split password line into fields
@@ -262,9 +286,12 @@ BEGIN {
 		for (i in array) {
 			if (sub("cpu=", "", array[i]) == 1) {	# Got the cpu=NNN field
 				cpulimits[$1][$2] = array[i]
+			} else if (sub("gres/gpu=", "", array[i]) == 1) {	# Got the gres/gpu=NNN field
+				gpulimits[$1][$2] = array[i]
 			}
 		}
 		# Debug: print "Got user " $0 " GrpTRES=" $3 " CPU limit=" cpulimits[$1][$2]
+		# Debug: print "Got user " $0 " GrpTRES=" $3 " CPU_limit=" cpulimits[$1][$2]  " GPU_limit=" gpulimits[$1][$2]
 		delete array
 	}
 	close(command)
@@ -282,22 +309,45 @@ BEGIN {
 	nprocs=$5
 	partition=$6
 	reason=$7
+	TresAlloc=$8
 	if (userselect > 0 && uname !~ userid) next	# Select specified username only
 	userlist[userid][account] = userid
 	accountlist[userid][account] = account
-	if (cpulimits[userid][account] == "") cpulimits[userid][account]	= "Inf"	# The default limit
+	if (cpulimits[userid][account] == "") cpulimits[userid][account]	= "Inf"	# The default CPU limit
+	if (gpuprint) { 
+		if (gpulimits[userid][account] == "") gpulimits[userid][account]	= "Inf"	# The default GPU limit
+		ngpus=0
+		# Parse the tres-alloc (TresAlloc) list to extract only GPU gres/gpu:
+		split (TresAlloc, treslist, ",")
+		for (i in treslist) {
+			if (index(treslist[i], "gres/gpu=") > 0) {
+				# The "generic" GPU field "gres/gpu="
+				# Omit the "gres/gpu=" string and start at char 10:
+				ngpus = substr(treslist[i],10)
+			}
+		}
+	}
+	# Debug: print "User " userid " job GPUs= " ngpus
 
 	if (status == "RUNNING" ) {
 		running[userid][account]++
 		totalrun++
 		runprocs[userid][account] += nprocs
 		totalrunprocs += nprocs
+		if (gpuprint) { 
+			rungpus[userid][account] += ngpus
+			totalrungpus += ngpus
+		}
 	} else {
 		# PENDING jobs
 		idle[userid][account]++
 		idleprocs[userid][account] += nprocs
 		totalidle++
 		totalidleprocs += nprocs
+		if (gpuprint) { 
+			idlegpus[userid][account] += ngpus
+			totalidlegpus += ngpus
+		}
 		if (reason_print == 1) {
 			if (reason == "Dependency") {
 				Dependency[userid][account]++
@@ -355,6 +405,7 @@ BEGIN {
 					Priority[u][a], Priority_procs[u][a], Dependency[u][a], Dependency_procs[u][a],
 					CpuLimit[u][a], CpuLimit_procs[u][a], Held[u][a], Held_procs[u][a],
 					fullname[userid])
+				# Debug: print "User " userid " Num GPUS = " rungpus[userid][account]
 			}
 			# Accumulate account statistics
 			accounts[account] = account
