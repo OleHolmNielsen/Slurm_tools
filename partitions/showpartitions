@@ -199,11 +199,11 @@ BEGIN {
 	n = sub("@", "", nodestate)
 	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
 	if (index(nodestate, "maint") > 0) maintenance[p] = "$"	# Nodes in maintenance mode 
-	if (nodestate == "idle")
+	if (nodestate ~ "^idle")		# This matches also states like idle~ and idle#
 		freenodes[p] += $3
 	# GRES (Generic Resources)
 	if ($10 != "(null)") {	# Node GRES
-		if (nodestate == "idle")
+		if (nodestate ~ "^idle")	# This matches also states like idle~ and idle#
 			gpustate = ":free"
 		else if (nodestate == "mixed")
 			gpustate = ":mix"
