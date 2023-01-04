@@ -56,6 +56,7 @@ while getopts "p:u:g:s:e:r:m:W:cwGhn" options; do
 			;;
 		u )     export username=$OPTARG
 			export ALLGROUPS=0
+			echo Print only user $OPTARG
 			;;
 		g )     export groupname="$OPTARG"
 			export ALLGROUPS=0
@@ -213,6 +214,9 @@ then
 	then
 		echo "User name selected: $username" >> $REPORT
 		selection="--user $username $selection"
+	else
+		# Select all users
+		selection="-a $selection"
 	fi
 	if test -n "$groupname"
 	then
@@ -259,7 +263,8 @@ export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Sub
 export STATE="ca,rq,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
-$prefix/sacct $selection -np -D -X -a -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
+# The "-a" flag was removed 04-Jan-2023
+$prefix/sacct $selection -np -X -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
 BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
@@ -278,6 +283,8 @@ BEGIN {
 {
 	# Parse input data
 	JobID	= $1		# JobID
+	cput	= $11		# CPU time in seconds
+	if (cput <= 0) next	# Skip jobs with zero cputime
 	user	= $2		# User name
 	group	= $3		# Group name
 	part	= $4		# Slurm partition name for this job
@@ -288,7 +295,7 @@ BEGIN {
 	if (eligible == "Unknown") eligible = submit
 	start	= $9		# Job start time in epoch seconds
 	end	= $10		# Job end time in epoch seconds
-	cput	= $11		# CPU time in seconds
+	if (start == "Unknown" || start == "None") start = end
 	state	= $12		# Job state
 	wall	= end - start
 	wait	= start - eligible
