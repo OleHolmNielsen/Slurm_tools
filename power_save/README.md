@@ -112,7 +112,7 @@ DebugFlags=Power
 TreeWidth=65536		# Configure TreeWidth only when cloud nodes are used
 ```
 
-In https://bugs.schedmd.com/show_bug.cgi?id=14270 there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
+In [bug 14270](https://bugs.schedmd.com/show_bug.cgi?id=14270) there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
 ```
 PrivateData=cloud
 ```
@@ -143,6 +143,11 @@ PrivateData=cloud
   ```
   <timestamp> power_save module, excluded nodes ...
   ```
-* Compute nodes that are drained for maintenance purposes will be suspended and then resumed.
-  This [bug 14989](https://bugs.schedmd.com/show_bug.cgi?id=14989) has been resolved in Slurm 22.05.
-  We have also opened another [bug 15561](https://bugs.schedmd.com/show_bug.cgi?id=15561) regarding this.
+* Compute nodes that are drained for maintenance purposes will be suspended and later resumed when needed by jobs.
+  This is highly undesirable!   
+
+  This [bug 15184](https://bugs.schedmd.com/show_bug.cgi?id=15184) has been resolved in Slurm 23.02
+  by introducing a new ```slurm.conf``` parameter:
+  ```
+  SuspendExcStates=down,drained,planned
+  ```
