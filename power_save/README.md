@@ -146,8 +146,10 @@ PrivateData=cloud
 * Compute nodes that are drained for maintenance purposes will be suspended and later resumed when needed by jobs.
   This is highly undesirable!   
 
-  This [bug 15184](https://bugs.schedmd.com/show_bug.cgi?id=15184) has been resolved in Slurm 23.02
-  by introducing a new ```slurm.conf``` parameter:
+  This issue has been resolved in Slurm_ 23.02 by [bug 15184](https://bugs.schedmd.com/show_bug.cgi?id=15184) which introduces a new slurm.conf_ parameter ``SuspendExcStates``.
+  This permits to configure node states which you want to be excluded from power saving suspension.
+  Valid states for ``SuspendExcStates`` include:
+
   ```
-  SuspendExcStates=down,drained,planned
+  CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL, INVALID_REG, MAINTENANCE, NOT_RESPONDING, PERFCTRS, PLANNED, RESERVED
   ```
