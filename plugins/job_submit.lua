@@ -2,7 +2,7 @@
 Example job_submit.lua file for Slurm from source etc/job_submit.lua.example
 
 For more information check https://slurm.schedmd.com/job_submit_plugins.html
-See also the Wiki page https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#job-submit-plugins
+See also the Wiki page https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#job-submit-plugins
 
 NOTES:
 * The slurm.log_info() function logs to the slurmctld.log
@@ -54,7 +54,7 @@ script_error="ERROR: Please modify your batch job script"
 -- Policy: the partition must be specified by the job
 function check_partition (job_desc, submit_uid, log_prefix)
 	-- Informational web page
-	local partitions_page="Our partitions are listed in https://wiki.fysik.dtu.dk/niflheim/Niflheim7_Getting_started#compute-node-partitions"
+	local partitions_page="Our partitions are listed in https://wiki.fysik.dtu.dk/Niflheim_users/Niflheim_Getting_Started/#compute-node-partitions"
 	local sbatch_msg="Please read the sbatch manual page about setting partitions with -p/--partition"
 	local support_msg="NOTICE: Please contact your local support people if you do not know how to use partitions"
 	-- The case where the job does not specify the partition name
@@ -222,7 +222,7 @@ end
 function check_cpus_tasks (job_desc, submit_uid, log_prefix)
 	local cpus_per_task = 1		-- Default value
 	-- Informational web page
-	local cpucores_page="See https://wiki.fysik.dtu.dk/niflheim/Niflheim7_Getting_started#correct-usage-of-multi-cpu-nodes"
+	local cpucores_page="See https://wiki.fysik.dtu.dk/Niflheim_users/Niflheim_Getting_Started/#correct-usage-of-multi-cpu-nodes"
 	if job_desc.cpus_per_task ~= slurm.NO_VAL16 then
 		cpus_per_task = job_desc.cpus_per_task		-- Value has been specified by job script
 	end
