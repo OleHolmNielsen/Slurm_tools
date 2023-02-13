@@ -11,7 +11,7 @@ and these functions simply loop over the desired sub-functions in the present sc
 functionlist = { check_arg_list, forbid_reserved_name, check_partition, check_num_nodes, check_num_tasks, forbid_memory_eq_0, check_cpus_tasks, check_gpus }
 ```
 
-See the [Niflheim Wiki page on job submit plugins](https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#job-submit-plugins)
+See the [Niflheim Wiki page on job submit plugins](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#job-submit-plugins)
 about building and enabling [job submit plugins]( https://slurm.schedmd.com/job_submit_plugins.html).
 
 Notes about the plugin
