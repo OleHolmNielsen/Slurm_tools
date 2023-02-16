@@ -160,8 +160,10 @@ sinfo --noheader -N $all_partitions $partition -O NodeList,CPUs,Partition,StateL
 			comment="Not responding"
 		} else if (index(s,"$") > 0) {
 			comment="Reservation for maintenance"
+		} else if (index(s,"@") > 0) {
+			comment="Reboot pending"
 		} else if (index(s,"^") > 0) {
-			comment="Pending reboot"
+			comment="Reboot issued"
 		} else {
 			comment=""
 		}
