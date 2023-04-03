@@ -299,7 +299,7 @@ BEGIN {
 	state	= $12		# Job state
 	wall	= end - start
 	wait	= start - eligible
-	if (wait < 0) wait = 0 # Should not happen
+	if (wait < 0) wait = 0	# Should not happen
 	jobworkdir	= $13	# Job working directory
 
 	# For accounting by number of CPU cores in stead of number of nodes,
