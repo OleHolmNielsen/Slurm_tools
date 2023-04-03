@@ -71,7 +71,7 @@ function format_sacct()
 # Get job accounting information
 function print_job_accounting()
 {
-	if test -z "`sacct -nP -o JobID -j $jobid.batch`"
+	if test -z "`sacct -nP -o JobID -j $jobid`"
 	then
 		echo
 		echo ERROR: Invalid JobID: $jobid is not found in the Slurm database
