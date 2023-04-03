@@ -59,7 +59,7 @@ echo "`date` Invoked $0"
 echo "${action^^} the Azure nodes $*" 
 # The environment variables set by slurmctld do not include USER etc.
 export USER=`whoami`
-echo "The invoking user is $USER: " `id $USER`
+echo "The invoking user is $USER:" `id $USER`
 
 if [[ ! -x /usr/bin/az ]]
 then
