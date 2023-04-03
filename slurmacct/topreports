@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Make Slurm cluster usage statistics
-# Usage: topreports [monthyear]
+# Usage: topreports [period-see-below]
 # Default periods: last-month ("") current-month (-c) current-week (-w)
 
 # Author:       Ole.H.Nielsen@fysik.dtu.dk
