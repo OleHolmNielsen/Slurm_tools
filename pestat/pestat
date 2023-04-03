@@ -22,7 +22,7 @@ export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
 # Per-user configuration file for pestat
 export PESTAT_CONFIG=$HOME/.pestat.conf
 # Omit nodes with these states (list separated by spaces):
-export statedown="down down~ idle~ drain drng resv maint boot"
+export statedown="down down~ idle~ alloc# drain drng resv maint boot"
 # End of CONFIGURE lines
 
 #####################################################################################
