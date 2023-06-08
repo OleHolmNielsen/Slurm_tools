@@ -100,7 +100,7 @@ function nodeloop () {
 			# Check for errors and send to syslog and mail to root
 			if test $? -ne 0
 			then
-				logger -p user.err "slurmctld command $0 set power $cmd for node $node gave response: $response"
+				logger -p user.err "slurmctld command $0 for node $node gave response: $response"
 				# Query the current power state
 				response2="`ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power status 2>&1`"
 				# Compose a mail message
