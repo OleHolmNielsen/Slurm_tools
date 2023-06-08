@@ -21,6 +21,7 @@ export LOGFILE=/var/log/slurm/power_ipmi.log
 # The slurm user
 slurmuser="slurm"
 
+# NOTE:
 # We require the "nodeset" command from the ClusterShell package.  Install it by:
 # yum install epel-release
 # yum install clustershell
@@ -99,9 +100,20 @@ function nodeloop () {
 			# Check for errors and send to syslog and mail to root
 			if test $? -ne 0
 			then
-				message="slurmctld command $0 for node $node gave response: $response"
-				logger -p user.err "$message"
-				echo "$message" | /usr/bin/mailx -s "Slurm IPMI error for node $node" root
+				logger -p user.err "slurmctld command $0 set power $cmd for node $node gave response: $response"
+				# Query the current power state
+				response2="`ipmitool -I lanplus -U $IPMI_USER -P $IPMI_PASSWORD -H ${nodebmc} chassis power status 2>&1`"
+				# Compose a mail message
+				tempfile=`mktemp`
+				cat <<EOF > $tempfile
+The slurmctld command $0 setting power $cmd for node $node gave response:
+$response
+
+The current chassis power status is:
+$response2
+EOF
+				cat $tempfile | /usr/bin/mailx -s "Slurm IPMI error for node $node" root
+				rm -f $tempfile
 			fi
 			echo "`date +'%b %d %T'` node $node ipmitool $response"
 		else
