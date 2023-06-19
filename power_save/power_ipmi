@@ -106,6 +106,7 @@ function nodeloop () {
 				# Compose a mail message
 				tempfile=`mktemp`
 				cat <<EOF > $tempfile
+Node $node BMC address ${nodebmc} responds to ping.
 The slurmctld command $0 setting power $cmd for node $node gave response:
 $response
 
