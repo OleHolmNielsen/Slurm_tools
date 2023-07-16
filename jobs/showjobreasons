@@ -2,8 +2,9 @@
 
 # Slurm batch queue: Show list of reasons for pending jobs
 # Only job reasons other than "Resources" and "Dependency" are shown.
+# Options such as "-p partition" etc. are passed to the squeue command:
 
-squeue -h -t pending -O "Username,Account,Partition,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c | awk '
+squeue $@ -h -t pending -O "Username,Account,Partition,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c | awk '
 {
 	jobcount=$1	# The jobcount comes from "uniq -c"
 	username=$2
