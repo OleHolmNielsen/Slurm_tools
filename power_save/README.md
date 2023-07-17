@@ -125,7 +125,7 @@ PrivateData=cloud
   In stead define it only on any relevant partitions, for example:
 
   ```
-  PartitionName=my_partition SuspendTime=300
+  PartitionName=my_partition SuspendTime=3600
   ```
 
 * Nodes that are in multiple partitions which have different ```SuspendTime``` values,
