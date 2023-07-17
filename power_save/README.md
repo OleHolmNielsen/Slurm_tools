@@ -59,12 +59,13 @@ Test IPMI power scripts
 ------------------------
 
 First make sure that the IPMI power scripts are actually working by querying some nodes
-as user *slurm* on the *slurmctld* server::
-
-  [slurm@ctld ~]$ power_ipmi -q d004,d005
-  Jul 17 09:36:27 POWER STATUS for the IPMI based nodelist d004,d005 (2 nodes)
-  Jul 17 09:36:27 node d004 ipmitool Chassis Power is on
-  Jul 17 09:36:28 node d005 ipmitool Chassis Power is off
+as user *slurm* on the *slurmctld* server:
+```
+[slurm@ctld ~]$ power_ipmi -q d004,d005
+Jul 17 09:36:27 POWER STATUS for the IPMI based nodelist d004,d005 (2 nodes)
+Jul 17 09:36:27 node d004 ipmitool Chassis Power is on
+Jul 17 09:36:28 node d005 ipmitool Chassis Power is off
+```
 
 Adding node features
 --------------------
