@@ -17,7 +17,7 @@ Prerequisites
    [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
    This is described in [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-2. The scripts require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
+2. The scripts in this project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
    [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
    install it as RPM packages by:
    ```
@@ -54,6 +54,17 @@ In the ```nodefailresume``` script configure the sysadmin E-mail address in this
 ```
 slurm_notify=<sysadmin-email>
 ```
+
+Test IPMI power scripts
+------------------------
+
+First make sure that the IPMI power scripts are actually working by querying some nodes
+as user *slurm* on the *slurmctld* server::
+
+  [slurm@ctld ~]$ power_ipmi -q d004,d005
+  Jul 17 09:36:27 POWER STATUS for the IPMI based nodelist d004,d005 (2 nodes)
+  Jul 17 09:36:27 node d004 ipmitool Chassis Power is on
+  Jul 17 09:36:28 node d005 ipmitool Chassis Power is off
 
 Adding node features
 --------------------
