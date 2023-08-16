@@ -254,3 +254,11 @@ Usage:
 ```
 slurmusertable [username(s)]
 ```
+
+
+showrecentusers tool
+--------------------
+
+This tool prints Slurm user settings that may need to be updated:
+Selects users that were added in the last $newuserperiod".
+It uses the ```slurmusersettings``` tool.
