@@ -7,6 +7,7 @@ echo "Print Slurm user settings to be updated:"
 echo "Select users that were added in the last $newuserperiod"
 commentsoff="-c"
 # commentsoff=""
+unset SLURM_TIME_FORMAT
 
 tempfile=`mktemp`
 # Output: username date-added sorted according to timestamp
@@ -25,9 +26,12 @@ do
 	getent passwd $u
 	echo -n "Number of Slurm jobs in the last 30 days: "
 	sacct -nX -S "now - 30 days " -b -u $u | wc -l
-	# Print Slurm user settings that should be updated
-	echo -n "Slurm account settings to be updated: "
-	slurmusersettings $commentsoff -u $u
+	if [ -x "$(command -v slurmusersettings)" ]
+	then
+		# Print Slurm user settings that should be updated
+		echo -n "Slurm account settings to be updated: "
+		slurmusersettings $commentsoff -u $u
+	fi
 done < $tempfile
 
 rm -f $tempfile
