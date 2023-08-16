@@ -18,9 +18,9 @@ while read -r line
 do
 	words=( $line )
 	u=${words[0]}
-	created=${words[1]}
+	added=${words[1]}
 	echo "========================================================"
-	echo "Slurm user $u was created on $created"
+	echo "Slurm user $u was added on $added"
 	echo -n "Password entry: "
 	getent passwd $u
 	echo -n "Number of Slurm jobs in the last 30 days: "
