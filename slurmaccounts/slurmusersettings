@@ -186,7 +186,7 @@ userfmt="User,DefaultAccount,Account,Cluster"
 $remote sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
 
 # Read the list of NEWUSER users which were added to Slurm recently
-$remote sacctmgr -nrp list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=where,time > $newusers_tmp
+$remote sacctmgr -nrp list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=Where,TimeStamp,Action > $newusers_tmp
 
 # cat $passwd_tmp | gawk -F: '
 $remote getent passwd | gawk -F: '
