@@ -3,12 +3,13 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 export newuserperiod="60 days"
-echo "Print Slurm user settings to be updated: Select users that were added in the last $newuserperiod"
+echo "Print Slurm user settings to be updated:"
+echo "Select users that were added in the last $newuserperiod"
 commentsoff="-c"
 # commentsoff=""
 
 tempfile=`mktemp`
-# Output: username date-added
+# Output: username date-added sorted according to timestamp
 sacctmgr -nr list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=where,timestamp | sort -k 2 > $tempfile
 
 # Loop over users
@@ -18,11 +19,14 @@ do
 	words=( $line )
 	u=${words[0]}
 	created=${words[1]}
-	echo
-	echo "Slurm user $u was created on date $created"
+	echo "========================================================"
+	echo "Slurm user $u was created on $created"
 	echo -n "Password entry: "
 	getent passwd $u
+	echo -n "Number of Slurm jobs in the last 30 days: "
+	sacct -nX -S "now - 30 days " -b -u $u | wc -l
 	# Print Slurm user settings that should be updated
+	echo -n "Slurm account settings to be updated: "
 	slurmusersettings $commentsoff -u $u
 done < $tempfile
 
