@@ -2,11 +2,45 @@
 
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-export newuserperiod="60 days"
+#
+# Command usage:
+#
+function usage()
+{
+        cat <<EOF
+Usage: $0 [-d userdays] [-j jobdays] [-c] | [-h]
+where:
+	-d userdays: Select users that were added in the last userdays days
+	-j jobdays:  Print the number of jobs in the last jobdays days
+	-c: Turn on detailed comments from the slurmusersettings command
+        -h Print help information
+EOF
+}
+
+# Default values
+userdays=60
+jobdays=30
+commentsoff="-c"
+
+#
+# Parse command options
+#
+while getopts "d:j:ch" options; do
+        case $options in
+                d ) userdays=$OPTARG ;;
+                j ) jobdays=$OPTARG ;;
+                c ) commentsoff="" ;;
+                h|*|? ) usage
+                exit 1;;
+        esac
+done
+
+export newuserperiod="$userdays days"
+export jobperiod="$jobdays days"
 echo "Print Slurm user settings to be updated:"
 echo "Select users that were added in the last $newuserperiod"
-commentsoff="-c"
-# commentsoff=""
+
+# Set to the default format:
 unset SLURM_TIME_FORMAT
 
 tempfile=`mktemp`
@@ -24,8 +58,8 @@ do
 	echo "Slurm user $u was added on $added"
 	echo -n "Password entry: "
 	getent passwd $u
-	echo -n "Number of Slurm jobs in the last 30 days: "
-	sacct -nX -S "now - 30 days " -b -u $u | wc -l
+	echo -n "Number of Slurm jobs in the last $jobperiod: "
+	sacct -nX -S "now - $jobperiod" -b -u $u | wc -l
 	if [ -x "$(command -v slurmusersettings)" ]
 	then
 		# Print Slurm user settings that should be updated
