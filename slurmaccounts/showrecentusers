@@ -10,10 +10,10 @@ function usage()
         cat <<EOF
 Usage: $0 [-d userdays] [-j jobdays] [-c] | [-h]
 where:
-	-d userdays: Select users that were added in the last userdays days
-	-j jobdays:  Print the number of jobs in the last jobdays days
+	-d userdays: Select users that were added in the last "userdays" days
+	-j jobdays:  Print the number of jobs in the last "jobdays" days
 	-c: Turn on detailed comments from the slurmusersettings command
-        -h Print help information
+	-h: Print help information
 EOF
 }
 
@@ -35,16 +35,16 @@ while getopts "d:j:ch" options; do
         esac
 done
 
-export newuserperiod="$userdays days"
-export jobperiod="$jobdays days"
+newuserperiod="$userdays days"
+jobperiod="$jobdays days"
 echo "Print Slurm user settings to be updated:"
 echo "Select users that were added in the last $newuserperiod"
 
-# Set to the default format:
+# Set the Slurm default time format:
 unset SLURM_TIME_FORMAT
 
+# Output: "username timestamp" sorted according to the date-added timestamp
 tempfile=`mktemp`
-# Output: username date-added sorted according to timestamp
 sacctmgr -nr list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=where,timestamp | sort -k 2 > $tempfile
 
 # Loop over users
