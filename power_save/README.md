@@ -76,6 +76,7 @@ c190b
 ----------------
  off
 ```
+Here the nodes' BMC hostnames are being listed.
 
 Adding node features
 --------------------
