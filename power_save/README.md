@@ -17,7 +17,12 @@ Prerequisites
    [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
    This is described in [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-2. The scripts in this project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
+2. Install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) package:
+   ```
+   yum install freeipmi
+   ```
+
+3. The scripts in this project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
    [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
    install it as RPM packages by:
    ```
