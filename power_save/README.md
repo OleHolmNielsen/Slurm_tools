@@ -36,7 +36,7 @@ cp noderesume nodefailresume nodesuspend power_ipmi power_azure /usr/local/bin/
 Configure script variables
 --------------------------
 
-We need to configure the BMC's DNS hostname as well as the IPMI administrator username and password for the ```ipmitool``` command.
+We need to configure the BMC's DNS hostname as well as the IPMI administrator username and password for the ```ipmipower``` command.
 For security reasons the username/password should be kept in a separate file which cannot be read by normal users.
 The helper script ```ipmi_setup``` may be useful for setting up IPMI on every compute node.
 
@@ -61,10 +61,15 @@ Test IPMI power scripts
 First make sure that the IPMI power scripts are actually working by querying some nodes
 as user *slurm* on the *slurmctld* server:
 ```
-[slurm@ctld ~]$ power_ipmi -q d004,d005
-Jul 17 09:36:27 POWER STATUS for the IPMI based nodelist d004,d005 (2 nodes)
-Jul 17 09:36:27 node d004 ipmitool Chassis Power is on
-Jul 17 09:36:28 node d005 ipmitool Chassis Power is off
+[slurm@ctld ~]$ power_ipmi -q d004,d005,c190
+----------------
+d004b,d005b
+----------------
+ on
+----------------
+c190b
+----------------
+ off
 ```
 
 Adding node features
