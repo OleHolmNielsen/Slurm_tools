@@ -84,9 +84,13 @@ bmclist=`nodeset --fold $bmclong`
 # Source the users' .bashrc file which should export variables like:
 # export IPMI_USER=root
 # export IPMI_PASSWORD=verysecretpassword
-# Note: The environment variables set by slurmctld do NOT include USER, HOME etc.
+# Note: The environment variables set by slurmctld do NOT include PATH, USER, HOME etc.
 source ~/.bashrc
 USER=`whoami`
+
+# Prepend the path where FreeIPMI tools live
+export PATH=/usr/sbin:$PATH
+
 if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
 then
 	echo "ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set in ~/.bashrc"
