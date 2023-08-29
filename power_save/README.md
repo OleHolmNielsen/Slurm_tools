@@ -21,6 +21,11 @@ Prerequisites
    ```
    yum install freeipmi
    ```
+   The official RPM versions may be quite old, so it is possible to download the latest tar-ball from 
+   https://www.gnu.org/software/freeipmi/download.html and build your own RPM:
+   ```
+   rpmbuild -ta freeipmi-1.6.11.tar.gz
+   ```
 
 3. The scripts in this project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
    [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
