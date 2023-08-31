@@ -14,19 +14,19 @@ NOTES:
 
 ERROR NUMBERS:
 Error numbers are defined in the source file /usr/include/slurm/slurm_errno.h
-We currently have to define error symbols manually, see https://bugs.schedmd.com/show_bug.cgi?id=14500
-Only a few selected symbols ESLURM_* are exposed to the Lua script,
-but from Slurm 23.02 all the error codes are exposed.
+Prior to Slurm 23.02 we have to define error symbols manually, see https://bugs.schedmd.com/show_bug.cgi?id=14500
+Only a few selected symbols ESLURM_* were exposed to the Lua script, but from Slurm 23.02 all the error codes are exposed.
 --]]
 
 badstring="BAD:"	-- This string is printed to slurmctld.log and can be grepped for
 userinfo=""
-slurm.ESLURM_INVALID_PARTITION_NAME=2000
-slurm.ESLURM_INVALID_NODE_COUNT=2006
-slurm.ESLURM_PATHNAME_TOO_LONG=2012
-slurm.ESLURM_BAD_TASK_COUNT=2025
-slurm.ESLURM_INVALID_TASK_MEMORY=2044
-slurm.ESLURM_INVALID_GRES=2072
+-- Prior to Slurm 23.02 we had to define these error codes:
+-- slurm.ESLURM_INVALID_PARTITION_NAME=2000
+-- slurm.ESLURM_INVALID_NODE_COUNT=2006
+-- slurm.ESLURM_PATHNAME_TOO_LONG=2012
+-- slurm.ESLURM_BAD_TASK_COUNT=2025
+-- slurm.ESLURM_INVALID_TASK_MEMORY=2044
+-- slurm.ESLURM_INVALID_GRES=2072
 
 --
 -- Define our partitions and defaults
@@ -157,10 +157,15 @@ end
 
 -- Sanity check of number of tasks (default=slurm.NO_VAL)
 function check_num_tasks (job_desc, submit_uid, log_prefix)
-	local sbatch_msg="Please read the sbatch manual page about setting tasks with -n/--tasks"
+	-- NOTE: From Slurm 23.02 job_desc.num_tasks may be undefined, see https://bugs.schedmd.com/show_bug.cgi?id=17564
+	local sbatch_msg="Please read the sbatch manual page about setting tasks with -n/--tasks or --ntasks-per-node"
 	if job_desc.num_tasks == slurm.NO_VAL then
-		-- slurm.log_info("%s: user %s(%u) job_name=%s %s No num_tasks specified",
-			-- log_prefix, job_desc.user_name, submit_uid, job_desc.name, badstring)
+		-- Workaround for Slurm 23.02 where job_desc.num_tasks is undefined at job submission time
+		if job_desc.ntasks_per_node ~= slurm.NO_VAL16 and job_desc.min_nodes ~= slurm.NO_VAL then
+			job_desc.num_tasks = job_desc.ntasks_per_node * job_desc.min_nodes
+			slurm.log_user("Setting number of tasks: %u", job_desc.num_tasks)
+			return slurm.SUCCESS
+		end
 		slurm.log_info("%s: user %s %s No num_tasks specified",
 			log_prefix, userinfo, badstring)
 		slurm.log_user("WARNING: The number of tasks has not been specified!")
@@ -363,7 +368,7 @@ function slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
 
 	-- Loop over the function list
 	-- We will call these functions in the order listed
-	local functionlist = { forbid_reserved_name, forbid_memory_eq_0 }
+	local functionlist = { forbid_reserved_name, forbid_memory_eq_0, check_partition, check_num_nodes, check_num_tasks }
 
 	local check = slurm.SUCCESS
 	-- Warning: Calling log_user() from slurm_job_modify() fails when using Slurm < 23.02
