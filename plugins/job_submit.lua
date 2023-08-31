@@ -170,7 +170,13 @@ function check_num_tasks (job_desc, submit_uid, log_prefix)
 			log_prefix, userinfo, badstring)
 		slurm.log_user("WARNING: The number of tasks has not been specified!")
 		slurm.log_user(sbatch_msg)
-		if default_tasks ~= nil then
+		if job_desc.min_nodes ~= slurm.NO_VAL then
+			-- Setting 1 task per node
+			job_desc.num_tasks = job_desc.min_nodes
+			slurm.log_user("Setting default number of tasks to the number of nodes: %u", job_desc.num_tasks)
+			return slurm.SUCCESS
+		elseif default_tasks ~= nil then
+			-- Setting the default number of tasks
 			job_desc.num_tasks = default_tasks
 			slurm.log_user("Setting default number of tasks: %u", job_desc.num_tasks)
 			return slurm.SUCCESS
