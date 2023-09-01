@@ -29,6 +29,8 @@ tools have been developed for management and monitoring of our cluster:
 
 12. Scripts for managing [power_save](power_save/) of nodes.
 
+13. Slurm [plugins](plugins/) for job_submit.
+
 Slurm deployment HOWTO
 ----------------------
 
