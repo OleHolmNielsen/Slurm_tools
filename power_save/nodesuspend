@@ -3,10 +3,10 @@
 # Slurm nodes suspend/resume script
 # Helper scripts required: power_ipmi power_azure
 
-# Identify IPMI or cloud nodes by node features (in slurm.conf)
-# and use the appropriate cloud commands to start and stop VMs.
-# For example: Feature=power_azure
-# Here we can get the node features using:
+# We must define some node features power_xxx in slurm.conf, for example for IPMI and Azure cloud:
+# NodeName=node[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
+# NodeName=cloud[001-100] Feature=xeon8272cl,power_azure
+# We can read the node features using:
 #   sinfo -hN -O "Nodelist: ,Features:" --nodes=$* | uniq
 
 # Define the action
