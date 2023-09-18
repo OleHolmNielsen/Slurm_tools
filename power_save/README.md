@@ -17,7 +17,8 @@ Prerequisites
    [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
    This is described in [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-2. Install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) packages:
+2. In case you want to use the IPMI based tool ```power_ipmi```, 
+   you must install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) packages:
    ```
    yum install freeipmi freeipmi-devel
    ```
