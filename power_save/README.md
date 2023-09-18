@@ -8,7 +8,11 @@ They will call different helper scripts according to the type of power managemen
 
 The power management type for each node set is configured as *node features* in ```slurm.conf```.
 
+In case you want to use the IPMI_ based tool ```power_ipmi```, please configure all the IPMI_ tools discussed below.
+
 General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
+
+.. _IPMI: https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface
 
 Prerequisites
 -------------
@@ -17,7 +21,7 @@ Prerequisites
    [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
    This is described in [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-2. In case you want to use the IPMI based tool ```power_ipmi```, 
+2. In case you want to use the IPMI_ based tool ```power_ipmi```, 
    you must install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) packages:
    ```
    yum install freeipmi freeipmi-devel
@@ -49,9 +53,9 @@ cp noderesume nodefailresume nodesuspend power_ipmi power_azure /usr/local/bin/
 Configure script variables
 --------------------------
 
-We need to configure the BMC's DNS hostname as well as the IPMI administrator username and password for the ```ipmipower``` command.
+We need to configure the BMC's DNS hostname as well as the IPMI_ administrator username and password for the ```ipmipower``` command.
 For security reasons the username/password should be kept in a separate file which cannot be read by normal users.
-The helper script ```ipmi_setup``` may be useful for setting up IPMI on every compute node.
+The helper script ```ipmi_setup``` may be useful for setting up IPMI_ on every compute node.
 
 Add these lines to the slurm user's ```.bashrc``` file (and for other users who need to execute the script)
 which should export variables for ```power_ipmi```, for example:
@@ -71,7 +75,7 @@ slurm_notify=<sysadmin-email>
 Test IPMI power scripts
 ------------------------
 
-First make sure that the IPMI power scripts are actually working by querying some nodes
+First make sure that the IPMI_ power scripts are actually working by querying some nodes
 as user *slurm* on the *slurmctld* server:
 ```
 [slurm@ctld ~]$ power_ipmi -q d004,d005,c190
