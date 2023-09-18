@@ -17,17 +17,17 @@ Prerequisites
    [Slurm configuration for cloud nodes](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_cloud_bursting/#slurm-configuration-for-cloud-nodes).
    This is described in [bug 14925](https://bugs.schedmd.com/show_bug.cgi?id=14925).
 
-2. Install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) package:
+2. Install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) packages:
    ```
-   yum install freeipmi
+   yum install freeipmi freeipmi-devel
    ```
    The RPM versions (especially on EL7) are quite old, so it is possible to download the latest [Fedora source RPM](https://src.fedoraproject.org/rpms/freeipmi)
-   file and rebuild the set of packages, for example:
+   file and rebuild the set of packages, for example on EL7:
    ```
    yum install libgcrypt-devel texinfo
-   rpmbuild --rebuild freeipmi-1.6.10-1.fc37.src.rpm
+   rpmbuild --rebuild freeipmi-1.6.10-1.fc38.src.rpm
+   yum install rpmbuild/RPMS/x86_64/freeipmi-1.6.10-2.el7.x86_64.rpm rpmbuild/RPMS/x86_64/freeipmi-devel-1.6.10-2.el7.x86_64.rpm
    ```
-   Only the ```freeipmi``` and (if available) ```freeipmi-devel``` RPMs need to be installed.
 
 3. The scripts in the present project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
    [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
