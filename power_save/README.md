@@ -26,7 +26,7 @@ Prerequisites
    ```
    rpmbuild --rebuild freeipmi-1.6.10-1.fc37.src.rpm
    ```
-   Only the ```freeipmi``` RPM needs to be installed.
+   Only the ```freeipmi``` and (if available) ```freeipmi-devel``` RPMs need to be installed.
 
 3. The scripts in the present project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
    [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
@@ -121,9 +121,10 @@ ls -la /var/log/slurm
 slurm.conf configuration
 ------------------------
 
-Configure ```slurm.conf``` with:
+Configure ```slurm.conf``` with appropriate resume and suspend parameters:
 ```
 ResumeProgram=/usr/local/bin/noderesume
+ResumeRate=60
 ResumeFailProgram=/usr/local/bin/nodefailresume
 SuspendProgram=/usr/local/bin/nodesuspend
 ```
@@ -141,7 +142,8 @@ DebugFlags=Power
 TreeWidth=65536		# Configure TreeWidth only when cloud nodes are used
 ```
 
-In [bug 14270](https://bugs.schedmd.com/show_bug.cgi?id=14270) there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
+In [bug 14270](https://bugs.schedmd.com/show_bug.cgi?id=14270) (resolved in 23.02)
+there is a workaround for ```slurm.conf``` to make cloud nodes visible to sinfo:
 ```
 PrivateData=cloud
 ```
