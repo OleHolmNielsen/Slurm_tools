@@ -24,6 +24,7 @@ Prerequisites
    The RPM versions (especially on EL7) are quite old, so it is possible to download the latest [Fedora source RPM](https://src.fedoraproject.org/rpms/freeipmi)
    file and rebuild the set of packages, for example:
    ```
+   yum install libgcrypt-devel texinfo
    rpmbuild --rebuild freeipmi-1.6.10-1.fc37.src.rpm
    ```
    Only the ```freeipmi``` and (if available) ```freeipmi-devel``` RPMs need to be installed.
