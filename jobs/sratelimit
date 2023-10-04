@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Summary of "RPC rate limit exceeded" lines from slurmctld.log looking like:
+# [2023-10-04T16:53:13.995] RPC rate limit exceeded by uid 208213 with REQUEST_JOB_STEP_CREATE, telling to back off
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+LOG=/var/log/slurm/slurmctld.log
+
+if [[ -r $LOG ]]
+then
+	grep "RPC rate limit exceeded by" $LOG | awk '
+{
+	u = $8
+	uid[u] = $8
+	line[u] = $0
+	nlines[u]++
+} END {
+	# Sort arrays by element values:
+	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
+	PROCINFO["sorted_in"] = "@val_num_desc"
+	for (u in nlines) {
+		# Get the username of UID=u from the passwd database
+		query = "getent passwd " uid[u]
+		while (query | getline ) {
+			split($0,b,":")	 # Split password line into fields
+			username[b[3]] = b[1]
+			useruid[b[3]] = b[3]
+			fullname[b[3]] = b[5]
+			delete b
+		}
+		close(query)
+		printf("User %s (uid %u) has %u RPC rate limit exceeded lines. The last line is:\n",
+			username[uid[u]], uid[u], nlines[u])
+		printf("    %s\n\n", line[u])
+	}
+}'
+else
+	echo "Slurmctld log file $LOG is unreadable"
+	exit 1
+fi
