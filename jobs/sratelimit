@@ -6,18 +6,38 @@
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
+# The slurmctld log file: The -f option selects a different log file (even with .gz)
 LOG=/var/log/slurm/slurmctld.log
+
+# Parse command options
+while getopts "f:h" options; do
+	case $options in
+		f )	export LOG=$OPTARG
+			if [[ ! -s "$LOG" ]]
+			then
+				echo "Slurmctld log file $LOG is not a regular file or is empty"
+				exit 1
+			fi
+			;;
+		h | * )	echo "Usage:"
+			echo "$0 [-f slurmctld-logfile]"
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
 
 # Check for rl_enable
 if [[ -z "` scontrol show config | grep rl_enable`" ]]
 then
+	# NOTE: rl_enable is only available from Slurm 23.02
 	echo "ERROR: The RPC rate limit parameter rl_enable is not configured in slurm.conf"
 	exit 1
 fi
 
 if [[ -r $LOG ]]
 then
-	grep "RPC rate limit exceeded by" $LOG | awk '
+	# Use zgrep so that .gz files can be read as well
+	zgrep "RPC rate limit exceeded by" $LOG | awk '
 {
 	u = $8
 	uid[u] = $8
