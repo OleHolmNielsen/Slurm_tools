@@ -2,10 +2,18 @@
 
 # Summary of "RPC rate limit exceeded" lines from slurmctld.log looking like:
 # [2023-10-04T16:53:13.995] RPC rate limit exceeded by uid 208213 with REQUEST_JOB_STEP_CREATE, telling to back off
+# This feature "rl_enable" was introduced from Slurm 23.02.
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 LOG=/var/log/slurm/slurmctld.log
+
+# Check for rl_enable
+if [[ -z "` scontrol show config | grep rl_enable`" ]]
+then
+	echo "ERROR: The RPC rate limit parameter rl_enable is not configured in slurm.conf"
+	exit 1
+fi
 
 if [[ -r $LOG ]]
 then
@@ -37,5 +45,7 @@ then
 }'
 else
 	echo "Slurmctld log file $LOG is unreadable"
-	exit 1
 fi
+
+echo "The log file $LOG is:"
+ls -l $LOG
