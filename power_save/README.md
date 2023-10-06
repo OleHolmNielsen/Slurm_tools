@@ -105,7 +105,7 @@ NodeName=cloud[001-100] Feature=xeon8272cl,power_azure
 
 The features are used by the ```nodesuspend``` and ```noderesume``` scripts
 to identify the power management features associated with each node.
-The scripts currently handle ``power_ipmi`` and ``power_azure`` features,
+The scripts currently handle ``power_ipmi``, ``power_azure``, and ``power_noaction`` features,
 but other features may be added.
 
 Logging of power savings
@@ -114,6 +114,7 @@ Logging of power savings
 The power saving script logs actions in files in the Slurm log directory:
 ```
 /var/log/slurm/power_ipmi.log
+/var/log/slurm/power_noaction.log
 /var/log/slurm/power_azure.log
 /var/log/slurm/nodefailresume.log
 ```
