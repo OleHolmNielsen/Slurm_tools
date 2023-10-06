@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Slurm nodes suspend/resume script
-# Helper scripts required: power_ipmi power_azure
+# Helper scripts required: power_ipmi power_azure power_noaction
 
 # We must define some node features power_xxx in slurm.conf, for example for IPMI and Azure cloud:
 # NodeName=node[001-100] Feature=xeon2650v4,opa,xeon24,power_ipmi
@@ -29,6 +29,14 @@ sinfo -hN -O "Nodelist: ,Features:" --nodes=$* > $TMPFILE
 # We require the "nodeset" command from the ClusterShell package.  Install it by:
 # yum install epel-release
 # yum install clustershell
+
+# Node suspend/resume DUMMY action used only for testing the power_save module
+# Select the nodelist with the "power_noaction" feature
+nodelist=`grep power_noaction $TMPFILE | uniq | awk '{print $1}' | nodeset --fold`
+if [[ -n "$nodelist" ]]
+then
+	power_noaction $action $nodelist
+fi
 
 # Node suspend/resume by IPMI
 # Select the nodelist with the "power_ipmi" feature
