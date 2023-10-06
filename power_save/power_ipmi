@@ -21,7 +21,7 @@ BMC_SUFFIX="b"
 # NOTE: Make sure this file is writable by SlurmUser
 LOGFILE=/var/log/slurm/power_ipmi.log
 # The slurm user must own the $LOGFILE
-slurmuser="slurm"
+slurmuser="`scontrol show config | grep SlurmUser | awk '{split($3,a,"("); print a[1]}'`"
 
 # Prerequisites:
 # * Install this RPM package: yum install freeipmi
