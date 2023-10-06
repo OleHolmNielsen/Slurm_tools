@@ -4,6 +4,8 @@
 # See https://slurm.schedmd.com/power_save.html stating:
 #   "You can also configure Slurm with programs that perform no action as SuspendProgram and ResumeProgram
 #   to assess the potential impact of power saving mode before enabling it."
+# You may want to consult https://bugs.schedmd.com/show_bug.cgi?id=17848
+#   "17848 – power_save module doesn't work for the documented "no action" suspend/resume programs"
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
