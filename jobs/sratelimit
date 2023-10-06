@@ -47,20 +47,24 @@ then
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 	PROCINFO["sorted_in"] = "@val_num_desc"
-	for (u in nlines) {
-		# Get the username of UID=u from the passwd database
-		query = "getent passwd " uid[u]
-		while (query | getline ) {
-			split($0,b,":")	 # Split password line into fields
-			username[b[3]] = b[1]
-			useruid[b[3]] = b[3]
-			fullname[b[3]] = b[5]
-			delete b
+	if (length(nlines) > 0) {
+		for (u in nlines) {
+			# Get the username of UID=u from the passwd database
+			query = "getent passwd " uid[u]
+			while (query | getline ) {
+				split($0,b,":")	 # Split password line into fields
+				username[b[3]] = b[1]
+				useruid[b[3]] = b[3]
+				fullname[b[3]] = b[5]
+				delete b
+			}
+			close(query)
+			printf("User %s (uid %u) has %u RPC rate limit exceeded lines. The last line is:\n",
+				username[uid[u]], uid[u], nlines[u])
+			printf("    %s\n\n", line[u])
 		}
-		close(query)
-		printf("User %s (uid %u) has %u RPC rate limit exceeded lines. The last line is:\n",
-			username[uid[u]], uid[u], nlines[u])
-		printf("    %s\n\n", line[u])
+	} else {
+		print "NOTICE: No RPC rate limit exceeded lines were found in the log file"
 	}
 }'
 else
