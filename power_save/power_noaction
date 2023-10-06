@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+# A DUMMY no-action power saving script, useful for testing the power_save module
+# See https://slurm.schedmd.com/power_save.html stating:
+#   "You can also configure Slurm with programs that perform no action as SuspendProgram and ResumeProgram
+#   to assess the potential impact of power saving mode before enabling it."
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# Use with ResumeProgram and SuspendProgram in slurm.conf
+# NOTE: The slurmctld will execute this script as user "slurm"
+# (see https://slurm.schedmd.com/power_save.html)
+# so the slurm user must have credentials for suspending and resuming nodes.
+
+# Logfile for suspend/resume actions
+# NOTE: Make sure this file is writable by SlurmUser
+LOGFILE=/var/log/slurm/power_noaction.log
+# The slurm user must own the $LOGFILE
+slurmuser="`scontrol show config | grep SlurmUser | awk '{split($3,a,"("); print a[1]}'`"
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 [-r|-s|-h] nodelist
+where the DUMMY action is:
+	-r: Resume (start) nodes in nodelist
+	-s: Suspend (stop) nodes in nodelist
+	-h: Print this help information
+EOF
+}
+
+# Set the power command action
+action=""
+logging=1
+while getopts "rsh" options; do
+	case $options in
+		r )	action="resume"
+			;;
+		s )	action="suspend"
+			;;
+		h|? ) usage
+			exit 0;;
+		* ) usage
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
+# Check the Slurm nodelist
+if [[ $# != 1 ]]
+then
+	echo "ERROR: No Slurm nodelist has been given"
+	usage
+	exit 1
+fi
+
+# List of nodenames
+nodelist=$1
+
+if [[ -z "$action" ]]
+then
+	echo "ERROR: No action has been given"
+	usage
+	exit 1
+elif [[ $logging -eq 1 ]]
+then
+	# The case where we want logging to go to $LOGFILE
+	# Make sure the LOGFILE is owned by SlurmUser and has correct permissions
+	touch $LOGFILE
+	chown $slurmuser: $LOGFILE
+	chmod 644 $LOGFILE
+	# Do the resume or suspend action:
+	# Redirect stdout and stderr to $LOGFILE
+	exec &>> $LOGFILE
+	DATE=`date +'%b %d %T'`
+	echo "$DATE Invoked $0" by `id $USER`
+	# Display $action in UPPER case (see the bash man-page under Case modification)
+	echo "$DATE POWER ${action^^} DUMMY action on the nodelist $nodelist"
+fi
+
+# NOTE: No power action is performed by this script!
