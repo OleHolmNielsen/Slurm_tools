@@ -37,7 +37,7 @@ fi
 if [[ -r $LOG ]]
 then
 	# Use zgrep so that .gz files can be read as well
-	zgrep "RPC rate limit exceeded by" $LOG | awk '
+	zgrep "RPC rate limit exceeded by" $LOG | awk -vLOG=$LOG '
 {
 	u = $8
 	uid[u] = $8
@@ -59,9 +59,11 @@ then
 				delete b
 			}
 			close(query)
-			printf("User %s (uid %u) has %u RPC rate limit exceeded lines. The last line is:\n",
+			printf("User %s (uid %u) has %u \"RPC rate limit exceeded\" lines. The last line is:\n",
 				username[uid[u]], uid[u], nlines[u])
-			printf("    %s\n\n", line[u])
+			printf("    %s\n", line[u])
+			printf("Print all lines by: zgrep \"RPC rate limit exceeded by uid %u\" %s\n", uid[u], LOG)
+			printf("\n")
 		}
 	} else {
 		print "NOTICE: No RPC rate limit exceeded lines were found in the log file"
