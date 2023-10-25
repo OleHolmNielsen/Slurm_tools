@@ -8,9 +8,10 @@
 
 # The slurmctld log file: The -f option selects a different log file (even with .gz)
 LOG=/var/log/slurm/slurmctld.log
+verbose=0
 
 # Parse command options
-while getopts "f:h" options; do
+while getopts "f:vh" options; do
 	case $options in
 		f )	export LOG=$OPTARG
 			if [[ ! -s "$LOG" ]]
@@ -19,8 +20,10 @@ while getopts "f:h" options; do
 				exit 1
 			fi
 			;;
+		v )	verbose=1
+			;;
 		h | * )	echo "Usage:"
-			echo "$0 [-f slurmctld-logfile]"
+			echo "$0 [-f slurmctld-logfile] [-v]"
 			exit 1;;
 	esac
 done
@@ -37,10 +40,12 @@ fi
 if [[ -r $LOG ]]
 then
 	# Use zgrep so that .gz files can be read as well
-	zgrep "RPC rate limit exceeded by" $LOG | awk -vLOG=$LOG '
+	zgrep "RPC rate limit exceeded by" $LOG | awk -vLOG=$LOG -vverbose=$verbose '
 {
 	u = $8
 	uid[u] = $8
+	# The client IP-address is added in 23.11, see https://bugs.schedmd.com/show_bug.cgi?id=17988
+	ipaddr[u] = $12
 	line[u] = $0
 	nlines[u]++
 } END {
@@ -48,6 +53,7 @@ then
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 	PROCINFO["sorted_in"] = "@val_num_desc"
 	if (length(nlines) > 0) {
+		printf("RPC rate limit exceeded lines:\n")
 		for (u in nlines) {
 			# Get the username of UID=u from the passwd database
 			query = "getent passwd " uid[u]
@@ -59,11 +65,16 @@ then
 				delete b
 			}
 			close(query)
-			printf("User %s (uid %u) has %u \"RPC rate limit exceeded\" lines. The last line is:\n",
-				username[uid[u]], uid[u], nlines[u])
-			printf("    %s\n", line[u])
-			printf("Print all lines by: zgrep \"RPC rate limit exceeded by uid %u\" %s\n", uid[u], LOG)
-			printf("\n")
+			if (verbose > 0) {
+				printf("User %s (uid %u) has %u \"RPC rate limit exceeded\" lines. The last line is:\n",
+					username[uid[u]], uid[u], nlines[u])
+				printf("    %s\n", line[u])
+				printf("Print all lines by: zgrep \"RPC rate limit exceeded by uid %u\" %s\n", uid[u], LOG)
+				printf("\n")
+			} else {
+				printf("User %8s (uid %10u) lines: %u\n",
+					username[uid[u]], uid[u], nlines[u])
+			}
 		}
 	} else {
 		print "NOTICE: No RPC rate limit exceeded lines were found in the log file"
