@@ -42,6 +42,9 @@ then
 	# Use zgrep so that .gz files can be read as well
 	zgrep "RPC rate limit exceeded by" $LOG | awk -vLOG=$LOG -vverbose=$verbose '
 {
+	timestamp = $1
+	# First RPC rate limit timestamp
+	if (NR == 1) timestamp0 = $1
 	u = $8
 	uid[u] = $8
 	# The client IP-address is added in 23.11, see https://bugs.schedmd.com/show_bug.cgi?id=17988
@@ -76,6 +79,7 @@ then
 					username[uid[u]], uid[u], nlines[u])
 			}
 		}
+		printf("First and last RPC rate limit timestamps were %s and %s\n", timestamp0, timestamp)
 	} else {
 		print "NOTICE: No RPC rate limit exceeded lines were found in the log file"
 	}
