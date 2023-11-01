@@ -156,8 +156,11 @@ minutes=`echo $timelimit | awk -F- '
 		days = $1
 		hms = $2
 	}
-	split(hms,a,":")	# Split hour:minute:second
-	print days*24*60 + a[1]*60 + a[2]	# Print number of minutes
+	n=split(hms,a,":")	# Split hour:minute:second
+	if (n==1) minutes=a[1]/60.0
+	else if (n==2) minutes=a[1]
+	else if (n==3) minutes=a[1]*60+a[2]
+	print days*24*60 + minutes	# Print number of minutes
 }'`
 echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
 echo "Job has state=$jobstate"
