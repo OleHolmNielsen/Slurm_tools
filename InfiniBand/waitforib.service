@@ -1,0 +1,13 @@
+[Unit]
+Description=Wait for Specific Network Interfaces to be Online
+Wants=network.target
+Before=network-online.target
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/waitforib.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=network-online.target
