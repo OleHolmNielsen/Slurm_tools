@@ -2,6 +2,8 @@
 
 The tools in this folder may be useful with Slurm on systems with InfiniBand or Omni-Path networks.
 
+This work is based on scripts by Ward Poelmans <ward.poelmans@vub.be> and Max Rutkowski <max.rutkowski@gfz-potsdam.de>.
+
 Usage
 -----
 
