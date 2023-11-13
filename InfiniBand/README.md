@@ -1,5 +1,4 @@
-InfiniBand tools for Slurm
---------------------------------
+# InfiniBand tools for Slurm
 
 The tools in this folder may be useful with Slurm on systems with InfiniBand or Omni-Path networks.
 
