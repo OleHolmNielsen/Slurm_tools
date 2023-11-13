@@ -1,7 +1,7 @@
 InfiniBand tools for Slurm
 --------------------------------
 
-The tools in this folder may be useful with Slurm on systems with InfiniBand and Omni-Path networks.
+The tools in this folder may be useful with Slurm on systems with InfiniBand or Omni-Path networks.
 
 Usage
 -----
@@ -25,3 +25,5 @@ Enable the Systemd service:
 cp waitforib.service /etc/systemd/system/
 systemctl enable waitforib.service
 ```
+
+When the system is rebooted, the `network-online.target` is delayed until InfiniBand/Omni-Path is active.
