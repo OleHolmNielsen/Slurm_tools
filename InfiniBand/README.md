@@ -35,3 +35,25 @@ systemctl enable waitforib.service
 ```
 
 When the system is rebooted, the `network-online.target` is delayed until InfiniBand/Omni-Path is active.
+
+Disabling the Ethernet iRDMA driver
+----------------------------------------
+
+It may happen that a "fake" InfiniBand device exists on a system with certain Ethernet NICs.
+The `irdma` Linux driver enables RDMA functionality on RDMA-capable Intel network devices.
+See https://downloadmirror.intel.com/738730/README_irdma.txt
+Devices supported by this driver:
+
+- Intel(R) Ethernet Controller E800 Series
+- Intel(R) Ethernet Network Connection X722
+
+It is possible to disable the `irdma` Linux kernel module by creating a
+file `/etc/modprobe.d/disable-irdma.conf` with the contents:
+```
+blacklist irdma
+```
+and reboot the system.
+Check for the presence of any RDMA devices by the command:
+```
+rdma link show
+```
