@@ -8,6 +8,8 @@ but will claim that the network is online as soon as one interface is ready (typ
 
 If you have configured `Node Health Check` (NHC) to check the InfiniBand ports,
 the NHC check is going to fail until the InfiniBand ports are up.
+Please note that `slurmd` will call NHC at startup, if `HealthCheckProgram` has been configured in `slurm.conf`.
+Jobs started by `slurmd` may fail if the InfiniBand port is not yet up.
 
 This work is based on scripts by Ward Poelmans <ward.poelmans@vub.be> and Max Rutkowski <max.rutkowski@gfz-potsdam.de>.
 
@@ -40,8 +42,8 @@ Disabling the Ethernet iRDMA driver
 ----------------------------------------
 
 It may happen that a "fake" InfiniBand device exists on a system with certain Ethernet NICs.
-The `irdma` Linux driver enables RDMA functionality on RDMA-capable Intel network devices.
-See https://downloadmirror.intel.com/738730/README_irdma.txt
+The `irdma` Linux driver enables RDMA functionality on RDMA-capable Intel network devices,
+see https://downloadmirror.intel.com/738730/README_irdma.txt
 Devices supported by this driver:
 
 - Intel(R) Ethernet Controller E800 Series
