@@ -53,14 +53,13 @@ You can verify the type of Ethernet NIC in the system with:
 ```
 lspci | grep Ethernet
 ```
-
-It is possible to disable the `irdma` Linux kernel module by creating a
-file `/etc/modprobe.d/disable-irdma.conf` with the contents:
-```
-blacklist irdma
-```
-and reboot the system.
 Check for the presence of any RDMA devices by the command:
 ```
 rdma link show
 ```
+
+It is possible to disable the `irdma` Linux kernel module by creating a file `/etc/modprobe.d/disable-irdma.conf`:
+```
+echo "blacklist irdma" > /etc/modprobe.d/disable-irdma.conf
+```
+and reboot the system.
