@@ -49,6 +49,11 @@ Devices supported by this driver:
 - Intel(R) Ethernet Controller E800 Series
 - Intel(R) Ethernet Network Connection X722
 
+You can verify the type of Ethernet NIC in the system with:
+```
+lspci | grep Ethernet
+```
+
 It is possible to disable the `irdma` Linux kernel module by creating a
 file `/etc/modprobe.d/disable-irdma.conf` with the contents:
 ```
