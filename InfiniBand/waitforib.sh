@@ -14,7 +14,7 @@ fi
 # Loop over all InfiniBand $basedir/*/ports/ directories until ALL have come to exist
 for (( count = 0; count < $maxcount; count++ ))
 do
-    for nic in "$basedir"/*; do
+    for nic in $basedir/*; do
         if [[ ! -d $nic/ports ]]; then
             sleep 1
         fi
@@ -22,9 +22,9 @@ do
 done
 
 # Identify any InfiniBand link_layer ports.
-# The port might be an IRDMA Ethernet port, check it with "rdma link show".
+# The port might be an iRDMA Ethernet port, check it with "rdma link show".
 # Alternative for explicitly skipping Ethernet iRDMA ports: grep -vqc "Ethernet" ...
-for nic in "$basedir"/*; do
+for nic in $basedir/*; do
     for port in $nic/ports/*; do
         if grep -qc "InfiniBand" "$port/link_layer"; then
             ib_ports+=( "$port" )
