@@ -13,10 +13,10 @@ fi
 # Identify any InfiniBand link_layer ports.
 # The port might be an IRDMA Ethernet port, check it with "rdma link show".
 # Alternative for explicitly skipping Ethernet iRDMA ports: grep -vqc "Ethernet" ...
-for nic in $(ls $basedir); do
-    for port in $(ls -d $basedir/$nic/ports/*); do
-        if grep -qc "InfiniBand" $port/link_layer; then
-            ib_ports+=( $port )
+for nic in "$basedir"/*; do
+    for port in "$nic"/ports/*; do
+        if grep -qc "InfiniBand" "$port/link_layer"; then
+            ib_ports+=( "$port" )
         fi
     done
 done
@@ -33,7 +33,7 @@ maxcount=300
 for (( count = 0; count < $maxcount; count++ ))
 do
     for port in ${ib_ports[*]}; do
-        if grep -qc "ACTIVE" $port/state; then
+        if grep -qc "ACTIVE" "$port/state"; then
             logger "$0: InfiniBand online at $port"
             exit 0    # Exit when the first InfiniBand becomes active
         else
