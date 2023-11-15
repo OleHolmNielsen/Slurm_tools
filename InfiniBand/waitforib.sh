@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Search for infiniband devices and check waits until at least one is ACTIVE.
+# Search for InfiniBand devices and wait until at least one is ACTIVE.
 # Potential InfiniBand ports will be in /sys/class/infiniband/*/ports/*
 
 maxcount=180

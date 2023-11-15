@@ -53,7 +53,7 @@ You can verify the type of Ethernet NIC in the system with:
 ```
 lspci | grep Ethernet
 ```
-Check for the presence of any RDMA devices by the command:
+Check for the presence of any RDMA devices by the commands:
 ```
 rdma link show
 ibstatus
