@@ -1,13 +1,12 @@
 #!/bin/bash
 
-# Search for infiniband devices and check waits until
-# at least one reports that it is ACTIVE
-# Potential InfiniBand ports: /sys/class/infiniband/*/ports/*
+# Search for infiniband devices and check waits until at least one is ACTIVE.
+# Potential InfiniBand ports will be in /sys/class/infiniband/*/ports/*
 
 maxcount=180
 basedir=/sys/class/infiniband
 if [[ ! -d $basedir ]]; then
-    logger "$0: No InfiniBand ports found"
+    logger "$0: No InfiniBand devices found"
     exit 0
 fi
 
@@ -21,7 +20,7 @@ do
     done
 done
 
-# Identify any InfiniBand link_layer ports.
+# Identify any InfiniBand link_layer ports and add to the ib_ports array.
 # The port might be an iRDMA Ethernet port, check it with "rdma link show".
 # Alternative for explicitly skipping Ethernet iRDMA ports: grep -vqc "Ethernet" ...
 for nic in $basedir/*; do
