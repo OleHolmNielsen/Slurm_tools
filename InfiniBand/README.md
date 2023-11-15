@@ -6,6 +6,9 @@ The reason why we need this tool is that InfiniBand ports may take a number of s
 and `NetworkManager` cannot be configured to wait for InfiniBand,
 but will claim that the network is online as soon as one interface is ready (typically Ethernet).
 
+This issue has been observed on servers running RHEL 8 (and clones),
+whereas CentOS 7 seems to start InfiniBand faster and avoid the issue.
+
 If you have configured `Node Health Check` (NHC) to check the InfiniBand ports,
 the NHC check is going to fail until the InfiniBand ports are up.
 Please note that `slurmd` will call NHC at startup, if `HealthCheckProgram` has been configured in `slurm.conf`.
