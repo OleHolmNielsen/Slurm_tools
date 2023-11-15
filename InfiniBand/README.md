@@ -56,6 +56,7 @@ lspci | grep Ethernet
 Check for the presence of any RDMA devices by the command:
 ```
 rdma link show
+ibstatus
 ```
 
 It is possible to disable the `irdma` Linux kernel module by creating a file `/etc/modprobe.d/disable-irdma.conf`:

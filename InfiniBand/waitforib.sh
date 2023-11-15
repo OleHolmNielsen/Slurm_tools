@@ -21,7 +21,7 @@ do
 done
 
 # Identify any InfiniBand link_layer ports and add to the ib_ports array.
-# The port might be an iRDMA Ethernet port, check it with "rdma link show".
+# The port might be an iRDMA Ethernet port, check it with "rdma link show" or "ibstatus".
 # Alternative for explicitly skipping Ethernet iRDMA ports: grep -vqc "Ethernet" ...
 for nic in $basedir/*; do
     for port in $nic/ports/*; do
