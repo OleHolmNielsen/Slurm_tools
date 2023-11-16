@@ -10,11 +10,20 @@ if [ ! -d $basedir ]; then
     exit 0
 fi
 
-# Check if $basedir exists but is empty (meaning no InfiniBand devices, only Ethernet).
+# Check if $basedir exists but is empty (meaning no InfiniBand devices).
 # This may happen if the ib_core kernel module has been loaded, check with "lsmod | grep ib_core".
-if [ -z "$(ls -A $basedir)" ]; then
+device_found=0
+for (( count = 0; count < $maxcount; count++ )); do
+    if [ -z "$(ls -A $basedir)" ]; then
+        sleep 1
+    else
+        device_found=1
+        break
+    fi
+done
+if [[ $device_found -eq 0 ]]; then
     logger "$0: No active InfiniBand devices found"
-    exit 0
+    exit 1
 fi
 
 # Loop over all InfiniBand $basedir/*/ports/ directories until ALL ports have come to exist
@@ -40,7 +49,7 @@ for nic in $basedir/*; do
     done
 done
 
-if [[ ${#ib_ports[@]} -gt 0 ]]; then
+if [ ${#ib_ports[@]} -gt 0 ]; then
     logger "$0: Found ${#ib_ports[@]} InfiniBand link_layer ports: ${ib_ports[*]}"
 else
     logger "$0: No InfiniBand link_layer ports found"
@@ -48,8 +57,7 @@ else
 fi
 
 # Loop over InfiniBand link_layer ports until one becomes ACTIVE
-for (( count = 0; count < $maxcount; count++ ))
-do
+for (( count = 0; count < $maxcount; count++ )); do
     for port in ${ib_ports[*]}; do
         if grep -qc "ACTIVE" "$port/state"; then
             logger "$0: InfiniBand online at $port"
