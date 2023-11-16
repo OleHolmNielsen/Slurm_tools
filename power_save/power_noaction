@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 
-# A DUMMY no-action power saving script, useful for testing the power_save module
-# See https://slurm.schedmd.com/power_save.html stating:
-#   "You can also configure Slurm with programs that perform no action as SuspendProgram and ResumeProgram
-#   to assess the potential impact of power saving mode before enabling it."
-# You may want to consult https://bugs.schedmd.com/show_bug.cgi?id=17848
+# A DUMMY no-action power saving script which may serve as a template for creating your own power_save module.
+
+# A power saving script must perform some power action, see https://bugs.schedmd.com/show_bug.cgi?id=17848
 #   "17848 – power_save module doesn't work for the documented "no action" suspend/resume programs"
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
