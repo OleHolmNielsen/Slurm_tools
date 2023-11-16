@@ -21,7 +21,7 @@ for (( count = 0; count < $maxcount; count++ )); do
         break
     fi
 done
-if [[ $device_found -eq 0 ]]; then
+if [ $device_found -eq 0 ]; then
     logger "$0: No active InfiniBand devices found"
     exit 1
 fi
