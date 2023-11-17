@@ -31,11 +31,13 @@ tools have been developed for management and monitoring of our cluster:
 
 13. Slurm [plugins](plugins/) for job_submit.
 
+14. Tools for managing [InfiniBand and Omni-Path](InfiniBand/) network fabrics.
+
 Slurm deployment HOWTO
 ----------------------
 
 Our [Slurm HOWTO guide](https://wiki.fysik.dtu.dk/niflheim/SLURM) for setting up a Slurm installation.
-It's based on CentOS/RHEL 7 Linux, but much of the information should be relevant on other Linuxes as well.
+It's based on RHEL 7/8 Linux (and clones), but much of the information should be relevant on other Linuxes as well.
 
 Download
 --------
