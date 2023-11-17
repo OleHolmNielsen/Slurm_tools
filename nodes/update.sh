@@ -97,6 +97,20 @@ then
 	exit 1
 fi
 
+echo
+echo "Ask NetworkManager whether the network startup is complete"
+nm-online --wait-for-startup
+
+# Detect OS version
+if [ -s /etc/os-release ]
+then
+	echo
+	echo "Detect the OS version (see man os-release)"
+	. /etc/os-release
+	osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
+	echo "OS version is: $osversion"
+fi
+
 # YUM update
 
 echo
