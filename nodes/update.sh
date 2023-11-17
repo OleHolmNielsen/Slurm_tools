@@ -93,8 +93,8 @@ echo "Running $0 script at `date`"
 
 if [ ! `rpm -q dmidecode` ]
 then
-	echo ERROR: The dmidecode package is absent, please install it.
-	exit 1
+	echo NOTE: The dmidecode package is absent, installing it.
+	yum -y install dmidecode
 fi
 
 echo
