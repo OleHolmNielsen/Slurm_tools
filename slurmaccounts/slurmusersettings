@@ -75,9 +75,10 @@ export accounts_conf=/etc/slurm/accounts.conf
 function usage()
 {
 	cat <<EOF
-Usage: $0 [-u username] [-d] [-n] [-c] | [-h]
+Usage: $0 [-u username [-l limits]] [-d] [-n] [-c] | [-h]
 where:
 	-u username: Select user <username> (Default is all users)
+	-l limits: Set limits of user <username>
 	-d Print debugging output
 	-n Omit users with non-login shells (-d overrides this)
 	-c Do not print explanatory comments (-d overrides this)
@@ -91,15 +92,27 @@ EOF
 export debugflag=0
 export omitnonlogin=0
 export commentsoff=0
+export newlimits=""
 
-while getopts "u:hdnc" options; do
+while getopts "u:l:hdnc" options; do
 	case $options in
 		u ) export username=$OPTARG	# Select user
 		    echo "### Select only user $username"
-		    if test -z "`$remote getent passwd $username`"
+		    if [ -z "`$remote getent passwd $username`" ]
 		    then
 			# Just a warning. Delete the user at the end of the script.
 			echo "### WARNING: User $username is not in the passwd database"
+		    fi
+		;;
+		l ) if [ -z "$username" ]
+		    then
+			echo "### ERROR: Please specify the username for new limits"
+		    fi
+		    if [ -z "$newlimits" ]
+		    then
+			export newlimits=$OPTARG	# New limits for this user
+		    else
+			export newlimits="$newlimits $OPTARG"	# Append limits 
 		    fi
 		;;
 		d ) export debugflag=1
@@ -117,7 +130,7 @@ while getopts "u:hdnc" options; do
 	esac
 done
 
-if test ! -f $user_settings_conf
+if [ ! -f $user_settings_conf ]
 then
 	echo "### ERROR: No account settings configuration file $user_settings_conf"
 	exit 1
@@ -125,7 +138,7 @@ fi
 
 # WARNING: GNU gawk version 4.0 or later is required for arrays of arrays
 awk_version=`awk --version | head -1 | awk '{version=$3; split(version,v,"."); print v[1]}'`
-if test "$awk_version" = "3"
+if [ "$awk_version" = "3" ]
 then
 	echo -n "Sorry, gawk version 4.0 or later is required. Your version is: "
 	awk --version | head -1
@@ -157,7 +170,7 @@ function version { echo "$@" | awk -F. '{ printf("%03d%03d%03d", $1,$2,$3); }'; 
 # See "man sacctmgr" section "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
 assocfmt="Cluster,Account,User,Partition,Fairshare,GrpJobs,GrpTRES,GrpSubmit,GrpWall,GrpTRESMins,MaxJobs,MaxTRES,MaxTRESPerNode,MaxSubmitJobs,MaxWall,MaxTRESMins,QOS,DefaultQOS,GrpTRESRunMins"
 # Add parameters from newer Slurm versions
-if test $(version $SLURM_VERSION) -ge $(version 18.08)
+if [ $(version $SLURM_VERSION) -ge $(version 18.08) ]
 then
 	assocfmt="$assocfmt,GrpJobsAccrue,MaxJobsAccrue"
 fi
@@ -199,6 +212,7 @@ BEGIN {
 	accounts_conf	= ENVIRON["accounts_conf"]
 	sacctmgr	= ENVIRON["sacctmgr"]
 	username	= ENVIRON["username"]
+	newlimits	= ENVIRON["newlimits"]
 	# passwd		= ENVIRON["passwd_tmp"]
 	group		= ENVIRON["group_tmp"]
 	assoc		= ENVIRON["assoc_tmp"]
@@ -600,6 +614,10 @@ $3 >= MINUID {
 	}
 
 	if (user[u] != "") {
+		if (user[u] == username && newlimits != "") {
+			# Add new user limits to COMMAND
+			COMMAND = COMMAND " " newlimits
+		}
 		# Modify existing user, checking if the jobcount is sufficiently high
 		if (COMMAND != "") {
 			# Print user information
