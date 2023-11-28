@@ -4,7 +4,11 @@ The tools in this folder may be useful with Slurm on systems with InfiniBand or 
 
 The reason why we need this tool is that InfiniBand ports may take a number of seconds to become activated at system boot time,
 and `NetworkManager` cannot be configured to wait for InfiniBand,
-but will claim that the network is online as soon as one interface is ready (typically Ethernet).
+but will claim that the network is online as soon as **just a single interface** is up and running
+(this will typically be Ethernet).
+Other services may be started after `NetworkManager` says `network online`,
+and if these service involve InfiniBand or Omni-Path networks,
+they may very likely fail to start correctly.
 
 This issue has been observed on servers running RHEL 8 (and clones),
 whereas CentOS 7 seems to start InfiniBand faster and avoid the issue.
