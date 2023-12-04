@@ -308,4 +308,5 @@ BEGIN {
 		else
 			print ""
 	}
+	print "Note: The cluster default partition name is indicated by :*"
 }' 
