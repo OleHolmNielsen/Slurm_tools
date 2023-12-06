@@ -8,11 +8,10 @@ They will call different helper scripts according to the type of power managemen
 
 The power management type for each node set is configured as *node features* in ```slurm.conf```.
 
-In case you want to use the IPMI_ based tool ```power_ipmi```, please configure all the IPMI_ tools discussed below.
+In case you want to use the IPMI_ based tool ```power_ipmi```, please configure all the
+[IPMI](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface) tools discussed below.
 
 General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
-
-.. _IPMI: https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface
 
 Prerequisites
 -------------
