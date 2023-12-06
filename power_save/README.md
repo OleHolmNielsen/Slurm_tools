@@ -158,7 +158,7 @@ PrivateData=cloud
 
 * If you set ```SuspendTime``` to anything but INFINITE (or -1), **power saving shutdown of all idle nodes will commence immediately** as soon as you reconfigure Slurm!
 
-* It may perhaps be preferable to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.   
+* It is recommended to omit the global parameter and leave it with the default value ```SuspendTime=INFINITE```.   
   In stead define it only on any relevant partitions, for example:
 
   ```
