@@ -4,17 +4,25 @@
 # Use default time format:
 unset SLURM_TIME_FORMAT
 
+nodelist=$*
 # Omit the 1st line (timestamp) from sinfo
-sinfo -N --long -n $* | tail -n +2
+sinfo -N --long -n $nodelist | tail -n +2
+state=`sinfo -h -O StateCompact:4 -n $nodelist`
 
-# Node job information 
-echo
-squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime -w $*
+if [[ "$state" == "idle" ]]
+then
+	echo
+	echo "No jobs on nodes $nodelist"
+else
+	echo
+	echo "Node $nodelist job information:"
+	squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime,NodeList:50 -w $nodelist
+fi
 
 # Check if squeue returned without error
 if [[ "$?" == 0 ]]
 then
 	echo
 	echo NODE CONFIGURATION:
-	scontrol show node $*
+	scontrol show node $nodelist
 fi
