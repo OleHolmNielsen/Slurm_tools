@@ -13,11 +13,12 @@ cat <<EOF
 Usage: $0 [-p partition-list] [-g] [-m] [-a|-P] [-f] [-h]
 where:
 	-p partition-list: Print only jobs in partition(s) <partition-list>
-	-g: Print also GRES information
+	-g: Print also GRES information.
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a|-P: Display information about all partitions including hidden ones.
 	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
-	-h: Print this help information
+	-n: no headers or colors will be printed (for parsing).
+	-h: Print this help information.
 
 Notes about the columns:
 1. An * after the partition name identifies the default Slurm partition.
@@ -41,8 +42,10 @@ export all_partitions=""
 export minmax=0
 # Enable colors in output
 export colors=1
+# Print headers
+export noheaders=0
 
-while getopts "p:gmaPfh" options; do
+while getopts "p:gmaPfnh" options; do
 	case $options in
 		p ) 	export partitionlist="-p $OPTARG"
 			echo "Print only jobs in partition $OPTARG"
@@ -56,6 +59,9 @@ while getopts "p:gmaPfh" options; do
 		f ) 	export federation="--federation"
 			# Append sinfo option %V (CLUSTER) for Slurm 18.08 and newer.
 			export sinfo_options="$sinfo_options %V"
+			;;
+		n ) 	export noheaders=1	# No headers and no colors for parsing output
+			export colors=0
 			;;
 		h|? ) usage
 			exit 1;;
@@ -73,10 +79,13 @@ then
 fi
 
 export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
-echo "Partition statistics for cluster $mycluster at `date`"
-
 # Identify any hidden partitions (see slurm.conf man-page)
 export hidden_partitions="`diff <(sinfo --hide -o %P) <(sinfo --all -o %P) | awk '$1==">" {printf("%s ", $2)}'`"
+
+if [ $noheaders == 0 ]
+then
+	echo "Partition statistics for cluster $mycluster at `date`"
+fi
 
 sinfo --noheader --exact $federation $partitionlist $all_partitions -o "$sinfo_options" | awk '
 BEGIN {
@@ -89,6 +98,7 @@ BEGIN {
 	mycluster	= ENVIRON["mycluster"]
 	federation	= ENVIRON["federation"]
 	clusternamelength = 7	# Minimum length of cluster name column
+	noheaders	= ENVIRON["noheaders"]
 
 	# Identify hidden partitions
 	if (split(hidden_partitions, array, " ") > 0)
@@ -128,7 +138,7 @@ BEGIN {
 	p = $1			# Partition name
 	partition[p] = p	# Partition name
 	len = length(p)		# Length of partition name string
-	if (isdefault > 0) {		# The default partition
+	if (noheaders == 0 && isdefault > 0) {		# The default partition (suppress with noheaders)
 		defaultpartition[p] = 1
 		len++			# Add 1 character to length
 	}
@@ -244,9 +254,11 @@ BEGIN {
 		header1 = header1 "    GRES      "
 		header2 = header2 " (#Nodes:state)"
 	}
-	# Print the header lines
-	printf("%s\n", header1)
-	printf("%s\n", header2)
+	if (noheaders == 0) {
+		# Print the header lines
+		printf("%s\n", header1)
+		printf("%s\n", header2)
+	}
 
 	# Sort arrays by element values:
 	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
@@ -308,5 +320,6 @@ BEGIN {
 		else
 			print ""
 	}
-	print "Note: The cluster default partition name is indicated by :*"
+	if (noheaders == 0) 
+		print "Note: The cluster default partition name is indicated by :*"
 }' 
