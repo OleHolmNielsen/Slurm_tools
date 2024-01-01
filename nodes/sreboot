@@ -1,24 +1,40 @@
 #!/usr/bin/env bash
 
 # Slurm: use scontrol to reboot nodes
+# NextState is "Resume" by default, use "-d" to set to Down.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-NODES="$1"
-ACTION=resume
+action=resume
+reason="reboot and resume"
 
-if test $# -ne 1
+# Parse command options
+while getopts "dh" options; do
+	case $options in
+		d )	action=down
+			reason="reboot and down"
+			;;
+		h | * )	echo "Usage:"
+			echo "$0 [-d] <nodelist>"
+			echo "The NextState after reboot is Resume.  Use -d to set NextState to Down"
+			exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+NODES="$1"
+
+if [ $# -ne 1 ]
 then
-	echo Usage: $0 nodename-list
+	echo "Usage: $0 [-d] nodename-list"
 	exit 1
 fi
 
 # Check the node list
-if [[ "`sinfo -hN -n $NODES`" = "" ]]
+if [ "`sinfo -hN -n $NODES`" = "" ]
 then
-	echo ERROR: Nodelist $NODES does not exist
+	echo "ERROR: Nodelist $NODES does not exist"
 	exit 1
 fi
 
-echo Reboot nodes $NODES with nextstate=$ACTION 
-scontrol reboot asap nextstate=$ACTION $NODES 
+echo "Reboot nodes $NODES with nextstate=$action"
+scontrol reboot asap nextstate=$action reason="$reason" $NODES 
 sinfo -N -n $NODES
