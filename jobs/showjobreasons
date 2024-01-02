@@ -16,7 +16,7 @@ BEGIN {
 		cores[p] = $5
 		idlecores[p] = $6
 	}
-	fmt="%8s(%8s)\t%12s\t%-16s %5s %5s %5s %5s %5s\n"
+	fmt="%8s %8s \t%12s\t%-16s %5s %5s %5s %5s %5s\n"
 	printf(fmt, "User", "Account", "Partition", "Reason", "#Jobs", "Nodes", "Idle", "Cpus", "Idle")
 }
 {
