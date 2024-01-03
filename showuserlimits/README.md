@@ -36,7 +36,7 @@ Specific limits (such as ```GrpTRESRunMins```) and even sub-limits (such as ```c
 Usage:
 
 ```
-Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-q qos] [-l limit] [-s sub-limit] [-n] | -h ]
+Usage: ./showuserlimits [-u username [-A account] [-p partition] [-M cluster] [-q qos] [-l limit] [-s sublimit1[,sublimit2,...]] [-n] | -h ]
 where:
         -u username: Print user <username> (Default is current user)
         -A accountname: Print only account <accountname>
@@ -44,17 +44,18 @@ where:
         -M cluster: Print only cluster <cluster>
         -q Print only QOS=<qos>
         -l Print selected limits only
-        -s Print selected sub-limits only
-        -n Print also limits with value None
+        -s Print selected sublimit1[,sublimit2,...] only
+	-n Print also limits with value None
         -h Print help information
 ```
 
 A typical use case is to inquire about a certain limit, for example,
-```GrpTRESRunMins``` and possibly sub-limits such as the ```cpu``` field:
+```GrpTRESRunMins``` and possibly **sub-limits** such as the ```cpu``` (and more) fields:
 
 ```
 showuserlimits -u username -l GrpTRESRunMins
 showuserlimits -u username -l GrpTRESRunMins -s cpu
+showuserlimits -u username -l GrpTRESRunMins -s cpu,node
 ```
 
 The output may look like this example:

@@ -9,7 +9,7 @@
 function usage()
 {
         cat <<EOF
-Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-q qos] [-l limit] [-s sub-limit] [-n] | -h ]
+Usage: $0 [-u username [-A account] [-p partition] [-M cluster] [-q qos] [-l limit] [-s sublimit1[,sublimit2,...]] [-n] | -h ]
 where:
         -u username: Print user <username> (Default is current user)
         -A accountname: Print only account <accountname>
@@ -17,7 +17,7 @@ where:
         -M cluster: Print only cluster <cluster>
         -q Print only QOS=<qos>
         -l Print selected limits only
-        -s Print selected sub-limits only
+        -s Print selected sublimit1[,sublimit2,...] only
 	-n Print also limits with value None
         -h Print help information
 EOF
@@ -202,8 +202,8 @@ function split_parenthesis (string, array) {
 				gsub(rec "=","",$i)		# Remove leading rec= from string
 				m = split($i,b,",")		# Comma-separated sub-fields
 				for (j=1; j<=m; j++) {
-					split(b[j],c,"=")	# Sub-limit value=field
-					if (sublimits == "" || c[1] == sublimits) {
+					split(b[j],c,"=")	# Split sublimit value=field
+					if (sublimits == "" || index(sublimits,c[1]) > 0) {	# The sublimits may contain multiple values
 						# Value c[2] sub-field consists of "Limit(Value)" pairs
 						if (split_parenthesis(c[2], array)) {
 							if (printNone==1 || array[1]!="None")
