@@ -122,7 +122,9 @@ fi
 # Use The FreeIPMI command "ipmipower" to power nodes on or off or get status
 #
 # Specify the IPMI 2.0 cipher suite ID to use:
-cipher="-I 17"
+# HPE and SuperMicro BMC only support "-I 3"
+# cipher="-I 17"
+cipher="-I 3"
 driver="-D LAN_2_0"
 timeout="--session-timeout=1000"	# Set IPMI timeout to 1000 milliseconds
 consolidate="--consolidate-output"	# Consolidated node output
