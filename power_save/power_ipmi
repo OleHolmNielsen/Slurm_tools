@@ -118,8 +118,12 @@ then
 	echo "$DATE POWER ${action^^} the IPMI based nodelist $nodelist ($nodecount nodes)" 
 fi
 
-# Use ipmipower to power nodes on or off or get status
+#
+# Use The FreeIPMI command "ipmipower" to power nodes on or off or get status
+#
+# Specify the IPMI 2.0 cipher suite ID to use:
+cipher="-I 17"
+driver="-D LAN_2_0"
 timeout="--session-timeout=1000"	# Set IPMI timeout to 1000 milliseconds
 consolidate="--consolidate-output"	# Consolidated node output
-# consolidate=""
-ipmipower -D LAN_2_0 --username=$IPMI_USER --password=$IPMI_PASSWORD $timeout $consolidate --hostname=$bmclist $action
+ipmipower $driver $cipher --username=$IPMI_USER --password=$IPMI_PASSWORD $timeout $consolidate --hostname=$bmclist $action
