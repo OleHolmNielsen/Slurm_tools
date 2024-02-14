@@ -11,7 +11,7 @@
 # Directory and report file name prefix:
 PREFIX=/TOPDIR/Top
 # Partion list: overlapping partitions are comma-separated so they will be reported together
-partitionlist="xeon16,xeon16_128,xeon16_256 xeon24,xeon24_512 xeon40,xeon40_768,xeon40_clx xeon56 sm3090,sm3090_768"
+partitionlist="xeon24,xeon24_512 xeon32_4096 xeon40,xeon40_768,xeon40_clx xeon56 sm3090,sm3090_768"
 # END CONFIGURE
 
 slurmacct=slurmacct
