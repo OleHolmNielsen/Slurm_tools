@@ -137,6 +137,7 @@ if [ $? -eq 0 ]
 then
 	cat $tempfile
 else
+	cat $tempfile
 	ipmipower $driver $fallbackcipher --username=$IPMI_USER --password=$IPMI_PASSWORD $timeout $consolidate --hostname=$bmclist $action
 fi
 rm -f $tempfile
