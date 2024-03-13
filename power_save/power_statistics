@@ -74,7 +74,6 @@ grep "Current Power" $tempfile > $tempfile2
 if [ -s $tempfile2 ]
 then
 	sort $tempfile2
-#grep "Current Power" $tempfile | sort
 	# Calculate total and average power
 	cat $tempfile2 | awk '{total+=$5}END{if(NR>0) printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
 else
