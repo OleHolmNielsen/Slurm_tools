@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# Get power usage statistics from Slurm nodes using FreeIPMI tools from https://www.gnu.org/software/freeipmi/
+# Author: Ole.H.Nielsen@fysik.dtu.dk
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# MODIFY THIS:
+# Add these lines (uncommented) to the users' .bashrc file which should export variables like:
+# export IPMI_USER=root
+# export IPMI_PASSWORD=verysecretpassword
+# Define the node BMC DNS name: BMC DNS-name is the node name plus this suffix:
+BMC_SUFFIX="b"
+# For example: node c190 BMC has DNS name c190b
+
+# Prerequisites:
+# * Install this RPM package: yum install freeipmi
+# * We require the "nodeset" command from the ClusterShell package.  Install it by:
+#   yum install epel-release
+#   yum install clustershell
+
+# Check the Slurm nodelist
+if [[ $# != 1 ]]
+then
+	echo "ERROR: No Slurm nodelist has been given"
+	echo "Usage: $0 nodelist"
+	exit 1
+fi
+
+# List of nodenames and BMC DNS names
+nodelist=$1
+# Append the BMC's DNS name suffix BMC_SUFFIX to the nodes' DNS names
+# using the ClusterShell command "nodeset"
+bmclong=`nodeset -O "%s${BMC_SUFFIX}" --expand $nodelist`
+bmclist=`nodeset --fold $bmclong`
+
+# Source the users' .bashrc file which should export variables like:
+# export IPMI_USER=root
+# export IPMI_PASSWORD=verysecretpassword
+# Note: The environment variables set by slurmctld do NOT include PATH, USER, HOME etc.
+source ~/.bashrc
+USER=`whoami`
+
+# Prepend the path where FreeIPMI tools live
+export PATH=/usr/sbin:$PATH
+
+if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
+then
+	echo "ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set in ~/.bashrc"
+	exit 1
+fi
+
+#
+# Use The FreeIPMI command "ipmi-dcmi" to read node power statistics
+#
+# Specify the IPMI 2.0 cipher suite ID to use:
+# HPE and SuperMicro BMCs only support "-I 3"
+cipher="-I 17"
+# fallbackcipher="-I 3"
+fallbackcipher=""
+driver="-D LAN_2_0"
+
+# First try cipher suite 17 with a fallback (for HPE and SuperMicro BMCs)
+tempfile=`mktemp`
+ipmi-dcmi $driver $cipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics > $tempfile 2>&1
+if [ $? -eq 0 ]
+then
+	# The default case (output is sorted by BMC DNS name)
+	grep "Current Power" $tempfile | sort
+else
+	# Error: Try fallback cipher
+	ipmi-dcmi $driver $fallbackcipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics | grep "Current Power" | sort
+fi
+rm -f $tempfile

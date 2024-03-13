@@ -46,7 +46,7 @@ Usage
 
 Copy these scripts to ```/usr/local/bin/```:
 ```
-cp noderesume nodefailresume nodesuspend power_ipmi power_azure /usr/local/bin/
+cp noderesume nodefailresume nodesuspend power_ipmi power_azure power_statistics /usr/local/bin/
 ```
 
 Configure script variables
@@ -69,6 +69,19 @@ This file will be sourced by the scripts.
 In the ```nodefailresume``` script configure the sysadmin E-mail address in this line:
 ```
 slurm_notify=<sysadmin-email>
+```
+
+Test the power_statistics tool
+------------------------------
+
+The ```power_statistics``` tool uses the ```ipmi-dcmi``` command to gather power usage statistics from the node BMCs.
+Example:
+```
+power_statistics  e[001-004]
+e001b: Current Power                        : 825 Watts
+e002b: Current Power                        : 846 Watts
+e003b: Current Power                        : 851 Watts
+e004b: Current Power                        : 875 Watts
 ```
 
 Test IPMI power scripts
