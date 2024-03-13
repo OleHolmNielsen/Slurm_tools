@@ -62,12 +62,13 @@ driver="-D LAN_2_0"
 # First try cipher suite 17 with a fallback (for HPE and SuperMicro BMCs)
 tempfile=`mktemp`
 ipmi-dcmi $driver $cipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics > $tempfile 2>&1
-if [ $? -eq 0 ]
+if [ $? -ne 0 ]
 then
-	# The default case (output is sorted by BMC DNS name)
-	grep "Current Power" $tempfile | sort
-else
 	# Error: Try fallback cipher
-	ipmi-dcmi $driver $fallbackcipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics | grep "Current Power" | sort
+	ipmi-dcmi $driver $fallbackcipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics > $tempfile 2>&1
 fi
+# The default case (output is sorted by BMC DNS name)
+grep "Current Power" $tempfile | sort
+# Calculate total and average power
+grep "Current Power" $tempfile | awk '{total+=$5}END{printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
 rm -f $tempfile
