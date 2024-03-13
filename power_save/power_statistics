@@ -67,8 +67,18 @@ then
 	# Error: Try fallback cipher
 	ipmi-dcmi $driver $fallbackcipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics > $tempfile 2>&1
 fi
+
+tempfile2=`mktemp`
 # Print Current Power lines (output is sorted by BMC DNS name)
-grep "Current Power" $tempfile | sort
-# Calculate total and average power
-grep "Current Power" $tempfile | awk '{total+=$5}END{printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
-rm -f $tempfile
+grep "Current Power" $tempfile > $tempfile2
+if [ -s $tempfile2 ]
+then
+	sort $tempfile2
+#grep "Current Power" $tempfile | sort
+	# Calculate total and average power
+	cat $tempfile2 | awk '{total+=$5}END{if(NR>0) printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
+else
+	# The ipmi-dcmi command fails on BMCs from Huawei, Xfusion (and others)
+	echo "ERROR: No Current Power output was obtained by the ipmi-dcmi command"
+fi
+rm -f $tempfile $tempfile2
