@@ -74,8 +74,8 @@ grep "Current Power" $tempfile > $tempfile2
 if [ -s $tempfile2 ]
 then
 	sort $tempfile2
-	# Calculate total and average power
-	cat $tempfile2 | awk '{total+=$5}END{if(NR>0) printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
+	# Calculate total and average power (if more than 1 node)
+	cat $tempfile2 | awk '{total+=$5}END{if(NR>1) printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
 else
 	# The ipmi-dcmi command fails on BMCs from Huawei, Xfusion (and others)
 	echo "ERROR: No Current Power output was obtained by the ipmi-dcmi command"
