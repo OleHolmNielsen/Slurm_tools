@@ -75,9 +75,10 @@ if [ -s $tempfile2 ]
 then
 	sort $tempfile2
 	# Calculate total and average power (if more than 1 node)
-	cat $tempfile2 | awk '{total+=$5}END{if(NR>1) printf("Total: Current Power (%4.4d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
+	cat $tempfile2 | awk '{total+=$5}END{if(NR>1) printf("Total: Current Power (%d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
 else
 	# The ipmi-dcmi command fails on BMCs from Huawei, Xfusion (and others)
+	# If a BMC's DNS hostname does not resolve correctly, ipmi-dcmi will also report no response
 	echo "ERROR: No Current Power output was obtained by the ipmi-dcmi command"
 	echo "BMC list was: $bmclist"
 fi
