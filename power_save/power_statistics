@@ -79,5 +79,6 @@ then
 else
 	# The ipmi-dcmi command fails on BMCs from Huawei, Xfusion (and others)
 	echo "ERROR: No Current Power output was obtained by the ipmi-dcmi command"
+	echo "BMC list was: $bmclist"
 fi
 rm -f $tempfile $tempfile2
