@@ -334,8 +334,13 @@ function get_userinfo (job_desc, submit_uid)
 			job_desc.user_name, submit_uid, job_desc.account, job_desc.name)
 	else
 		-- The job's account is the user's default account
-		userinfo = string.format("%s(UID=%u) job_name=%s",
-			job_desc.user_name, submit_uid, job_desc.name)
+		if job_desc.name ~= NIL then
+			userinfo = string.format("%s(UID=%u) job_name=%s",
+				job_desc.user_name, submit_uid, job_desc.name)
+		else
+			userinfo = string.format("%s(UID=%u) job_name=(nil)",
+				job_desc.user_name, submit_uid)
+		end
 	end
 	return slurm.SUCCESS
 end
