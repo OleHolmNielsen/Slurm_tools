@@ -141,10 +141,9 @@ then
 		# echo "Check partition $p"
 	if test -z "`sinfo -h -p $p -O PartitionName`" 
 	then
-			echo "ERROR: Invalid partition name $p"
+			echo "WARNING: Invalid partition name $p"
 			# echo "Valid partition names are:"
 			# sinfo -O "PartitionName"
-			exit -1
 		fi
 	done
 fi
