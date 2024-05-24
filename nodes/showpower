@@ -104,16 +104,16 @@ BEGIN {
 			value[array[1]][n] = array[2]
 	}
 }
-function printheading(   fmtheading)
+function printheading(text,   fmtheading)
 {
 	fmtheading = "%-8s %6s %8s %8s %8s %10.10s %10.10s %10.10s %10.10s\n" 
-	printf(fmtheading, "NodeName", "#CPUs", "CPU-", "Current", "Average", "Cap", "ExtSensors", "ExtSensors", "ExtSensors")
+	printf(fmtheading, text, "#CPUs", "CPU-", "Current", "Average", "Cap", "ExtSensors", "ExtSensors", "ExtSensors")
 	printf(fmtheading, "", "", "load", "Watts", "Watts", "Watts", "Watts", "Joules", "Temp")
 }
 END {
 	# Check that the sortvar index exists in the value array
 	if (sortvar in value) {
-		if (printnodes > 0) printheading()
+		if (printnodes > 0) printheading("Nodename")
 		# Print selected variables for all nodes (ascending values)
 		PROCINFO["sorted_in"] = "@val_num_asc"
 		format = "%-8s %6d %8.1f %8d %8d %10s %10s %10s %10s\n" 
@@ -141,7 +141,7 @@ END {
 		if (nodecount > 1 || printnodes == 0) {
 			n = nodecount
 			print ""
-			printheading()
+			printheading("Summary")
 			printf(format, "TOTAL", CPUTot, CPULoad, CurrentWatts, AveWatts, CapWatts,
 				ExtSensorsWatts, ExtSensorsJoules, ExtSensorsTemp)
 			printf(format, "Average", CPUTot/n, CPULoad/n, CurrentWatts/n, AveWatts/n, CapWatts/n,
