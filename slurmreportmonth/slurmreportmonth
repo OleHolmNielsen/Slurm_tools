@@ -28,7 +28,7 @@ function usage()
 {
 	cat << EOF
 
-Usage: $0 [-m] [-a accountlist] [-s startdate -e enddate] [-r report-directory]
+Usage: $0 [-m -c -y -w] [-a accountlist] [-s startdate -e enddate] [-r report-directory]
 where:
 	-m: Send report by E-mail to $SUBSCRIBERS
 	-a: Select an account (or list of accounts)
