@@ -77,7 +77,7 @@ Test the power_statistics tool
 The ```power_statistics``` tool uses the ```ipmi-dcmi``` command to gather power usage statistics from the node BMCs.
 Example:
 ```
-power_statistics  e[001-004]
+power_statistics e[001-004]
 e001b: Current Power                        : 825 Watts
 e002b: Current Power                        : 846 Watts
 e003b: Current Power                        : 851 Watts
