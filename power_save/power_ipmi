@@ -93,13 +93,13 @@ export PATH=/usr/sbin:$PATH
 
 if [[ -z "$IPMI_USER" || -z "$IPMI_PASSWORD" ]]
 then
-	echo "ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set in ~/.bashrc"
+	echo "ERROR: The user IPMI_USER and/or password IPMI_PASSWORD have not been set in ~/.bashrc" | tee --append $LOGFILE
 	exit 1
 fi
 
 if [[ -z "$action" ]]
 then
-	echo "ERROR: No action has been given"
+	echo "ERROR: No action has been given" | tee --append $LOGFILE
 	usage
 	exit 1
 elif [[ $logging -eq 1 ]]
