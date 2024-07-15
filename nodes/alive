@@ -10,10 +10,9 @@
 trap "exit -1" SIGTERM SIGINT SIGQUIT
 
 PING="/bin/ping -c 1 -w 3"
-# PING="/bin/ping -c 1 -w 10"
-# The Slurm server nodes list: Check only dead nodes (--dead)
-SINFO="/usr/bin/sinfo -N -h --dead"
-# SINFO="/usr/bin/sinfo -N -h"
+# The Slurm server nodes list: Check only dead nodes (--dead) and other failed nodes
+# Comment: Nodes that are powering_up/down or boot^ should not be listed
+SINFO="/usr/bin/sinfo -N -h -t down,fail,unknown"
 NODELIST=`$SINFO -O NodeList | sort | uniq`
 
 STOPFILEDIR=/var/lib/alive
