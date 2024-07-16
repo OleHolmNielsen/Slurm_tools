@@ -7,19 +7,19 @@
 # Author:       Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-# CONFIGURE: 
-# Directory and report file name prefix:
+# CONFIGURE THIS: 
+# Directory name and report file name prefix:
 PREFIX=/TOPDIR/Top
 # Partion list: overlapping partitions are comma-separated so they will be reported together
-partitionlist="xeon24,xeon24_512 xeon32_4096 xeon40,xeon40_768,xeon40_clx xeon56 sm3090,sm3090_768"
+partitionlist="xeon24,xeon24el8,xeon24el8_512,xeon24el8_test xeon32_4096 xeon40,xeon40_768,xeon40_clx,xeon40el8 xeon56,xeon56cmr sm3090,sm3090_768,sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week xeon32_4096,xeon32_week"
 # END CONFIGURE
 
 slurmacct=slurmacct
 
 if test $# -eq 0
 then
-	# Default periods: last-month ("") current-month (-c) current-week (-w)
-	periods="None -c -w"
+	# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
+	periods="None -c -w -y"
 else
 	# Select month and year (like "november2019")
 	periods="-m$1"
