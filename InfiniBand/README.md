@@ -10,8 +10,7 @@ Other services may be started after `NetworkManager` says `network online`,
 and if these service involve InfiniBand or Omni-Path networks,
 they may very likely fail to start correctly.
 
-This issue has been observed on servers running RHEL 8 (and clones),
-whereas CentOS 7 seems to start InfiniBand faster and avoid the issue.
+This issue has been observed on servers running RHEL 8 (and EL8 clones).
 
 If you have configured `Node Health Check` (NHC) to check the InfiniBand ports,
 the NHC check is going to fail until the InfiniBand ports are up.
