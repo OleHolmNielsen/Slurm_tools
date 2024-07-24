@@ -347,7 +347,10 @@ end
 
 
 function slurm_job_submit(job_desc, part_list, submit_uid)
-	local log_prefix = 'slurm_job_submit'
+	-- Arguments:
+	-- job_desc (input/output) the job allocation request specifications.
+	-- part_list (input) List of pointer to partitions which this user is authorized to use.
+	-- submit_uid (input) user ID initiating the request.
 
 	-- Don't block any activity from root. This may make reproduction of user errors difficult.
 	if submit_uid == 0 then
@@ -359,7 +362,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	-- We will call these functions in the order listed
 	local functionlist = { check_arg_list, forbid_reserved_name, check_partition,
 		check_num_nodes, check_num_tasks, forbid_memory_eq_0, check_cpus_tasks, check_gpus }
-
+	local log_prefix = 'slurm_job_submit'
 	local check = slurm.SUCCESS
 	for i, func in ipairs(functionlist) do
 		check = func(job_desc, submit_uid, log_prefix) 
@@ -372,7 +375,11 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 end
 
 function slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
-	local log_prefix = 'slurm_job_modify'
+	-- Arguments:
+	-- job_desc (input/output) the job allocation **modification request** specifications.
+	-- job_ptr (input/output) slurmctld daemon's **current** data structure for the job to be modified.
+	-- part_list (input) List of pointer to partitions which this user is authorized to use.
+	-- modify_uid (input) user ID initiating the request.
 
 	--Don't block/modify any update from root 
 	if modify_uid == 0 then
@@ -382,8 +389,8 @@ function slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
 
 	-- Loop over the function list
 	-- We will call these functions in the order listed
-	local functionlist = { forbid_reserved_name, forbid_memory_eq_0, check_partition, check_num_nodes, check_num_tasks }
-
+	local functionlist = { forbid_reserved_name, forbid_memory_eq_0 }
+	local log_prefix = 'slurm_job_modify'
 	local check = slurm.SUCCESS
 	-- Warning: Calling log_user() from slurm_job_modify() fails when using Slurm < 23.02
 	-- See https://bugs.schedmd.com/show_bug.cgi?id=14539
