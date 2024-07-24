@@ -7,8 +7,9 @@
 # clush -bw <nodelist> --copy update.sh --dest /root/
 #
 # On the compute nodes append this crontab entry:
-# clush -bw <nodelist> 'echo "@reboot root /bin/bash /root/update.sh" >> /etc/crontab'
-# Duplicate crontab lines should be avoided, but are caught using the STOP_FILE below.
+# Using "cat" avoids a possible overwrite of update.sh (up to 128 kB) while executing it.
+# clush -bw <nodelist> 'echo "@reboot root cat /root/update.sh | bash" >> /etc/crontab'
+# Duplicate crontab lines should be avoided, but are caught using the COMPLETION_FILE below.
 #
 # Then reboot the nodes with:
 # scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
@@ -23,7 +24,7 @@
 
 LOCK_FILE="/root/update.lock"
 LOG_FILE="/root/update.log"
-STOP_FILE="/root/update.done"
+COMPLETION_FILE="/root/update.done"
 
 # Configure: Where RPM packages and drivers live:
 PACKAGEDIR=/home/que
@@ -49,6 +50,30 @@ function dell_update()
 	else
 		echo ERROR: Update file $file was not found or is not executable
 		ls -l $file
+	fi
+}
+
+# Function for running a Lenovo update file using Lenovo "OneCLI"
+# https://support.lenovo.com/us/en/solutions/ht116433-lenovo-xclarity-essentials-onecli-onecli
+# We assume update files to be in the folder .../Lenovo/<system-product-name>/<firmware>
+# Usage: lenovo_update <system-product-name> <subdir> <firmware-file>
+function lenovo_update()
+{
+	fwdir=$PACKAGEDIR/Lenovo/$1/$2
+	file="$3"
+	payload=$fwdir/payloads/$file.uxz
+	echo
+	echo "Lenovo $1 update file $file"
+	if [ -f $payload ]
+	then
+		# The OneCLI logfiles will be in /tmp
+		onecli update flash --scope individual --dir $fwdir --nocompare  --includeid $file --output /tmp --quiet
+		echo "Update completed"
+		return 0
+	else
+		echo "ERROR: Update payload file $payload was not found"
+		ls -l $fwdir
+		return 1
 	fi
 }
 
@@ -83,18 +108,21 @@ else
 fi
 
 # Remove any previous stop file
-rm -f $STOP_FILE
+rm -f $COMPLETION_FILE
 
 # Redirect stdout and stderr
 exec 1>$LOG_FILE
 exec 2>&1
 
 echo "Running $0 script at `date`"
+echo
+echo "Ask NetworkManager whether the network startup is complete"
+nm-online --wait-for-startup
 
 if [ ! `rpm -q dmidecode` ]
 then
 	echo NOTE: The dmidecode package is absent, installing it.
-	yum -y install dmidecode
+	dnf -y install dmidecode
 fi
 
 echo
@@ -114,10 +142,10 @@ fi
 # YUM update
 
 echo
-echo Running yum clean all
-yum clean all
-echo Running yum update
-yum -y update
+echo Running dnf clean all
+dnf clean all
+echo Running dnf update
+dnf -y update
 
 # BIOS updates (system product specific)
 
@@ -126,23 +154,24 @@ product="`dmidecode -s system-product-name`"
 echo
 echo "This node's system product name is $product"
 
-# Reboot after BIOS update
 if [ "$product" == "PowerEdge C6420" ]
 then
-	dell_update C6420 BIOS_RHYDH_LN64_2.12.2.BIN -r
+	dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_3NNH8_LN64_7.00.00.172_A00.BIN
+	dell_update C6420 BIOS_JJDCD_LN64_2.21.0.BIN
 elif [ "$product" == "PowerEdge R640" ]
 then
-	dell_update R640 BIOS_4CRD2_LN64_2.12.2.BIN -r
+	dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_3NNH8_LN64_7.00.00.172_A00.BIN
+	dell_update R640 BIOS_72VRD_LN64_2.21.2.BIN
 elif [ "$product" == "PowerEdge R650" ]
 then
-	dell_update R650 BIOS_CNDYW_LN64_1.3.8.BIN -r
+	dell_update R650 iDRAC-with-Lifecycle-Controller_Firmware_CX8MF_LN64_7.10.50.00_A00.BIN
+	dell_update R650 BIOS_JRHTF_LN64_1.14.1.BIN
 fi
 
 # Dell PowerEdge iDRAC firmware update and Dell System Update (DSU)
 
 if [ "`dmidecode -s system-family`" == "PowerEdge" ]
 then
-	dell_update iDRAC iDRAC-with-Lifecycle-Controller_Firmware_7CH5T_LN64_5.00.10.00_A00.BIN
 	ipmitool bmc info
 	echo
 	echo Running Dell System Update
@@ -157,11 +186,21 @@ then
 	fi
 fi
 
+# Lenovo ThinkSystem servers
+# The Lenovo firmware zip-files must be unpacked to dedicated folders in $PACKAGEDIR/Lenovo/$1/$2
+if [ "$product" == "ThinkSystem SD665 V3" ]
+then
+	echo "Firmware updates for $manufacturer $product"
+	lenovo_update SD665V3 XCC lnvgy_fw_xcc_qgx340j-6.10_anyos_comp
+	lenovo_update SD665V3 UEFI lnvgy_fw_uefi_qge124h-5.20_anyos_comp
+fi
+
+
 # Now do the crontab cleanup
 crontab_cleanup
 
 # Create the stop-file indicating that the script has completed
-touch $STOP_FILE
+touch $COMPLETION_FILE
 echo
 echo "Finished $0 script at `date`"
 
@@ -169,17 +208,41 @@ echo "Finished $0 script at `date`"
 rm -f $LOCK_FILE
 
 # Check if this is a Slurm compute node and then reboot it
+
 echo
-if [ `rpm -q slurm` ]
+echo "Reboot this node `hostname`"
+echo
+echo -n "Check the slurm rpm package: "
+
+if rpm -q slurm
 then
-	shortname=`hostname -s`
-	if [ -n "`sinfo -N -hn $shortname`" ]
+	# NOTICE: It is required that slurmd is running for "scontrol reboot" to work!
+	echo
+	echo "Check if the slurmd process is running:"
+	if pgrep --list-full -u root slurmd
 	then
-		echo Reboot and resume node by Slurm scontrol reboot
-		scontrol reboot nextstate=resume $shortname
+		echo "Check OK: the slurmd process is running"
 	else
-		echo NOTICE: This node $shortname is not a Slurm compute node, reboot it manually.
+		echo "ERROR: no slurmd process is running"
+		echo "Reboot the node immediately"
+		shutdown -r now
+	fi
+	echo
+	shortname=`hostname -s`
+	if [[ -n "`sinfo -N -hn $shortname`" ]]
+	then
+		NEXTSTATE=resume
+		echo "Next Slurm node state is: $NEXTSTATE"
+		echo "Reboot node by Slurm scontrol reboot, setting nextstate=$NEXTSTATE"
+		scontrol reboot nextstate=$NEXTSTATE reason=Update_done $shortname
+	else
+		echo "NOTICE: This node $shortname is not a Slurm compute node, reboot it manually."
+		echo "Reboot the node immediately"
+		shutdown -r now
 	fi
 else
-	echo NOTICE: Slurm is not installed.  Reboot this node $shortname manually.
+	echo "NOTICE: Slurm is not installed.  Reboot this node $shortname manually."
+	echo "Reboot the node immediately"
+	shutdown -r now
 fi
+
