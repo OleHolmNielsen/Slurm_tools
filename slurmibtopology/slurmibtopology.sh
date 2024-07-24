@@ -5,7 +5,7 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 VERSION="slurmibtopology.sh version 0.22. Date: 09-May-2017"
 
-# CONFIGURE the paths to the commands below (defaults are from CentOS Linux):
+# CONFIGURE the paths to the commands below:
 
 # Directories where commands live:
 sprefix=/usr/sbin

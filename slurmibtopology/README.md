@@ -7,7 +7,7 @@ Prerequisites
 -------------
 
 The OFED command ```ibnetdiscover```.
-On CentOS/RHEL 7 this is part of the ```infiniband-diags``` RPM package.
+On EL8/9 Linux this is part of the ```infiniband-diags``` RPM package.
 
 Usage
 -----
