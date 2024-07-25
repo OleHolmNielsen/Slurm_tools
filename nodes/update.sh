@@ -210,7 +210,7 @@ rm -f $LOCK_FILE
 # Check if this is a Slurm compute node and then reboot it
 
 echo
-echo "Reboot this node `hostname`"
+echo "Reboot this node `hostname` at `date`"
 echo
 echo -n "Check the slurm rpm package: "
 
