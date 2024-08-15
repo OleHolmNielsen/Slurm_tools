@@ -54,14 +54,19 @@ fi
 #
 # Specify the IPMI 2.0 cipher suite ID to use:
 # HPE and SuperMicro BMCs only support "-I 3"
+# Specify the K_g BMC key to use when authenticating with the remote host for IPMI 2.0.
+# If not specified, a null key is assumed. To input the key in hexadecimal form, prefix
+# the string with '0x'. E.g., the key 'abc' can be entered with the either the string 'abc' or the string '0x616263'
+# For Dell iDRAC, set in the "IPMI Settings" => "Encryption Key*" Section of the web interface in hexadecimal.
 cipher="-I 17"
 # fallbackcipher="-I 3"
 fallbackcipher=""
 driver="-D LAN_2_0"
+KG="--k-g=abc"			# See Above
 
 # First try cipher suite 17 with a fallback (for HPE and SuperMicro BMCs)
 tempfile=`mktemp`
-ipmi-dcmi $driver $cipher --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics > $tempfile 2>&1
+ipmi-dcmi $driver $cipher $KG --username=$IPMI_USER --password=$IPMI_PASSWORD --hostname=$bmclist --get-system-power-statistics > $tempfile 2>&1
 if [ $? -ne 0 ]
 then
 	# Error: Try fallback cipher
@@ -73,7 +78,7 @@ tempfile2=`mktemp`
 grep "Current Power" $tempfile > $tempfile2
 if [ -s $tempfile2 ]
 then
-	sort $tempfile2
+	sort -V $tempfile2
 	# Calculate total and average power (if more than 1 node)
 	cat $tempfile2 | awk '{total+=$5}END{if(NR>1) printf("Total: Current Power (%d nodes)           : %.0f Watts (Average %.1f Watts)\n", NR, total, total/NR)}'
 else
