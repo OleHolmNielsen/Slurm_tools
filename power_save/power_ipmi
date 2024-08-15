@@ -123,16 +123,21 @@ fi
 #
 # Specify the IPMI 2.0 cipher suite ID to use:
 # HPE and SuperMicro BMC only support "-I 3"
+# Specify the K_g BMC key to use when authenticating with the remote host for IPMI 2.0.
+# If not specified, a null key is assumed. To input the key in hexadecimal form, prefix
+# the string with '0x'. E.g., the key 'abc' can be entered with the either the string 'abc' or the string '0x616263'
+# For Dell iDRAC, set in the "IPMI Settings" => "Encryption Key*" Section of the web interface in hexadecimal.
 cipher="-I 17"
-# fallbackcipher="-I 3"
-fallbackcipher=""
+fallbackcipher="-I 3"
+#fallbackcipher=""
 driver="-D LAN_2_0"
+KG="--k-g=abc"				# See Above
 timeout="--session-timeout=1000"	# Set IPMI timeout to 1000 milliseconds
 consolidate="--consolidate-output"	# Consolidated node output
 
 # First try cipher suite 17 with a fallback to 3 (for HPE and SuperMicro BMCs)
 tempfile=`mktemp`
-ipmipower $driver $cipher --username=$IPMI_USER --password=$IPMI_PASSWORD $timeout $consolidate --hostname=$bmclist $action > $tempfile 2>&1
+ipmipower $driver $cipher $KG --username=$IPMI_USER --password=$IPMI_PASSWORD $timeout $consolidate --hostname=$bmclist $action > $tempfile 2>&1
 if [ $? -eq 0 ]
 then
 	cat $tempfile
@@ -141,3 +146,4 @@ else
 	ipmipower $driver $fallbackcipher --username=$IPMI_USER --password=$IPMI_PASSWORD $timeout $consolidate --hostname=$bmclist $action
 fi
 rm -f $tempfile
+
