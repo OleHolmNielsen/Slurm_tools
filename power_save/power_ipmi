@@ -33,10 +33,11 @@ slurmuser="`scontrol show config | grep SlurmUser | awk '{split($3,a,"("); print
 function usage()
 {
 cat <<EOF
-Usage: $0 [-r|-s|-q|-h] nodelist
+Usage: $0 [-r|-s|-f|-q|-h] nodelist
 where the action is:
 	-r: Resume (start) nodes in nodelist
 	-s: Suspend (stop) nodes in nodelist
+	-f: FORCE power-off nodes in nodelist
 	-c: Power cycle nodes in nodelist
 	-q: Query power status of nodes in nodelist
 	-h: Print this help information
@@ -46,11 +47,13 @@ EOF
 # Set the ipmipower command action
 action=""
 logging=1
-while getopts "rscqh" options; do
+while getopts "rsfcqh" options; do
 	case $options in
 		r )	action="--on --on-if-off"
 			;;
 		s )	action="--soft --wait-until-off"
+			;;
+		f )	action="--off"
 			;;
 		c )	action="--cycle"
 			;;
