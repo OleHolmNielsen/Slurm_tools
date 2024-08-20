@@ -11,6 +11,9 @@
 # clush -bw <nodelist> 'echo "@reboot root cat /root/update.sh | bash" >> /etc/crontab'
 # Duplicate crontab lines should be avoided, but are caught using the COMPLETION_FILE below.
 #
+# Optional: Remove any update.lock files from previously failed updates:
+# clush -bw <nodelist> rm -f update.lock
+#
 # Then reboot the nodes with:
 # scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
 #
