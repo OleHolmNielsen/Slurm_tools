@@ -321,6 +321,7 @@ then
 	export hostnamelength=8
 elif [[ $hostnamelength -gt 20 ]]	
 then
+	echo "Notice: Longest hostname length is $hostnamelength"
 	export hostnamelength=20
 	echo "Notice: Longest hostname length is truncated to $hostnamelength"
 fi
