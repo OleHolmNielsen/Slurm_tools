@@ -82,8 +82,8 @@ export free_mem_less=-1
 export free_mem_more=-1
 
 # Thresholds for flagging nodes
-export cpuload_delta1=2.0	# CPU load delta from ideal load (RED)
-export cpuload_delta2=0.5	# CPU load delta from ideal load (MAGENTA)
+export cpuload_delta1=4.0	# CPU load delta from ideal load (RED)
+export cpuload_delta2=2.0	# CPU load delta from ideal load (MAGENTA)
 export memory_thres1=0.1	# Fraction of memory which is free (RED)
 export memory_thres2=0.2	# Fraction of memory which is free (MAGENTA)
 
