@@ -20,7 +20,7 @@ fi
 listnice=0
 # Default nice value
 NICE=-50000
-SQUEUE_FORMAT=Nice,Priority,State,JobID,Partition,UserName,GroupName,StartTime,EndTime,Name,tres-per-node,Reason
+SQUEUE_FORMAT=Nice,PriorityLong,State,JobID,Partition,UserName,GroupName,StartTime,EndTime,Name,tres-per-node,Reason
 
 # Parse command options
 while getopts "lp:n:f:h" options; do
@@ -73,3 +73,22 @@ else
 	echo; echo "Jobs with a non-zero nice value:"; echo
 	squeue $partition -O "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
 fi
+
+# Read the bf_min_prio_reserve scheduler parameter (see 'man slurm.conf').
+cat <<EOF
+
+Note: The backfill and main scheduling logic will not reserve resources for pending jobs
+unless they have a priority equal to or higher than the bf_min_prio_reserve.
+
+EOF
+
+scontrol show config | grep SchedulerParameters | awk '
+{
+	bf_min_prio_reserve="bf_min_prio_reserve is undefined"
+	split($3,array,",")
+	for (i in array) {
+		if (array[i] ~ "bf_min_prio_reserve") bf_min_prio_reserve=array[i]
+	}
+} END {
+	print "The SchedulerParameters in slurm.conf currently contain: " bf_min_prio_reserve
+}'
