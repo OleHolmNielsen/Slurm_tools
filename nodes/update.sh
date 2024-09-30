@@ -101,6 +101,7 @@ function crontab_cleanup ()
 # Check for a lock file and exit if it exists.
 # Duplicates may happen if multiple lines have been added to /etc/crontab by mistake.
 # Sleep a random number of microseconds in order to avoid a race condition:
+# (Bash cannot perform floating-point arithmetic, so use awk)
 sleep `awk -v ran=$RANDOM 'BEGIN{printf("%10.6f\n"), ran / 1000000}'`
 # The usleep command is deprecated:
 # usleep $RANDOM
