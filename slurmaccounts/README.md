@@ -172,11 +172,15 @@ The file ```/etc/slurm/user_settings.conf``` defines users' Slurm factors includ
 fairshare GrpTRES GrpTRESMins MaxTRES MaxTRESPerNode MaxTRESMins GrpTRESRunMins QOS DefaultQOS GrpJobsAccrue MaxJobsAccrue
 ```
 
-The syntax of this file is 3 items separated by ```:``` like:
+The syntax of this file is 3, 4 or 5 items separated by ":"
 
 ```
-[DEFAULT|UNIX_group|username|NEWUSER]:[Type]:value
+[DEFAULT|NEWUSER|UNIX_group|username]:[Type]:value[:partition[:cluster]]
+Type may be: fairshare, GrpTRES, GrpTRESRunMins, etc.
+The partition and cluster fields (4,5) are optional, and defaults are chosen if the fields are omitted.
 ```
+
+Restriction: The ``value`` field **must not** contain a ``:`` character, for example when specifying a Time parameter.
 
 The example file in this directory should be edited and copied to ```/etc/slurm/user_settings.conf```.
 
