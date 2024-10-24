@@ -46,11 +46,11 @@ Become the *slurm* user.
 
 Initialize the triggers by:
 ```
-slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
-slurm> strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
-slurm> strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
-slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_failure
-slurm> strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_resumed_operation
+strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
+strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
+strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
+strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_failure
+strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_resumed_operation
 ```
 
 Usage of node triggers
@@ -64,8 +64,8 @@ Become the *slurm* user.
 To set up the triggers:
 
 ```
-slurm> strigger --set --node --down    --program=/usr/local/bin/notify_nodes_down
-slurm> strigger --set --node --drained --program=/usr/local/bin/notify_nodes_drained
+strigger --set --node --down    --program=/usr/local/bin/notify_nodes_down
+strigger --set --node --drained --program=/usr/local/bin/notify_nodes_drained
 ```
 
 To display enabled triggers:
