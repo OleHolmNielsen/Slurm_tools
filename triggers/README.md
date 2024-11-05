@@ -27,6 +27,7 @@ The following scripts are used to monitor the ```slurmctld``` and the ```slurmdb
 * ```notify_slurmdbd_down```: Trigger script for primary_slurmdbd_failure
 * ```notify_slurmdbd_resumed```: Trigger script for primary_slurmdbd_resumed
 * ```notify_slurmctld_acct_buffer_full```: Trigger script for slurmctld_acct_buffer_full
+* ```notify_primary_slurmctld_resumed_operation```: Trigger script for primary_slurmctld_resumed_operation
 
 Slurm database scripts
 ----------------------
@@ -49,6 +50,7 @@ Initialize the triggers by:
 strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
 strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
 strigger --set --primary_slurmctld_acct_buffer_full --program=/usr/local/bin/notify_slurmctld_acct_buffer_full
+strigger --set --primary_slurmctld_resumed_operation --program=/usr/local/bin/primary_slurmctld_resumed_operation
 strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_failure
 strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_primary_database_resumed_operation
 ```
