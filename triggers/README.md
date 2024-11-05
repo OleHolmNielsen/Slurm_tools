@@ -41,11 +41,8 @@ The following scripts are used to monitor the ```slurmdbd``` database connection
 Usage of daemon triggers
 ------------------------
 
-Copy these scripts to /usr/local/bin/.
-
-Become the *slurm* user.
-
-Initialize the triggers by:
+Copy these scripts to ``/usr/local/bin/``.
+Become the ``slurm`` user and initialize the triggers by:
 ```
 strigger --set --primary_slurmdbd_failure --program=/usr/local/bin/notify_slurmdbd_down
 strigger --set --primary_slurmdbd_resumed --program=/usr/local/bin/notify_slurmdbd_resumed
