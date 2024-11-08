@@ -29,4 +29,4 @@ function my_tasks() {
 }
 
 # Notify Slurm administrator of node state
-my_tasks 2>&1 | $my_mail -s "Slurmctld acct buffer is full: $@" $slurm_notify
+my_tasks 2>&1 | $my_mail -s "Primary slurmctld resumed operation: $@" $slurm_notify
