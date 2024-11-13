@@ -40,6 +40,7 @@ PS="/bin/ps"
 PSFLAGS="-o pid,nlwp,state,user,start,cputime,%cpu,rssize,command --columns $columns"
 SSH="ssh -n -x"
 PING="/bin/ping -c 1 -w 3"
+unset SQUEUE_FORMAT2
 
 # System users EXCLUDED from the process list
 USERLIST="root rpc rpcuser daemon ntp smmsp sshd hpsmh named dbus 68 chrony polkitd munge"
@@ -65,11 +66,18 @@ do
 	then
 		echo $sep
 	fi
-	echo Node ${node} information:
+	jobids="`squeue -h -O JobID -w $node | xargs --no-run-if-empty`"
+	if [[ -z "$jobids" ]]
+	then
+		echo "Node $node has no running jobs"
+		continue
+	fi
 	# Print node status information:
+	echo Node ${node} information:
 	sinfo -N  -O "NodeList:10 ,Partition:10 ,CPUs:4 ,CPUsLoad:9 ,SocketCoreThread:8 ,Memory:7 ,StateLong:11 ,Reason:20" -n $node
-	echo Jobid list: `squeue -h -O JobID -w $node`
-	echo Node ${node} user processes:
+	echo "Jobid and username list:"
+	squeue -h -O JobID,Username -w $node
+	echo "User processes:"
 	if $PING $node >/dev/null 2>&1
 	then
 		# Count also the number of processes (numprocs) and threads (numthreads) when field $1 is a number
