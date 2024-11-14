@@ -13,12 +13,12 @@ while getopts "c:" options; do
 		c )	export columns=$OPTARG
 			if ! [[ $columns =~ ^[0-9]+$ ]]
 			then
-				echo Number of columns $columns must be a positive number
+				echo "Number of columns $columns must be a positive number"
 				exit 1
 			fi
 			if [[ $columns -lt 5 ]] || [[ $columns -gt 1024 ]]
 			then
-				echo Unreasonable number of columns $columns 
+				echo "Unreasonable number of columns $columns"
 				exit 1
 			fi
 			;;
@@ -31,7 +31,7 @@ shift $((OPTIND-1))
 
 if test $# -ne 1
 then
-	echo ERROR:
+	echo "ERROR:"
 	echo "Usage: psnode [-c columns | -h] node-list"
 	exit -1
 fi
@@ -64,7 +64,7 @@ for node in `scontrol show hostnames $*`
 do
 	if test -n "$sep"
 	then
-		echo $sep
+		echo "$sep"
 	fi
 	jobids="`squeue -h -O JobID -w $node | xargs --no-run-if-empty`"
 	if [[ -z "$jobids" ]]
@@ -73,7 +73,7 @@ do
 		continue
 	fi
 	# Print node status information:
-	echo Node ${node} information:
+	echo "Node ${node} information:"
 	sinfo -N  -O "NodeList:10 ,Partition:10 ,CPUs:4 ,CPUsLoad:9 ,SocketCoreThread:8 ,Memory:7 ,StateLong:11 ,Reason:20" -n $node
 	echo "Jobid and username list:"
 	squeue -h -O JobID,Username -w $node
@@ -83,7 +83,7 @@ do
 		# Count also the number of processes (numprocs) and threads (numthreads) when field $1 is a number
 		$SSH $node $PS $PSFLAGS --deselect -u \""${deselect_list}"\" | awk '{print $0; if($1~/^[0-9]+$/) {numprocs++; numthreads+=$2}} END {printf("Total: %d processes and %d threads\n", numprocs, numthreads)}'
 	else
-		echo '*** WARNING ***' Cannot ping host ${node} !
+		echo "'*** WARNING ***' Cannot ping host ${node} !"
 	fi
 	sep="====================================="
 done
