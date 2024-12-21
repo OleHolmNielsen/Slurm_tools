@@ -39,6 +39,7 @@ where the action is:
 	-s: Suspend (stop) nodes in nodelist
 	-f: FORCE power-off nodes in nodelist
 	-c: Power cycle nodes in nodelist
+	-R: Reset nodes in nodelist
 	-q: Query power status of nodes in nodelist
 	-h: Print this help information
 EOF
@@ -47,7 +48,7 @@ EOF
 # Set the ipmipower command action
 action=""
 logging=1
-while getopts "rsfcqh" options; do
+while getopts "rsfcRqh" options; do
 	case $options in
 		r )	action="--on --on-if-off"
 			;;
@@ -56,6 +57,8 @@ while getopts "rsfcqh" options; do
 		f )	action="--off"
 			;;
 		c )	action="--cycle"
+			;;
+		R )	action="--reset"
 			;;
 		q )	action="--stat"
 			logging=0
