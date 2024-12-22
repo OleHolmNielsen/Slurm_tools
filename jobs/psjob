@@ -97,7 +97,7 @@ echo NODELIST: $NODELIST
 $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    ' | awk '{print \$0; if(\$1~/^[0-9]+\$/) {numprocs++; numthreads+=\$2}} END {printf(\"Total: %d processes and %d threads\n\", numprocs, numthreads)}'; echo -n Uptime:; uptime"
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
-
+# See also https://support.schedmd.com/show_bug.cgi?id=11183
 JobContainerType=`scontrol show config | grep JobContainerType | awk '{print $3}'`
 if [[ "$JobContainerType" == "job_container/tmpfs" ]]
 then
