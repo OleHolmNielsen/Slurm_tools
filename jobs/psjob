@@ -77,7 +77,8 @@ then
 fi
 
 # For an array job, get the individual jobid corresponding to the array job:
-realjobid=`squeue -h -O JobID -j $jobid`
+# Convert string to integer
+realjobid=$((`squeue -h -O JobID -j $jobid`))
 
 # Print some job information
 if test "$realjobid" = "$jobid"
@@ -102,7 +103,7 @@ JobContainerType=`scontrol show config | grep JobContainerType | awk '{print $3}
 if [[ "$JobContainerType" == "job_container/tmpfs" ]]
 then
 	echo
-	echo "List job_container spaces disk usage:"
+	echo "List Slurm job_container temporary scratch spaces: Disk usage for JobID $realjobid:"
 	grep -i '^BasePath' /etc/slurm/job_container.conf
 	$CLUSH -bw $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh"
 fi
