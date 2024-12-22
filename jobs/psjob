@@ -103,8 +103,9 @@ JobContainerType=`scontrol show config | grep JobContainerType | awk '{print $3}
 if [[ "$JobContainerType" == "job_container/tmpfs" ]]
 then
 	echo
-	echo "List Slurm job_container temporary scratch spaces: Disk usage for JobID $realjobid:"
+	echo "Slurm job_container temporary scratch spaces:"
 	grep -i '^BasePath' /etc/slurm/job_container.conf
+	echo "Disk usage for JobID $realjobid:"
 	$CLUSH -bw $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh"
 fi
 
