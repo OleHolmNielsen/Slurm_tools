@@ -77,8 +77,7 @@ then
 fi
 
 # For an array job, get the individual jobid corresponding to the array job:
-# Convert string to integer
-realjobid=$((`squeue -h -O JobID -j $jobid`))
+realjobid=`squeue -h -O JobID: -j $jobid`
 
 # Print some job information
 if test "$realjobid" = "$jobid"
@@ -105,8 +104,13 @@ then
 	echo
 	echo "Slurm job_container temporary scratch spaces:"
 	grep -i '^BasePath' /etc/slurm/job_container.conf
-	echo "Disk usage for JobID $realjobid:"
+	echo
+	echo "Scratch disk usage for JobID $realjobid:"
 	$CLUSH -bw $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh"
+	echo
+	echo "Scratch disks on JobID $realjobid compute nodes:"
+	basepath=`grep -i '^BasePath' /etc/slurm/job_container.conf | awk '{split($1,a,"="); print a[2]}'`
+	$CLUSH -bw $NODELIST "df -Ph $basepath"
 fi
 
 # $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
