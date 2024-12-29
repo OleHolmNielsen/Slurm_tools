@@ -12,6 +12,7 @@ export usage="$0 [-c columns | -h] jobid"
 
 # Default value:
 export columns=100
+enable_gpustat=1
 
 # Parse command options
 while getopts "c:h" options; do
@@ -82,19 +83,37 @@ realjobid=`squeue -h -O JobID: -j $jobid`
 # Print some job information
 if test "$realjobid" = "$jobid"
 then
-	squeue -O JobID:10,Partition:14,NumNodes:6,NumTasks:6,UserName:10,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
+	arrayprint=""
 else
 	# For array jobs
-	squeue -O JobID:10,Partition:14,NumNodes:6,NumTasks:6,UserName:10,ArrayJobID:13,ArrayTaskID:14,StartTime,TimeUsed:14,TimeLimit:14 -j $jobid
+	arrayprint=",ArrayJobID:13,ArrayTaskID:14"
 fi
+squeue -O JobID:10,Partition:14,NumNodes:6,NumTasks:6,UserName:10$arrayprint,StartTime,TimeUsed:14,TimeLimit:14,tres-alloc: -j $jobid
 # Print the NodeList
 NODELIST="`squeue -h -O NodeList: -j $jobid`"
 echo NODELIST: $NODELIST
 
+bar="===================================================="
+echo
+echo "$bar"
+echo "Job process list:"
 # Execute parallel shell on the job nodes:
 # The "scontrol listpids" lists all processes belonging to a Slurm job $realjobid
 # Count also the number of processes (numprocs) and threads (numthreads in $2=nlwp) when $1 is a number
-$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    ' | awk '{print \$0; if(\$1~/^[0-9]+\$/) {numprocs++; numthreads+=\$2}} END {printf(\"Total: %d processes and %d threads\n\", numprocs, numthreads)}'; echo -n Uptime:; uptime"
+$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | awk 'int(\$1)>0 {print \$1}') | grep -v ' root    ' | awk '{print \$0; if(\$1~/^[0-9]+\$/) {numprocs++; numthreads+=\$2}} END {printf(\"Total: %d processes and %d threads\n\", numprocs, numthreads)}'; echo -n Uptime:; uptime"
+
+# Check for GPU jobs
+# Using gpustat tool from https://github.com/wookayin/gpustat
+if [[ $enable_gpustat > 0 && "`squeue -h -O tres-alloc: -j $jobid`" =~ "gres/gpu" ]]
+then
+	echo
+	echo "$bar"
+	echo "GPU tasks:"
+	echo "Node: ID  GPU-type			| Temp  CPU%	| Mem / Tot	| user:process/PID(Mem)"
+	# color="--color"
+	color=""
+	$CLUSH -w $NODELIST "gpustat -upc $color | grep \$(scontrol listpids $realjobid | awk '{print \"-e \" \$1}')" | sort -k 1
+fi
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
 # See also https://support.schedmd.com/show_bug.cgi?id=11183
@@ -102,16 +121,20 @@ JobContainerType=`scontrol show config | grep JobContainerType | awk '{print $3}
 if [[ "$JobContainerType" == "job_container/tmpfs" ]]
 then
 	echo
-	echo "Slurm job_container temporary scratch spaces:"
-	grep -i '^BasePath' /etc/slurm/job_container.conf
-	echo
+	echo "$bar"
+	# echo "Slurm job_container temporary scratch spaces:"
+	# grep -i '^BasePath' /etc/slurm/job_container.conf
+	basepath=`grep -i '^BasePath' /etc/slurm/job_container.conf | awk '{split($1,a,"="); print a[2]}'`
 	echo "Scratch disk usage for JobID $realjobid:"
-	$CLUSH -bw $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh"
+	echo "Node: Usage     Scratch folder"
+	$CLUSH -w $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh" | sort -k 1
 	echo
 	echo "Scratch disks on JobID $realjobid compute nodes:"
-	basepath=`grep -i '^BasePath' /etc/slurm/job_container.conf | awk '{split($1,a,"="); print a[2]}'`
-	$CLUSH -bw $NODELIST "df -Ph $basepath"
+	echo "Node:        Size   Used  Avail   Use%  Mounted on"
+	$CLUSH -w $NODELIST "df -Ph $basepath | tail -n+2" | awk '{printf("%-10s %6s %6s %6s %6s  %-20s\n", $1, $3, $4, $5, $6, $7)}' | sort -k 1
 fi
+
+echo "$bar"
 
 # $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
 # You could also use: $CLUSH -bw@sj:$realjobid ...

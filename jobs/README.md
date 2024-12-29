@@ -5,6 +5,7 @@ Some convenient scripts for managing Slurm jobs:
 
 * ```psjob```: Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob [-c columns | -h] <jobid>```.
   Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
+  The scratch disk usage with Slurm *job_container/tmpfs* (if configured) is printed.
 
 * ```showjob```: Show status of Slurm job(s). Both queue information and accounting information is printed.
 
@@ -25,6 +26,20 @@ Some convenient scripts for managing Slurm jobs:
 * ```warn_maxjobs```: Issue warnings about the number of Slurm jobs approaching MaxJobCount
 
 * ```schedjobs```: Stop or start job scheduling in ALL Slurm partitions
+
+GPU monitoring
+--------------
+
+The ```psjob``` script can also monitor the job's GPU usage using the ```gpustat``` tool from https://github.com/wookayin/gpustat.
+If the the job uses ```tres/gpu``` on nodes with GPUs, the ```gpustat``` tool is used to display GPU usage.
+
+All GPU nodes should have this tool installed.
+On EL8 systems:
+```
+dnf install gcc python3-devel
+pip3 install setuptools-scm
+pip3 install gpustat 
+```
 
 Usage
 -----
