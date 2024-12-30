@@ -12,6 +12,7 @@ export usage="$0 [-c columns | -h] jobid"
 
 # Default value:
 export columns=100
+# Enable this if the gpustat command has been installed on nodes with GPUs
 enable_gpustat=1
 
 # Parse command options

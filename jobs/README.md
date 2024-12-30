@@ -33,6 +33,7 @@ GPU monitoring
 
 The ```psjob``` script can also monitor the job's GPU usage using the ```gpustat``` tool from https://github.com/wookayin/gpustat.
 If the the job uses ```gres/gpu``` on nodes with GPUs, the ```gpustat``` tool is used to display GPU usage.
+If ```gpustat``` isn't installed, set the variable ```enable_gpustat=0``` in the ```psjob``` script.
 
 All GPU nodes should have this tool installed.
 On EL8 systems:
