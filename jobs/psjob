@@ -121,11 +121,12 @@ if [[ $enable_gpustat > 0 && "`squeue -h -O tres-alloc: -j $jobid`" =~ "gres/gpu
 then
 	echo
 	echo "Running GPU tasks:"
-	echo "Node: ID  GPU-type			| Temp  CPU%	| Mem / Tot	| user:process/PID(Mem)"
+	echo "Node: ID  GPU-type                  | Temp   CPU% |   Mem / Tot      | user:process/PID(Mem)"
 	# color="--color"
+	GPUNAME_WIDTH="--gpuname-width 24"
 	color=""
 	# Sort output on nodenames (key 1)
-	$CLUSH -w $NODELIST "gpustat -upc $color | grep \$(scontrol listpids $realjobid | awk '{print \"-e \" \$1}')" | sort -k 1
+	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk '{print \"-e \" \$1}')" | sort -k 1
 fi
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
