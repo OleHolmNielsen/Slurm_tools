@@ -95,7 +95,6 @@ NODELIST="`squeue -h -O NodeList: -j $jobid`"
 echo NODELIST: $NODELIST
 
 bar="===================================================="
-echo
 echo "$bar"
 echo "Job process list:"
 # Execute parallel shell on the job nodes:
@@ -108,7 +107,6 @@ gpunodes=`mktemp`
 sinfo -h  -N -n $NODELIST -O NodeHost,Gres | uniq | grep -i GPU > $gpunodes
 if [[ -s $gpunodes ]]
 then
-	echo
 	echo "$bar"
 	echo "Nodes in this job with GPU Generic Resources (Gres):"
 	cat $gpunodes
@@ -134,7 +132,6 @@ fi
 JobContainerType=`scontrol show config | grep JobContainerType | awk '{print $3}'`
 if [[ "$JobContainerType" == "job_container/tmpfs" ]]
 then
-	echo
 	echo "$bar"
 	# echo "Slurm job_container temporary scratch spaces:"
 	# grep -i '^BasePath' /etc/slurm/job_container.conf
