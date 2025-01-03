@@ -96,7 +96,7 @@ echo NODELIST: $NODELIST
 
 bar="===================================================="
 echo "$bar"
-echo "Job process list:"
+echo "Process list on each node in the job:"
 # Execute parallel shell on the job nodes:
 # The "scontrol listpids" lists all processes belonging to a Slurm job $realjobid
 # Count also the number of processes (numprocs) and threads (numthreads in $2=nlwp) when $1 is a number
@@ -104,7 +104,7 @@ $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | awk 'int(\$
 
 # Check for job nodes with GPU gres
 gpunodes=`mktemp`
-sinfo -h  -N -n $NODELIST -O NodeHost,Gres | uniq | grep -i GPU > $gpunodes
+sinfo -h -N -n $NODELIST -O NodeHost,Gres | uniq | grep -i GPU > $gpunodes
 if [[ -s $gpunodes ]]
 then
 	echo "$bar"
