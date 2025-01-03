@@ -123,8 +123,9 @@ then
 	# color="--color"
 	GPUNAME_WIDTH="--gpuname-width 24"
 	color=""
-	# Sort output on nodenames (key 1)
-	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk '{print \"-e \" \$1}')" | sort -k 1
+	# The /bin/true catches the case of grep returning an error code
+	# Sort output on nodenames using key: -k 1
+	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk 'int(\$1)>0 {print \"-e \" \$1}') || /bin/true" | sort -k 1
 fi
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
