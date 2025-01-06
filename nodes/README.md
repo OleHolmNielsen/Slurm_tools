@@ -15,7 +15,6 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Check consistency of /etc/slurm/topology.conf with node-list in /etc/slurm/slurm.conf: ```checktopology```
 * Compute node OS and firmware updates using the ```update.sh``` script.
 
-
 Usage
 -----
 
@@ -87,5 +86,20 @@ scontrol update nodename=<nodes that have completed updating> state=resume
 Resuming the node is actually accomplished at the end of the ```update.sh``` script by these lines:
 ```
 scontrol reboot nextstate=resume `hostname -s`
+```
+
+GPU monitoring
+--------------
+
+The ```psnode``` script can also monitor the job's GPU usage using the ```gpustat``` tool from https://github.com/wookayin/gpustat.
+If the the job uses ```gres/gpu``` on nodes with GPUs, the ```gpustat``` tool is used to display GPU usage.
+If ```gpustat``` isn't installed, set the variable ```enable_gpustat=0``` in the ```psnode``` script.
+
+All GPU nodes should have this tool installed.
+On EL8 systems:
+```
+dnf install gcc python3 python3-pip python3-devel
+python3 -m pip install setuptools-scm
+python3 -m pip install gpustat
 ```
 

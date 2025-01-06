@@ -38,9 +38,9 @@ If ```gpustat``` isn't installed, set the variable ```enable_gpustat=0``` in the
 All GPU nodes should have this tool installed.
 On EL8 systems:
 ```
-dnf install gcc python3-devel
-pip3 install setuptools-scm
-pip3 install gpustat 
+dnf install gcc python3 python3-pip python3-devel
+python3 -m pip install setuptools-scm
+python3 -m pip install gpustat 
 ```
 
 Usage
