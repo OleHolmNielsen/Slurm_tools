@@ -96,7 +96,7 @@ echo NODELIST: $NODELIST
 
 bar="===================================================="
 echo "$bar"
-echo "Process list on each node in the job:"
+echo "Process list from 'ps' on each node in the job:"
 # Execute parallel shell on the job nodes:
 # The "scontrol listpids" lists all processes belonging to a Slurm job $realjobid
 # Count also the number of processes (numprocs) and threads (numthreads in $2=nlwp) when $1 is a number
