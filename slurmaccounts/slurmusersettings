@@ -68,10 +68,11 @@ export accounts_conf=/etc/slurm/accounts.conf
 function usage()
 {
 	cat <<EOF
-Usage: $0 [-u username [-l limits]] [-d] [-n] [-c] | [-h]
+Usage: $0 [-u username [-l limits]] | [-a accountname] [-d] [-n] [-c] | [-h]
 where:
 	-u username: Select user <username> (Default is all users)
 	-l limits: Set limits of user <username>
+	-a accountname: Select all users in this accountname
 	-d Print debugging output
 	-n Omit users with non-login shells (-d overrides this)
 	-c Do not print explanatory comments (-d overrides this)
@@ -87,7 +88,7 @@ export omitnonlogin=0
 export commentsoff=0
 export newlimits=""
 
-while getopts "u:l:hdnc" options; do
+while getopts "u:l:a:hdnc" options; do
 	case $options in
 		u ) export username=$OPTARG	# Select user
 		    echo "### Select only user $username"
@@ -106,6 +107,13 @@ while getopts "u:l:hdnc" options; do
 			export newlimits=$OPTARG	# New limits for this user
 		    else
 			export newlimits="$newlimits $OPTARG"	# Append limits 
+		    fi
+		;;
+		a ) export selectedaccount=$OPTARG	# Select account
+		    echo "### Select only users in account: $selectedaccount"
+		    if [ -z "`getent group $selectedaccount`" ]
+		    then
+			echo "### WARNING: User $selectedaccount is not in the group database"
 		    fi
 		;;
 		d ) export debugflag=1
@@ -132,7 +140,6 @@ fi
 # Process all users in the system passwd database
 
 # Store data in temporary files 
-export passwd_tmp=`mktemp`
 export group_tmp=`mktemp`
 export assoc_tmp=`mktemp`
 export users_tmp=`mktemp`
@@ -162,7 +169,7 @@ EOF
 fi
 
 # Read the associations
-sacctmgr -snorp show associations format=$assocfmt > $assoc_tmp
+sacctmgr -snrp show associations format=$assocfmt > $assoc_tmp
 
 # Read the users
 # Format for users:
@@ -172,7 +179,6 @@ sacctmgr -nrp show user WithAssoc format=$userfmt > $users_tmp
 # Read the list of NEWUSER users which were added to Slurm recently
 sacctmgr -nrp list transactions Action="Add Users" Start=`date -d "-$newuserperiod" +%m/%d/%y` format=Where,TimeStamp,Action > $newusers_tmp
 
-# cat $passwd_tmp | gawk -F: '
 getent passwd | gawk -F: '
 BEGIN {
 	MINUID = ENVIRON["MINUID"]
@@ -181,10 +187,9 @@ BEGIN {
 	ignore_primary_groups = ENVIRON["ignore_primary_groups"]
 	user_settings_conf = ENVIRON["user_settings_conf"]
 	accounts_conf	= ENVIRON["accounts_conf"]
-	# sacctmgr	= ENVIRON["sacctmgr"]
 	username	= ENVIRON["username"]
+	selectedaccount	= ENVIRON["selectedaccount"]
 	newlimits	= ENVIRON["newlimits"]
-	# passwd		= ENVIRON["passwd_tmp"]
 	group		= ENVIRON["group_tmp"]
 	assoc		= ENVIRON["assoc_tmp"]
 	users		= ENVIRON["users_tmp"]
@@ -290,7 +295,7 @@ BEGIN {
 	if (newuserprint == 1 && comm) print "### NEWUSER list user(date): " newuserlist
 
 	# Read list of existing accounts (parseable output)
-	# Header of sacctmgr -snorp show associations: See the "assocfmt" variable above.
+	# Header of sacctmgr -snrp show associations: See the "assocfmt" variable above.
 	while ((getline < assoc) > 0) {
 		if (debug > 1) print "Got account " $0
 		a = $2	# account
@@ -419,6 +424,7 @@ $3 >= MINUID {
 	else
 		# The case where the UNIX group g is an alias for a Slurm account name
 		acct = group2account[g]
+	if (selectedaccount != acct) next	# Skip account != selectedaccount
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
@@ -614,6 +620,7 @@ $3 >= MINUID {
 	}
 }
 END {
+	if (selectedaccount != "") exit		# Do not delete other accounts in this case
 	# Check for accounts belonging to non-existent users
 	for (u in user) {
 		# Process only the selected username:
@@ -633,4 +640,4 @@ END {
 }'
 
 # Clean-up
-rm -f $passwd_tmp $group_tmp $assoc_tmp $users_tmp $newusers_tmp
+rm -f $group_tmp $assoc_tmp $users_tmp $newusers_tmp
