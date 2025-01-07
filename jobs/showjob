@@ -134,8 +134,9 @@ fi
 # Print basic job information
 #
 # Get required job information from a single squeue command:
-# eval `squeue -ho "%u %a %P %T %C %l %r %V %E" -j $jobid | awk '{
-eval `squeue -hO "UserName,Account,Partition,State,NumCPUs,TimeLimit,Reason: ,SubmitTime,Dependency" -j $jobid | awk '{
+# Note: Some fields may be very long!
+# Alternative: scontrol show job 8079707 | tr -s '[:blank:]' '\n' | awk -F= '{printf("%s=\"%s\"\n", $1, $2)}'
+eval `squeue -hO "UserName,Account,Partition:200,State,NumCPUs,TimeLimit,Reason: ,SubmitTime,Dependency" -j $jobid | awk '{
 	print "jobuser=" $1
 	print "jobaccount=" $2
 	print "partition=" $3
