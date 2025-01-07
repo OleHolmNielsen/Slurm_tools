@@ -2,7 +2,7 @@
 
 # Make Slurm cluster usage statistics
 # Usage: topreports [period-see-below]
-# Default periods: last-month ("") current-month (-c) current-week (-w)
+# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
 
 # Author:       Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
@@ -21,7 +21,7 @@ then
 	# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
 	periods="None -c -w -y"
 else
-	# Select month and year (like "november2019")
+	# Select month/year (like "november2019")
 	periods="-m$1"
 fi
 
