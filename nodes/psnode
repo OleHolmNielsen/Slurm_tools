@@ -95,7 +95,7 @@ do
 		then
 			echo
 			echo "Running GPU tasks on node $node:"
-			echo "ID  GPU-type                  | Temp   CPU% |   Mem / Tot      | user:process/PID(Mem)"
+			echo "ID  GPU-type                  | Temp   GPU% |   Mem / Tot      | user:process/PID(Mem)"
 			$SSH $node gpustat -upc $GPUNAME_WIDTH $color --no-header
 		fi
 	else
