@@ -119,7 +119,7 @@ if [[ $enable_gpustat > 0 && "`squeue -h -O tres-alloc: -j $jobid`" =~ "gres/gpu
 then
 	echo
 	echo "Running GPU tasks:"
-	echo "Node: ID  GPU-type                  | Temp   CPU% |   Mem / Tot      | user:process/PID(Mem)"
+	echo "Node: ID  GPU-type                  | Temp   GPU% |   Mem / Tot      | user:process/PID(Mem)"
 	# color="--color"
 	GPUNAME_WIDTH="--gpuname-width 24"
 	color=""
