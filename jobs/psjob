@@ -123,8 +123,8 @@ then
 	# color="--color"
 	GPUNAME_WIDTH="--gpuname-width 24"
 	color=""
-	# The /bin/true catches the case of grep returning an error code
-	# Sort output on nodenames using key: -k 1
+	# The "/bin/true" catches the case of grep returning an error code
+	# Sort output on nodenames using "sort -k 1"
 	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk 'int(\$1)>0 {print \"-e \" \$1}') || /bin/true" | sort -k 1
 fi
 
@@ -141,7 +141,7 @@ then
 	basepath=`grep -i '^BasePath' /etc/slurm/job_container.conf | awk '{split($1,a,"="); print a[2]}'`
 	echo "Scratch disk usage for JobID $realjobid:"
 	echo "Node: Usage     Scratch folder"
-	# Sort output on nodenames (key 1)
+	# Sort output on nodenames using "sort -k 1"
 	$CLUSH -w $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh" | sort -k 1
 	echo
 	echo "Scratch disks on JobID $realjobid compute nodes:"
