@@ -130,6 +130,8 @@ fi
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
 # See also https://support.schedmd.com/show_bug.cgi?id=11183
+#   Viewing mounts on a node from outside the job: findmnt -l -o target,source,fstype,propagation
+
 JobContainerType=`scontrol show config | grep JobContainerType | awk '{print $3}'`
 if [[ "$JobContainerType" == "job_container/tmpfs" ]]
 then
