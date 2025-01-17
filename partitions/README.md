@@ -19,7 +19,7 @@ Usage
 -----
 
 ```
-Usage: ./showpartitions [-p partition-list] [-g] [-N] [-m] [-a|-P] [-f] [-h] [-n]
+Usage: showpartitions [-p partition-list] [-g] [-N] [-m] [-a|-P] [-f] [-h] [-n]
 where:
 	-p partition-list: Print only jobs in partition(s) <partition-list>
 -g: Print also GRES information.
