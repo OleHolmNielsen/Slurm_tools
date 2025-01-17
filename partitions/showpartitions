@@ -230,8 +230,11 @@ if ($10 != "(null)") {	# Node GRES
 	else
 		gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
 }
-# List of node names (column 12)
-nodelist[p] = nodelist[p] "," $12
+# List of node names (from column 12)
+if (nodelist[p] == "")
+	nodelist[p] = $12
+else
+	nodelist[p] = nodelist[p] "," $12
 # Federations (from Slurm 18.08) (column 13)
 if ($13 == "N/A") {		# Not a federation of clusters
 	clustername[p] = mycluster	# Default cluster name
@@ -330,13 +333,16 @@ for (p in part_order) {
 		if (gres[p] == "") gres[p] = "(No_GRES)     "
 		printf(" %s", gres[p])
 	}
-		if (printnodelist == 1) {	# Print the Node list information (collapsed and sorted)
-			# Use scontrol to collapse the nodelist
-                        "scontrol show hostlistsorted " nodelist[p] | getline nodelistsorted[p]
-			printf(" %s", nodelistsorted[p])
-		}
-		print ""	# End of line
+	if (printnodelist == 1) {	# Print the Node list information (collapsed and sorted)
+		nodelistsorted[p] = "(None)"	# Default
+		# Use scontrol to collapse the nodelist
+		COMMAND = "scontrol show hostlistsorted " nodelist[p]
+		COMMAND | getline nodelistsorted[p]
+		close(COMMAND)
+		printf(" %s", nodelistsorted[p])
 	}
+	print ""	# Print end-of-line
+}
 	if (noheaders == 0) 
 		print "Note: The cluster default partition name is indicated by :*"
 }' 
