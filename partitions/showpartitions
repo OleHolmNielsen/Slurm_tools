@@ -10,15 +10,16 @@
 function usage()
 {
 cat <<EOF
-Usage: $0 [-p partition-list] [-g] [-m] [-a|-P] [-f] [-h]
+Usage: $0 [-p partition-list] [-g] [-N] [-m] [-a|-P] [-f] [-h] [-n]
 where:
 	-p partition-list: Print only jobs in partition(s) <partition-list>
-	-g: Print also GRES information.
-	-m: Print minimum and maximum values for memory and cores/node.
-	-a|-P: Display information about all partitions including hidden ones.
-	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
-	-n: no headers or colors will be printed (for parsing).
-	-h: Print this help information.
+-g: Print also GRES information.
+-N: Print also Node list in each partition
+-m: Print minimum and maximum values for memory and cores/node.
+-a|-P: Display information about all partitions including hidden ones.
+-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
+-n: no headers or colors will be printed (for parsing).
+-h: Print this help information.
 
 Notes about the columns:
 1. An * after the partition name identifies the default Slurm partition.
@@ -30,8 +31,10 @@ EOF
 }
 
 # sinfo output options:
-# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES ROOT
-export sinfo_options="%P %a %D %C %m %l %L %s %T %G %r"
+# PARTITION AVAIL NODES CPUS(A/I/O/T) MEMORY TIMELIMIT DEFAULTTIME JOB_SIZE NODES STATE GRES ROOT NODELIST CLUSTER
+# Old -o options
+export sinfo_options="%P %a %D %C %m %l %L %s %T %G %r %N %V"
+export sinfo_options2="PartitionName,Available,Nodes,CPUsState,Memory,Time,DefaultTime,Size,StateLong,Gres: ,Root,NodeList: ,Cluster"
 # Printing of GRES is disabled by default
 export printgres=0
 # Printing of federation clusters is disabled by default
@@ -45,37 +48,38 @@ export colors=1
 # Print headers
 export noheaders=0
 
-while getopts "p:gmaPfnh" options; do
-	case $options in
-		p ) 	export partitionlist="-p $OPTARG"
-			echo "Print only jobs in partition $OPTARG"
-			;;
-		g ) 	export printgres=1
-			;;
-		m ) 	export minmax=1
-			;;
-		a|P ) 	export all_partitions="--all"
-			;;
-		f ) 	export federation="--federation"
-			# Append sinfo option %V (CLUSTER) for Slurm 18.08 and newer.
-			export sinfo_options="$sinfo_options %V"
-			;;
-		n ) 	export noheaders=1	# No headers and no colors for parsing output
-			export colors=0
-			;;
-		h|? ) usage
-			exit 1;;
-		* ) usage
-			exit 1;;
-	esac
+while getopts "p:gNmaPfnh" options; do
+case $options in
+	p ) 	export partitionlist="-p $OPTARG"
+		echo "Print only jobs in partition $OPTARG"
+		;;
+	g ) 	export printgres=1
+		;;
+	N ) 	export printnodelist=1
+		echo "Print partitions nodelists"
+		;;
+	m ) 	export minmax=1
+		;;
+	a|P ) 	export all_partitions="--all"
+		;;
+	f ) 	export federation="--federation"
+		;;
+	n ) 	export noheaders=1	# No headers and no colors for parsing output
+		export colors=0
+		;;
+	h|? ) usage
+		exit 1;;
+	* ) usage
+		exit 1;;
+esac
 done
 
 # Test for extraneous command line arguments
 if test $# -gt $(($OPTIND-1))
 then
-	echo "ERROR: Too many command line arguments: $*"
-	usage
-	exit 1
+echo "ERROR: Too many command line arguments: $*"
+usage
+exit 1
 fi
 
 export mycluster=`scontrol show config | grep ClusterName | awk '{print $3}'`
@@ -84,241 +88,254 @@ export hidden_partitions="`diff <(sinfo --hide -o %P) <(sinfo --all -o %P) | awk
 
 if [ $noheaders == 0 ]
 then
-	echo "Partition statistics for cluster $mycluster at `date`"
+echo "Partition statistics for cluster $mycluster at `date`"
 fi
 
-sinfo --noheader --exact $federation $partitionlist $all_partitions -o "$sinfo_options" | awk '
+sinfo --noheader --exact $federation $partitionlist $all_partitions -O "$sinfo_options2" | awk '
 BEGIN {
-	# Environment variables
-	printgres	= ENVIRON["printgres"]
-	minmax		= ENVIRON["minmax"]
-	colors		= ENVIRON["colors"]
-	partitionlist	= ENVIRON["partitionlist"]
-	hidden_partitions = ENVIRON["hidden_partitions"]
-	mycluster	= ENVIRON["mycluster"]
-	federation	= ENVIRON["federation"]
-	clusternamelength = 7	# Minimum length of cluster name column
-	noheaders	= ENVIRON["noheaders"]
+# Environment variables
+printgres	= ENVIRON["printgres"]
+printnodelist	= ENVIRON["printnodelist"]
+minmax		= ENVIRON["minmax"]
+colors		= ENVIRON["colors"]
+partitionlist	= ENVIRON["partitionlist"]
+hidden_partitions = ENVIRON["hidden_partitions"]
+mycluster	= ENVIRON["mycluster"]
+federation	= ENVIRON["federation"]
+clusternamelength = 7	# Minimum length of cluster name column
+noheaders	= ENVIRON["noheaders"]
 
-	# Identify hidden partitions
-	if (split(hidden_partitions, array, " ") > 0)
-		for (i in array)
-			hidden[array[i]] = 1
-	delete array
+# Identify hidden partitions
+if (split(hidden_partitions, array, " ") > 0)
+	for (i in array)
+		hidden[array[i]] = 1
+delete array
 
-	# Get the list of all pending jobs
-	JOBLIST = "squeue --noheader -t pending -O JobID,Partition,NumCPUs,Reason " federation partitionlist
-	while ((JOBLIST | getline) > 0) {
-		split($2, jobpartitions, ",") # Job partitions (may be a comma-separated list)
-		numcpus = $3
-		reason = $4
-		for (i in jobpartitions) {
-			p = jobpartitions[i]
-			if (reason == "(Resources)" || reason == "(Priority)")
-				pending_resources[p] += numcpus
-			else
-				pending_other[p] += numcpus
-		}
-	}
-	close (JOBLIST)
-	delete jobpartitions
-
-	# Define terminal colors for the output if requested
-	if (colors > 0) {
-		# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-		RED="\033[1;31m"
-		GREEN="\033[1;32m"
-		MAGENTA="\033[1;35m"
-		NORMAL="\033[0m"
+# Get the list of all pending jobs
+JOBLIST = "squeue --noheader -t pending -O JobID,Partition,NumCPUs,Reason " federation partitionlist
+while ((JOBLIST | getline) > 0) {
+	split($2, jobpartitions, ",") # Job partitions (may be a comma-separated list)
+	numcpus = $3
+	reason = $4
+	for (i in jobpartitions) {
+		p = jobpartitions[i]
+		if (reason == "(Resources)" || reason == "(Priority)")
+			pending_resources[p] += numcpus
+		else
+			pending_other[p] += numcpus
 	}
 }
+close (JOBLIST)
+delete jobpartitions
+
+# Define terminal colors for the output if requested
+if (colors > 0) {
+	# See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+	RED="\033[1;31m"
+	GREEN="\033[1;32m"
+	MAGENTA="\033[1;35m"
+	NORMAL="\033[0m"
+}
+}
 {
-	# Partitions
-	isdefault = sub("*", "", $1)	# Strip trailing * for default partition
-	p = $1			# Partition name
-	partition[p] = p	# Partition name
-	len = length(p)		# Length of partition name string
-	if (noheaders == 0 && isdefault > 0) {		# The default partition (suppress with noheaders)
-		defaultpartition[p] = 1
-		len++			# Add 1 character to length
-	}
-	if ($11 == "yes") {	# Only user root may initiate jobs, "yes" or "no"
-		root_only[p] = 1
-		len++		# Add 1 character to length
-	}
-	if (hidden[p] > 0)
-		len++		# Add 1 character to length
-	if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
-		len++		# Add room for a :
-	if (len > maxlength) maxlength = len	# Calculate maximum string length
-	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
-	state[p] = $2		# Partition state: up or down
-	nodes[p] += $3		# Number of nodes in partition
+# Partitions
+isdefault = sub("*", "", $1)	# Strip trailing * for default partition
+p = $1			# Partition name
+partition[p] = p	# Partition name
+len = length(p)		# Length of partition name string
+if (noheaders == 0 && isdefault > 0) {		# The default partition (suppress with noheaders)
+	defaultpartition[p] = 1
+	len++			# Add 1 character to length
+}
+if ($11 == "yes") {	# Only user root may initiate jobs, "yes" or "no"
+	root_only[p] = 1
+	len++		# Add 1 character to length
+}
+if (hidden[p] > 0)
+	len++		# Add 1 character to length
+if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
+	len++		# Add room for a :
+if (len > maxlength) maxlength = len	# Calculate maximum string length
+part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
+state[p] = $2		# Partition state: up or down
+nodes[p] += $3		# Number of nodes in partition
 
-	# CPU cores
-	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
-	freecores[p] += cpus[2]
-	totalcores[p] += cpus[4]
-	# Empty partitions have #nodes ($3)==0
-	if ($3 > 0)
-		cpn = cpus[4] / $3
+# CPU cores
+split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
+freecores[p] += cpus[2]
+totalcores[p] += cpus[4]
+# Empty partitions have #nodes ($3)==0
+if ($3 > 0)
+	cpn = cpus[4] / $3
+else
+	cpn = 0
+if (corespernode[p] == 0 || cpn < corespernode[p])	# Select the lowest count of cores per node
+	corespernode[p] = cpn
+if (minmax > 0) {
+	# Save min and max core count
+	if (mincores[p] == 0 || cpn < mincores[p])
+		mincores[p] = cpn
+	if (cpn > maxcores[p])
+		maxcores[p] = cpn
+}
+
+# RAM memory
+mem = $5		# Node memory
+n = sub("+", "", mem)	# Strip trailing +
+if (n > 0)
+	memoryplus[p] = "+"
+else
+	if (memoryplus[p] == "")
+		memoryplus[p] = " "	# Only overwrite empty string
+mem = int(mem / 1000)		# Convert MB to GB
+if (memory[p] == 0 || mem < memory[p])
+	memory[p] = mem		# Save the minimum memory size
+if (mem > memory[p])
+	memoryplus[p] = "+"	# Some memory is larger than the minimum size
+if (minmax > 0) {
+	# Save min and max memory sizes
+	if (minmemory[p] == 0 || mem < minmemory[p])
+		minmemory[p] = mem
+	if (mem > maxmemory[p])
+		maxmemory[p] = mem
+}
+
+# Time limits
+gsub(":00$", "", $6)	# Strip time limit seconds :00
+timelimit[p] = $6
+gsub(":00$", "", $7)	# Strip time limit seconds :00
+defaulttime[p] = $7
+# Job sizes
+split($8, jobsize, "-")	# Job size min-max nodes
+minnodes[p] = jobsize[1]
+maxnodes[p] = jobsize[2]
+# Node states
+nodestate = $9		# Node state
+n = sub("@", "", nodestate)
+if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
+if (index(nodestate, "maint") > 0) maintenance[p] = "$"	# Nodes in maintenance mode 
+if (nodestate ~ "^idle")		# This matches also states like idle~ and idle#
+	freenodes[p] += $3
+# GRES (Generic Resources)
+if ($10 != "(null)") {	# Node GRES
+	if (nodestate ~ "^idle")	# This matches also states like idle~ and idle#
+		gpustate = ":free"
+	else if (nodestate == "mixed")
+		gpustate = ":mix"
 	else
-		cpn = 0
-	if (corespernode[p] == 0 || cpn < corespernode[p])	# Select the lowest count of cores per node
-		corespernode[p] = cpn
-	if (minmax > 0) {
-		# Save min and max core count
-		if (mincores[p] == 0 || cpn < mincores[p])
-			mincores[p] = cpn
-		if (cpn > maxcores[p])
-			maxcores[p] = cpn
-	}
+		gpustate = ":used"
 
-	# RAM memory
-	mem = $5		# Node memory
-	n = sub("+", "", mem)	# Strip trailing +
-	if (n > 0)
-		memoryplus[p] = "+"
+	if (gres[p] == "")
+		gres[p] = $10 "(" $3 gpustate ")"
 	else
-		if (memoryplus[p] == "")
-			memoryplus[p] = " "	# Only overwrite empty string
-	mem = int(mem / 1000)		# Convert MB to GB
-	if (memory[p] == 0 || mem < memory[p])
-		memory[p] = mem		# Save the minimum memory size
-	if (mem > memory[p])
-		memoryplus[p] = "+"	# Some memory is larger than the minimum size
-	if (minmax > 0) {
-		# Save min and max memory sizes
-		if (minmemory[p] == 0 || mem < minmemory[p])
-			minmemory[p] = mem
-		if (mem > maxmemory[p])
-			maxmemory[p] = mem
-	}
-
-	# Time limits
-	gsub(":00$", "", $6)	# Strip time limit seconds :00
-	timelimit[p] = $6
-	gsub(":00$", "", $7)	# Strip time limit seconds :00
-	defaulttime[p] = $7
-	# Job sizes
-	split($8, jobsize, "-")	# Job size min-max nodes
-	minnodes[p] = jobsize[1]
-	maxnodes[p] = jobsize[2]
-	# Node states
-	nodestate = $9		# Node state
-	n = sub("@", "", nodestate)
-	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
-	if (index(nodestate, "maint") > 0) maintenance[p] = "$"	# Nodes in maintenance mode 
-	if (nodestate ~ "^idle")		# This matches also states like idle~ and idle#
-		freenodes[p] += $3
-	# GRES (Generic Resources)
-	if ($10 != "(null)") {	# Node GRES
-		if (nodestate ~ "^idle")	# This matches also states like idle~ and idle#
-			gpustate = ":free"
-		else if (nodestate == "mixed")
-			gpustate = ":mix"
-		else
-			gpustate = ":used"
-
-		if (gres[p] == "")
-			gres[p] = $10 "(" $3 gpustate ")"
-		else
-			gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
-	}
-	# Federations (from Slurm 18.08)
-	if ($12 == "N/A") {		# Not a federation of clusters
-		clustername[p] = mycluster	# Default cluster name
-	} else
-		clustername[p] = $12	# Cluster name in a federation
-	n = length(clustername[p])
-	if (n > clusternamelength) clusternamelength = n	# Max clustername string length
+		gres[p] = gres[p] "+" $10 "(" $3 gpustate ")"
+}
+# List of node names (column 12)
+nodelist[p] = nodelist[p] "," $12
+# Federations (from Slurm 18.08) (column 13)
+if ($13 == "N/A") {		# Not a federation of clusters
+	clustername[p] = mycluster	# Default cluster name
+} else
+	clustername[p] = $13	# Cluster name in a federation
+n = length(clustername[p])
+if (n > clusternamelength) clusternamelength = n	# Max clustername string length
 } END {
-	# Partition column output format string:
-	# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
-	columnfmt = "%*s %5.5s %5d %s%5d%s %6d %s%6d%s %s%6d%s %6d %5.5s %5.5s %10s %5.5s %8s"
+# Partition column output format string:
+# The format assumes <1000k cores (6 digits) and <100k nodes (5 digits), but this can be adjusted 
+columnfmt = "%*s %5.5s %5d %s%5d%s %6d %s%6d%s %s%6d%s %6d %5.5s %5.5s %10s %5.5s %8s"
 
-	# Column header lines
-	header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
-	header2 = "Name State Total  Idle  Total   Idle Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
-	# Prepend some spaces for partition name length (shift by 5 characters)
-	n = maxlength - 5
-	header1 = sprintf("%*.*s %s", n, n, " ", header1)
-	header2 = sprintf("%*.*s %s", n, n, " ", header2)
+# Column header lines
+header1 = "Partition     #Nodes     #CPU_cores  Cores_pending   Job_Nodes MaxJobTime Cores Mem/Node"
+header2 = "Name State Total  Idle  Total   Idle Resorc  Other   Min   Max  Day-hr:mn /node     (GB)"
+# Prepend some spaces for partition name length (shift by 5 characters)
+n = maxlength - 5
+header1 = sprintf("%*.*s %s", n, n, " ", header1)
+header2 = sprintf("%*.*s %s", n, n, " ", header2)
 
-	if (federation != "") {		# Prepend cluster name header
-		n = clusternamelength
-		header1 = sprintf("%*.*s %s", n, n, "Cluster", header1)
-		header2 = sprintf("%*.*s %s", n, n, "Name", header2)
-	}
-	if (printgres > 0) {		# Append GRES header
-		header1 = header1 "    GRES      "
-		header2 = header2 " (#Nodes:state)"
-	}
-	if (noheaders == 0) {
-		# Print the header lines
-		printf("%s\n", header1)
-		printf("%s\n", header2)
-	}
+if (federation != "") {		# Prepend cluster name header
+	n = clusternamelength
+	header1 = sprintf("%*.*s %s", n, n, "Cluster", header1)
+	header2 = sprintf("%*.*s %s", n, n, "Name", header2)
+}
+if (printgres > 0) {		# Append GRES header
+	header1 = header1 "    GRES      "
+	header2 = header2 " (#Nodes:state)"
+}
+if (printnodelist > 0) {		# Append nodelist header
+	header1 = header1 "  NODELIST    "
+	header2 = header2 "               "
+}
+if (noheaders == 0) {
+	# Print the header lines
+	printf("%s\n", header1)
+	printf("%s\n", header2)
+}
 
-	# Sort arrays by element values:
-	# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
-	PROCINFO["sorted_in"] = "@val_type_asc"
-	for (p in part_order) {
-		pname = p	# Partition name
-		# Append partition flags
-		if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
-			pname = pname ":"	# Append a : before the flags
-		if (defaultpartition[p] > 0)
-			pname = pname "*"	# Append * for the default partition
-		if (root_only[p] > 0)
-			pname = pname "R"	# Append R for root-only partitions
-		if (hidden[p] > 0)
-			pname = pname "H"	# Append H for hidden partitions
-		# Truncate long partition names and replace last character by a +
-		if (length(pname) > maxlength)
-			pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
-		if (pending_reboot[p] != "") state[p] = state[p] "@"
-		if (maintenance[p] != "") state[p] = state[p] "$"	# Append $ for nodes in maintenance state
-		if (minmax == 0) {
-			memsize = memory[p] memoryplus[p]
+# Sort arrays by element values:
+# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
+PROCINFO["sorted_in"] = "@val_type_asc"
+for (p in part_order) {
+	pname = p	# Partition name
+	# Append partition flags
+	if (defaultpartition[p] > 0 || root_only[p] > 0 || hidden[p] > 0)
+		pname = pname ":"	# Append a : before the flags
+	if (defaultpartition[p] > 0)
+		pname = pname "*"	# Append * for the default partition
+	if (root_only[p] > 0)
+		pname = pname "R"	# Append R for root-only partitions
+	if (hidden[p] > 0)
+		pname = pname "H"	# Append H for hidden partitions
+	# Truncate long partition names and replace last character by a +
+	if (length(pname) > maxlength)
+		pname = sprintf("%*.*s+", maxlength-1, maxlength-1, pname)
+	if (pending_reboot[p] != "") state[p] = state[p] "@"
+	if (maintenance[p] != "") state[p] = state[p] "$"	# Append $ for nodes in maintenance state
+	if (minmax == 0) {
+		memsize = memory[p] memoryplus[p]
+		cores = corespernode[p]
+	} else {
+		# Display min-max values
+		if (minmemory[p] == maxmemory[p])
+			memsize = memory[p]
+		else
+			memsize = minmemory[p] "-" maxmemory[p]
+		if (mincores[p] == maxcores[p])
 			cores = corespernode[p]
-		} else {
-			# Display min-max values
-			if (minmemory[p] == maxmemory[p])
-				memsize = memory[p]
-			else
-				memsize = minmemory[p] "-" maxmemory[p]
-			if (mincores[p] == maxcores[p])
-				cores = corespernode[p]
-			else
-				cores = mincores[p] "-" maxcores[p]
-		}
+		else
+			cores = mincores[p] "-" maxcores[p]
+	}
 
-		if (federation != "")	# Print the cluster name
-			printf("%*.*s ", clusternamelength, clusternamelength, clustername[p])
-		# Flag free nodes and cores in GREEN if nothing is pending
-		if (freenodes[p] > 0 && pending_resources[p] == 0)
-			colornodes = GREEN
-		else
-			colornodes = NORMAL
-		if (freecores[p] > 0 && pending_resources[p] == 0)
-			colorcores = GREEN
-		else
-			colorcores = NORMAL
-		# Flag cores with pending_resources in RED
-		if (pending_resources[p] > 0)
-			colorpending = RED
-		else
-			colorpending = NORMAL
-		printf(columnfmt, maxlength, pname, state[p], nodes[p],
-			colornodes, freenodes[p], NORMAL,
-			totalcores[p], colorcores, freecores[p], NORMAL,
-			colorpending, pending_resources[p], NORMAL, pending_other[p],
-			minnodes[p], maxnodes[p], timelimit[p], cores, memsize)
-		if (printgres == 1)	# Print the GRES information
-			print " " gres[p]
-		else
-			print ""
+	if (federation != "")	# Print the cluster name
+		printf("%*.*s ", clusternamelength, clusternamelength, clustername[p])
+	# Flag free nodes and cores in GREEN if nothing is pending
+	if (freenodes[p] > 0 && pending_resources[p] == 0)
+		colornodes = GREEN
+	else
+		colornodes = NORMAL
+	if (freecores[p] > 0 && pending_resources[p] == 0)
+		colorcores = GREEN
+	else
+		colorcores = NORMAL
+	# Flag cores with pending_resources in RED
+	if (pending_resources[p] > 0)
+		colorpending = RED
+	else
+		colorpending = NORMAL
+	printf(columnfmt, maxlength, pname, state[p], nodes[p],
+		colornodes, freenodes[p], NORMAL,
+		totalcores[p], colorcores, freecores[p], NORMAL,
+		colorpending, pending_resources[p], NORMAL, pending_other[p],
+		minnodes[p], maxnodes[p], timelimit[p], cores, memsize)
+	if (printgres == 1) {	# Print the GRES information
+		if (gres[p] == "") gres[p] = "(No_GRES)     "
+		printf(" %s", gres[p])
+	}
+		if (printnodelist == 1) {	# Print the Node list information (collapsed and sorted)
+			# Use scontrol to collapse the nodelist
+                        "scontrol show hostlistsorted " nodelist[p] | getline nodelistsorted[p]
+			printf(" %s", nodelistsorted[p])
+		}
+		print ""	# End of line
 	}
 	if (noheaders == 0) 
 		print "Note: The cluster default partition name is indicated by :*"
