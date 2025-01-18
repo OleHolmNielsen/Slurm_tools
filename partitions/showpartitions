@@ -347,5 +347,5 @@ BEGIN {
 		print ""	# Print end-of-line
 	}
 	if (noheaders == 0 && defaultpartitionname != "") 
-		print "The cluster default partition is: " defaultpartitionname
+		print "The cluster "  clustername[defaultpartitionname] " default partition is: " defaultpartitionname
 }' 
