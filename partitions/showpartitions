@@ -171,6 +171,7 @@ BEGIN {
 		cpn = cpus[4] / $3
 	else
 		cpn = 0
+	delete cpus
 	if (corespernode[p] == 0 || cpn < corespernode[p])	# Select the lowest count of cores per node
 		corespernode[p] = cpn
 	if (minmax > 0) {
@@ -346,5 +347,5 @@ BEGIN {
 		print ""	# Print end-of-line
 	}
 	if (noheaders == 0 && defaultpartitionname != "") 
-		print "Note: The cluster default partition is " defaultpartitionname
+		print "The cluster default partition is: " defaultpartitionname
 }' 
