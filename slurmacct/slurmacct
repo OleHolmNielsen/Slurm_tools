@@ -11,11 +11,12 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct [-s Start_time -e End_time | -c | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-s Start_time -e End_time | -c | -y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
+	-y: Current year
 	-w: Last week
 	-m monthyear: Select month and year (like "november2019")
 	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
@@ -44,12 +45,11 @@ export groupname=""
 export workdir=""
 export ALLGROUPS=0
 export SORTCOLUMN=5
-export prefix=/usr/bin
 export printheader=1
 export month="last"
 
 # Process options
-while getopts "p:u:g:s:e:r:m:W:cwGhn" options; do
+while getopts "p:u:g:s:e:r:m:W:cywGhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo Print only accounting in Slurm partition $OPTARG
@@ -89,6 +89,11 @@ while getopts "p:u:g:s:e:r:m:W:cwGhn" options; do
 			echo Select current month from $start_time until $end_time
 			REPORT_NAME=Current_month
 			;;
+		y )     export start_time=`date +0101%y`
+			export end_time=`date +%m%d%y`
+			echo Select current year from $start_time until $end_time
+			REPORT_NAME=Current_year
+			;;
 		w )     export start_time=`date -d 'last week' +%m%d%y`
 			export end_time=`date +%m%d%y`
 			echo Select last week from $start_time until $end_time
@@ -109,16 +114,6 @@ while getopts "p:u:g:s:e:r:m:W:cwGhn" options; do
 	esac
 done
 shift $((OPTIND-1))
-
-# Check Slurm commands path
-if test -x /usr/local/bin/sacct
-then
-	export prefix=/usr/local/bin
-elif ! test -x $prefix/sacct
-then
-	echo "ERROR: Slurm commands not found in '$prefix/' (Set 'prefix=')"
-	exit 1
-fi
 
 #
 # Default period: last month 
@@ -151,7 +146,7 @@ fi
 # Test username
 if test -n "$username" 
 then
-	if test -z "`$prefix/sacctmgr -p -n show assoc where users=$username`"
+	if test -z "`sacctmgr -p -n show assoc where users=$username`"
 	then
 		echo Error selecting Slurm username $username 
 		exit -1
@@ -187,7 +182,7 @@ selection=""
 if test $printheader -gt 0
 then
 	# Print a sreport header (overwrite any existing file)
-	$prefix/sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
+	sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
 fi
 
 # Request of a specific partition
@@ -222,9 +217,14 @@ then
 		echo "Group name selected: $groupname" >> $REPORT
 		selection="--group $groupname $selection"
 	fi
-	echo "                             Wallclock          Average Average" >> $REPORT
-	echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
-	echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
+	# echo "                             Wallclock          Average Average" >> $REPORT
+	# echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
+	# echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
+cat <<EOF >> $REPORT
+                             Wallclock           Energy Average Average
+Username    Group    #jobs       hours  Percent    kWh   #cpus  q-hours  Full name
+--------    -----  ------- -----------  ------- ------- ------- -------  ---------
+EOF
 else
 	# Group statistics
 	echo >> $REPORT
@@ -257,19 +257,23 @@ fi
 # Report time in seconds:
 export SLURM_TIME_FORMAT="%s"
 # Request job data
-export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,CPUTimeRAW,State,WorkDir"
+export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,Submit,Eligible,Start,End,ElapsedRAW,CPUTimeRAW,State,ConsumedEnergyRaw,WorkDir"
 # Request job states: CAncelled, ReQueued, CompleteD, Failed, TimeOut, PReempted, Out_Of_Memory
 export STATE="ca,rq,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
 # The "-a" flag was removed 04-Jan-2023
-$prefix/sacct $selection -np -X -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
+sacct $selection -np -X -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
 BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
 	ALLGROUPS=ENVIRON["ALLGROUPS"]
 	workdir=ENVIRON["workdir"]
 	totaljobs=0
+	giga=1000000000
+	# Maximum possible node power
+	maxpower = 5000
+	kWh=3600000	# 1 kWh is this many Joules
 	# First get the list of user full names from /etc/passwd lines
 	COMMAND="getent passwd"
 	while (COMMAND | getline ) {
@@ -280,7 +284,7 @@ BEGIN {
 	close(COMMAND)
 }
 {
-	# Parse input data
+	# Parse input data and make sanity checks
 	JobID	= $1		# JobID
 	cput	= $11		# CPU time in seconds
 	if (cput <= 0) next	# Skip jobs with zero cputime
@@ -294,12 +298,22 @@ BEGIN {
 	if (eligible == "Unknown") eligible = submit
 	start	= $9		# Job start time in epoch seconds
 	end	= $10		# Job end time in epoch seconds
+	elapsed	= $11		# Job elapsed time in seconds
+	cputime	= $12		# CPU time in seconds
 	if (start == "Unknown" || start == "None") start = end
-	state	= $12		# Job state
+	state	= $13		# Job state
 	wall	= end - start
 	wait	= start - eligible
 	if (wait < 0) wait = 0	# Should not happen
-	jobworkdir	= $13	# Job working directory
+	# Total energy consumed by a job, in joules. 
+	# BEWARE: If multiple jobs share a node, we cannot assign an energy to individual jobs!
+	joules	= $14
+	# Incorrect astronomically large joules numbers may occur, see https://support.schedmd.com/show_bug.cgi?id=20207
+	if (joules == "" || joules > 10*giga) joules = 0
+	# Check sanity of power (joules/elapsed) must be less than maxpower Watts
+	power = joules / elapsed
+	if (power > maxpower) joules = 0
+	jobworkdir	= $15	# Job working directory
 
 	# For accounting by number of CPU cores in stead of number of nodes,
 	# uncomment the following line:
@@ -325,6 +339,7 @@ BEGIN {
 	cpunodes[user,group] += nodect*cput
 	wallnodes[user,group] += nodect*wall
 	wallcpu[user,group] += wall
+	joulesused[user,group] += joules
 	if (nodect < minnodes[user,group]) minnodes[user,group] = nodect
 	if (nodect > maxnodes[user,group]) maxnodes[user,group] = nodect
 	waittime[user,group] += wait
@@ -338,6 +353,8 @@ BEGIN {
 	if (nodect < gr_minnodes[group]) gr_minnodes[group] = nodect
 	if (nodect > gr_maxnodes[group]) gr_maxnodes[group] = nodect
 	gr_waittime[group] += wait
+	groupjoulesused[group] += joules
+	totaljoules += joules
 } END {
 	# Some average values
 	if (totaljobs > 0)
@@ -361,9 +378,10 @@ BEGIN {
 	if (ALLGROUPS == 0) {
 
 		# Print format
-		format = "%8.8s %8.8s %8d  %10.1f  %7.2f %7.2f %7.2f  %s\n"
+		format = "%8.8s %8.8s %8d  %10.1f  %7.2f %7.0f %7.2f %7.2f  %s\n"
 		groupjobs = 0
 		grouphours = 0
+		groupjoules = 0
 		for (ug in usernamegroup) {
 			if (length(groupselect) > 0 && usergroup[ug] != groupselect) continue
 			if (wallnodehours > 0 && jobs[ug] > 0 && wallcpu[ug] > 0)
@@ -371,6 +389,7 @@ BEGIN {
 				jobs[ug], 
 				wallnodes[ug]/3600, 
 				100*wallnodes[ug]/(wallnodehours*3600),
+				joulesused[ug]/kWh,
 				wallnodes[ug]/wallcpu[ug],
 				waittime[ug]/jobs[ug]/3600,
 				fullnamegroup[ug])
@@ -378,17 +397,18 @@ BEGIN {
 			groupnodehours += wallnodes[ug]/3600
 			grouphours += wallcpu[ug]/3600
 			groupwait += waittime[ug]
+			groupjoules += groupjoulesused[ug]
 			usercount++
 		}
 		# Print out total usage
 		totalusers = "Number of users: " usercount
-		printf(format, "TOTAL", "(All)", totaljobs, wallnodehours, 100,
+		printf(format, "TOTAL", "(All)", totaljobs, wallnodehours, 100, totaljoules/kWh,
 			nodesaverage, totalwaitaverage/3600, totalusers)
 		# Print out group usage
 		if (length(groupselect) > 0 && groupjobs > 0 && wallnodehours > 0 && grouphours > 0 && groupjobs > 0)
 			printf(format,
 				"GROUP", groupselect, groupjobs, groupnodehours,
-				100*groupnodehours/wallnodehours,
+				100*groupnodehours/wallnodehours, groupjoules/kWh,
 				groupnodehours/grouphours, groupwait/groupjobs/3600, "")
 	} else {
 
