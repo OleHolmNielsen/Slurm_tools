@@ -226,7 +226,7 @@ then
 	# NOTICE: It is required that slurmd is running for "scontrol reboot" to work!
 	echo
 	echo "Check if the slurmd process is running:"
-	if pgrep --list-full -u root slurmd
+	if pgrep --full --list-full -u root slurmd
 	then
 		echo "Check OK: the slurmd process is running"
 	else
