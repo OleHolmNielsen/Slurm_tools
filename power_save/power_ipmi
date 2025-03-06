@@ -133,7 +133,7 @@ cipher="-I 17"
 # fallbackcipher="-I 3"
 fallbackcipher=""
 driver="-D LAN_2_0"
-timeout="--session-timeout=1000"	# Set IPMI timeout to 1000 milliseconds
+timeout="--session-timeout=2000"	# Set IPMI timeout to 2000 milliseconds
 consolidate="--consolidate-output"	# Consolidated node output
 
 # First try cipher suite 17 with a fallback to 3 (for HPE and SuperMicro BMCs)
