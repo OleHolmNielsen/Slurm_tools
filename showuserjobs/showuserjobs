@@ -164,6 +164,8 @@ sinfo --noheader -N $all_partitions $partition -O NodeList,CPUs,Partition,StateL
 			comment="Reboot pending"
 		} else if (index(s,"^") > 0) {
 			comment="Reboot issued"
+		} else if (index(s,"-") > 0) {
+			comment="Planned by backfill scheduler"
 		} else {
 			comment=""
 		}
