@@ -434,7 +434,10 @@ BEGIN {
 			# Parse the tres-alloc (TresAlloc) list to extract only GPU gres/gpu:
 			split (TresAlloc, treslist, ",")
 			for (i in treslist) {
-				# Additional tres-alloc values could be extracted here if desired
+				# Additional tres-alloc values could be extracted here if desired, for example:
+				#if (index(treslist[i], "cpu=") > 0) {
+				#	# The "generic" CPU field "cpu="
+				#	GRES = treslist[i] ","
 				if (index(treslist[i], "gres/gpu=") > 0) {
 					# The "generic" GPU field "gres/gpu="
 					# Omit the "gres/" string and start at char 6:
