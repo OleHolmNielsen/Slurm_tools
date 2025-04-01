@@ -21,21 +21,22 @@ Usage
 ```
 Usage: showpartitions [-p partition-list] [-g] [-N] [-m] [-a|-P] [-f] [-h] [-n]
 where:
-        -p partition-list: Print only jobs in partition(s) <partition-list>
-        -g: Print also GRES information.
-        -N: Print also Node list in each partition
-        -m: Print minimum and maximum values for memory and cores/node.
-        -a|-P: Display information about all partitions including hidden ones.
-        -f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
-        -n: no headers or colors will be printed (for parsing).
-        -h: Print this help information.
+	-p partition-list: Print only jobs in partition(s) <partition-list>
+	-g: Print also GRES information.
+	-N: Print also Node list in each partition
+	-m: Print minimum and maximum values for memory and cores/node.
+	-a|-P: Display information about all partitions (including hidden ones),
+		 and include also nodes that are in maintenance mode.
+	-f: Show all partitions from the federation if a member of one. Requires Slurm 18.08 and newer.
+	-n: no headers or colors will be printed (for parsing).
+	-h: Print this help information.
 
-        Notes about the columns:
-        1. An * after the partition name identifies the default Slurm partition.
-        2. An @ after the partition state means that some nodes are pending a reboot.
-        3. An $ after the partition state means that some nodes are in maintenance mode.
-        4. An R after the partition name identifies a root-only Slurm partition.
-        5. An H after the partition name identifies a hidden Slurm partition.
+	Notes about the columns:
+	1. An * after the partition name identifies the default Slurm partition.
+	2. An @ after the partition state means that some nodes are pending a reboot.
+	3. An $ after the partition state means that some nodes are in maintenance mode.
+	4. An R after the partition name identifies a root-only Slurm partition.
+	5. An H after the partition name identifies a hidden Slurm partition.
 ```
 
 Example output:
@@ -45,6 +46,7 @@ Example output:
 
 The ```Idle``` cores and nodes are those with a Slurm status of *Idle*,
 and these are colored in ```Green``` if ```Cores_pending:Resorc``` is zero.
+Note that nodes reserved for *maintenance* are omitted (use -a to include them).
 
 The ```#Cores_pend``` (cores pending) in the ```Resorc``` column correspond to
 *Pending* jobs with a Slurm job *Reason* flag of *Resources* or *Priority*,

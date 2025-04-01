@@ -16,8 +16,9 @@ where:
 	-g: Print also GRES information.
 	-N: Print also Node list in each partition
 	-m: Print minimum and maximum values for memory and cores/node.
-	-a|-P: Display information about all partitions including hidden ones.
-	-f: Show all partitions from the federation if a member of one. Only Slurm 18.08 and newer.
+	-a|-P: Display information about all partitions (including hidden ones),
+		 and include also nodes that are in maintenance mode.
+	-f: Show all partitions from the federation if a member of one. Requires Slurm 18.08 and newer.
 	-n: no headers or colors will be printed (for parsing).
 	-h: Print this help information.
 
@@ -41,6 +42,8 @@ export printgres=0
 export federation=""
 # By default sinfo does not show hidden and unavailable partitions
 export all_partitions=""
+# Skip nodes that are in maintenance mode
+export skip_maintenance=1
 # Print both min and max values (disabled by default)
 export minmax=0
 # Enable colors in output
@@ -61,6 +64,7 @@ case $options in
 	m ) 	export minmax=1
 		;;
 	a|P ) 	export all_partitions="--all"
+		export skip_maintenance=0
 		;;
 	f ) 	export federation="--federation"
 		;;
@@ -100,6 +104,7 @@ BEGIN {
 	colors		= ENVIRON["colors"]
 	partitionlist	= ENVIRON["partitionlist"]
 	hidden_partitions = ENVIRON["hidden_partitions"]
+	skip_maintenance = ENVIRON["skip_maintenance"]
 	mycluster	= ENVIRON["mycluster"]
 	federation	= ENVIRON["federation"]
 	clusternamelength = 7	# Minimum length of cluster name column
@@ -138,7 +143,7 @@ BEGIN {
 	}
 }
 {
-	# Process the list of partitions
+	# Partitions list in this cluster
 	isdefault = sub("*", "", $1)	# Strip trailing * in case of the default partition
 	p = $1			# Partition name
 	partition[p] = p	# Partition name
@@ -161,6 +166,19 @@ BEGIN {
 	part_order[p] = NR	# Maintain Slurm ordering (index) of partitions
 	state[p] = $2		# Partition state: up or down
 	nodes[p] += $3		# Number of nodes in partition
+
+	# Node states: See "NODE STATE CODES" in sinfo manual page
+	nodestate = $9		# Node state
+	n = sub("@", "", nodestate)
+	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
+	if (index(nodestate, "maint") > 0) {
+		# Flag that some nodes in partition p are in maintenance mode 
+		maintenance[p] = "$"
+		# Skip nodes that are in maintenance mode
+		if (skip_maintenance > 0) next
+	}
+	if (nodestate ~ "^idle")		# This matches also states like idle~ and idle#
+		freenodes[p] += $3
 
 	# CPU cores
 	split($4, cpus, "/")	# Split CPU fields A/I/O/T in $4
@@ -212,13 +230,7 @@ BEGIN {
 	split($8, jobsize, "-")	# Job size min-max nodes
 	minnodes[p] = jobsize[1]
 	maxnodes[p] = jobsize[2]
-	# Node states
-	nodestate = $9		# Node state
-	n = sub("@", "", nodestate)
-	if (n > 0) pending_reboot[p] = "@"	# Nodes pending a reboot
-	if (index(nodestate, "maint") > 0) maintenance[p] = "$"	# Nodes in maintenance mode 
-	if (nodestate ~ "^idle")		# This matches also states like idle~ and idle#
-		freenodes[p] += $3
+
 	# GRES (Generic Resources)
 	if ($10 != "(null)") {	# Node GRES
 		if (nodestate ~ "^idle")	# This matches also states like idle~ and idle#
