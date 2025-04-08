@@ -23,22 +23,15 @@ Prerequisites
 2. In case you want to use the IPMI based tool ```power_ipmi```, 
    you must install the GNU [FreeIPMI](https://www.gnu.org/software/freeipmi/) packages:
    ```
-   yum install freeipmi freeipmi-devel
-   ```
-   The RPM versions (especially on EL7) are quite old, so it is possible to download the latest [Fedora source RPM](https://src.fedoraproject.org/rpms/freeipmi)
-   file and rebuild the set of packages, for example on EL7:
-   ```
-   yum install libgcrypt-devel texinfo
-   rpmbuild --rebuild freeipmi-1.6.10-1.fc38.src.rpm
-   yum install rpmbuild/RPMS/x86_64/freeipmi-1.6.10-2.el7.x86_64.rpm rpmbuild/RPMS/x86_64/freeipmi-devel-1.6.10-2.el7.x86_64.rpm
+   dnf install freeipmi freeipmi-devel
    ```
 
 3. The scripts in the present project require the [nodeset](https://clustershell.readthedocs.io/en/latest/tools/nodeset.html) command from the
    [ClusterShell](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_operations/#clustershell) package,
    install it as RPM packages by:
    ```
-   yum install epel-release
-   yum install clustershell
+   dnf install epel-release
+   dnf install clustershell
    ```
 
 Usage
