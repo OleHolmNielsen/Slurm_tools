@@ -1,0 +1,51 @@
+#!/bin/bash
+
+#
+# Check all BMCs in a cluster by pinging each one
+#
+# Author: Ole Holm Nielsen, Ole.H.Nielsen@fysik.dtu.dk
+#
+
+# Exit the script in case of control-C etc.
+trap "exit -1" SIGTERM SIGINT SIGQUIT
+
+# An associative array defines node prefixes and their node-number ranges.
+# A BMC's DNS name is assumed to be <prefix><number><suffix>, for example: a123b
+declare -A range=(["a"]="001 128" ["b"]="001 012" ["c"]="001 184" ["d"]="001 096" ["e"]="001 070" ["s"]="001 008" ["x"]="006 192" ["xch"]="01 24")
+declare -A suffix=(["a"]="b" ["b"]="b" ["c"]="b" ["d"]="b" ["e"]="b" ["s"]="b" ["x"]="b" ["xch"]="")
+
+PING="/bin/ping -c 1 -w 2"
+STOPFILEDIR=/var/lib/alive
+if [[ ! -d $STOPFILEDIR ]]
+then
+	mkdir -pv $STOPFILEDIR
+fi
+
+function checknode() {
+	STOPFILE=$STOPFILEDIR/alive.$1
+	if $PING $1 2>&1 > /dev/null
+	then
+		if [ -f $STOPFILE ]
+		then
+			echo Host $1 is up again
+			rm -f $STOPFILE
+		fi
+	else
+		if [ ! -f $STOPFILE ]
+		then
+			echo Cannot ping host $1 !
+			touch $STOPFILE
+		fi
+
+	fi
+}
+
+for p in "${!range[@]}"
+do
+	# Loop over a node range
+	# echo "Node prefix $p with node range ${range[$p]} and DNS suffix=${suffix[$p]}"
+	for i in `seq -w ${range[$p]}`
+	do
+		checknode "$p${i}${suffix[$p]}"
+	done
+done
