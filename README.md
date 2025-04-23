@@ -1,6 +1,7 @@
 # Slurm tools
 
 This project is licensed under the GNU General Public License v3.0.
+The DOI link to these tools is https://doi.org/10.5281/zenodo.15261429
 
 These [Slurm](https://slurm.schedmd.com/overview.html)
 tools have been developed for management and monitoring of our cluster:
