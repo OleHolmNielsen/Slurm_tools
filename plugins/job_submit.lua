@@ -58,8 +58,10 @@ function check_interactive_job (job_desc, submit_uid, log_prefix)
 		local time_limit = 240
 		slurm.log_info("%s: user %s submitted an interactive job", log_prefix, userinfo)
 		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
-		slurm.log_user("        Job timelimit is set to %d minutes", time_limit)
-		job_desc.time_limit = time_limit
+		if job_desc.time_limit == nil or job_desc.time_limit > time_limit then
+			slurm.log_user("        Job timelimit is set to %d minutes", time_limit)
+			job_desc.time_limit = time_limit
+		end
 	end
 	return slurm.SUCCESS
 end
