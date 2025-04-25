@@ -52,6 +52,20 @@ default_tasks=1			-- Number of tasks if none was requested
 --
 script_error="ERROR: Please modify your batch job script"
 
+-- Check for interactive jobs
+-- Policy: Interactive jobs are limited to 4 hours
+function check_interactive_job (job_desc, submit_uid, log_prefix)
+	if (job_desc.script == nil or job_desc.script == '') then
+		local time_limit = 240
+		slurm.log_info("%s: user %s submitted an interactive job", log_prefix, userinfo)
+		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
+		slurm.log_user("        Job timelimit is set to %d minutes", time_limit)
+		job_desc.time_limit = time_limit
+	end
+	return slurm.SUCCESS
+end
+
+
 -- Sanity check of partition
 -- Policy: the partition must be specified by the job
 function check_partition (job_desc, submit_uid, log_prefix)
@@ -360,7 +374,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 
 	-- Loop over the function list
 	-- We will call these functions in the order listed
-	local functionlist = { check_arg_list, forbid_reserved_name, check_partition,
+	local functionlist = { check_arg_list, forbid_reserved_name, check_partition, check_interactive_job,
 		check_num_nodes, check_num_tasks, forbid_memory_eq_0, check_cpus_tasks, check_gpus }
 	local log_prefix = 'slurm_job_submit'
 	local check = slurm.SUCCESS
