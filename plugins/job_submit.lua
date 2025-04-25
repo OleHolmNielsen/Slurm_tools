@@ -36,11 +36,10 @@ slurm.ESLURM_INVALID_GRES=2072
 partitions = {
 	-- partition name (NOTE: a substring which begins the name), number of cores, entire node is 0/1, number of gpus
 	-- Multiple partitions can be lumped together, for example, xeon24, xeon24_512, xeon24_1024 as "xeon24"
-	-- { partition="xeon8",  numcores=8,  entirenode=1, num_gpus=0 },
-	{ partition="xeon16", numcores=16, entirenode=0, num_gpus=0 },
 	{ partition="xeon24", numcores=24, entirenode=1, num_gpus=0 },
 	{ partition="xeon40", numcores=40, entirenode=1, num_gpus=0 },
 	{ partition="xeon56", numcores=56, entirenode=1, num_gpus=0 },
+	{ partition="a100", numcores=128, entirenode=0, num_gpus=4 },
 	{ partition="sm3090", numcores=80, entirenode=0, num_gpus=10 }
 }
 default_partition="xeon16"	-- This partition will be set if none was requested
