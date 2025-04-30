@@ -84,7 +84,7 @@ nodelist=$1
 nodecount=`nodeset --count $nodelist`
 # Append the BMC's DNS name suffix BMC_SUFFIX to the nodes' DNS names
 # using the ClusterShell command "nodeset"
-bmclong=`nodeset -O "%s${BMC_SUFFIX}" --expand $1`
+bmclong=`nodeset -O "%s${BMC_SUFFIX}" --expand $nodelist`
 bmclist=`nodeset --fold $bmclong`
 
 # Source the users' .bashrc file which should export variables like:
