@@ -7,7 +7,11 @@ Prerequisites
 -------------
 
 The OFED command ```ibnetdiscover```.
-On EL8/9 Linux this is part of the ```infiniband-diags``` RPM package.
+On EL8/9 Linux install this package:
+
+```
+  dnf install infiniband-diags
+```
 
 Usage
 -----

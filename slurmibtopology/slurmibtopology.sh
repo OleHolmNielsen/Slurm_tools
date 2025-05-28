@@ -40,7 +40,7 @@ while getopts "cVh" options; do
 	case $options in
 		c ) export MY_FILTER="grep -v ^#"
 			;;
-		V ) echo $VERSION
+		V ) echo "$VERSION"
 			exit 1;;
 		h|? ) usage
 			exit 1;;
@@ -51,15 +51,15 @@ done
 # Test for extraneous command line arguments
 if test $# -gt $(($OPTIND-1))
 then
-	echo ERROR: Too many command line arguments: $*
+	echo "ERROR: Too many command line arguments: $*"
 	usage
 	exit 1
 fi
 
 if test ! -x $IBNETDISCOVER -o ! -x $IBSTAT
 then
-	echo Error: Command $IBNETDISCOVER not found
-	echo Please install the RPM package infiniband-diags
+	echo "Error: Command $IBNETDISCOVER not found"
+	echo "Please install the RPM package infiniband-diags"
 	exit -1
 fi
 
@@ -69,13 +69,13 @@ then
 	export MY_SCONTROL=""
 fi
 
-echo Verify the Infiniband interface:
+echo "Verify the Infiniband interface:"
 
 if $IBSTAT -l 
 then
-	echo Infiniband interface OK
+	echo "Infiniband interface OK"
 else
-	echo Infiniband interface NOT OK
+	echo "Infiniband interface NOT OK"
 	exit -1
 fi
 
