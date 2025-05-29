@@ -23,6 +23,13 @@ fi
 
 for node in $NODELIST
 do
+	# Check if the node is currently rebooting
+	if [[ -n "`$SINFO -n $node | grep 'boot^'`" ]]
+	then
+		# echo "Reboot of node $node is requested by Slurm"
+		continue
+	fi
+	# Try to ping the node
 	STOPFILE=$STOPFILEDIR/alive.${node}
 	if $PING $node >/dev/null 2>&1
 	then
