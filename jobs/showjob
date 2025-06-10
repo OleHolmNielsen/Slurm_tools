@@ -5,7 +5,7 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Check number of arguments
-if test $# -ne 1 
+if [[ $# -ne 1 ]]
 then
 	echo "Usage: $0 <jobid>"
 	exit 1
@@ -25,7 +25,7 @@ jobid=$1
 TMPFILE=/tmp/showjob.$$
 # Check the showuserlimits command
 showuserlimits=`which showuserlimits`
-if test -z "$showuserlimits"
+if [[ -z "$showuserlimits" ]]
 then
 	echo Did not find the showuserlimits command, please install it.
 	showuserlimits="echo showuserlimits"
@@ -71,7 +71,7 @@ function format_sacct()
 # Get job accounting information
 function print_job_accounting()
 {
-	if test -z "`sacct -nP -o JobID -j $jobid`"
+	if [[ -z "`sacct -nP -o JobID -j $jobid`" ]]
 	then
 		echo
 		echo ERROR: Invalid JobID: $jobid is not found in the Slurm database
@@ -118,7 +118,7 @@ function print_job_accounting()
 
 # Check if job is in the queue and squeue displays job information
 jobfound=`squeue -hO JobID -j $jobid 2>/dev/null`
-if test $? -ne 0 -o -z "$jobfound"
+if [[ $? -ne 0 || -z "$jobfound" ]]
 then
 	echo
 	echo Job $jobid is not in the current Slurm queue
@@ -128,7 +128,7 @@ fi
 
 # Check if this jobid can be inquired successfully.
 JOBSTATE="`squeue -h -O State -j $jobid`"
-if test "$?" != "0"
+if [[ "$?" != "0" ]]
 then
 	echo Error inquiring about job $jobid 
 	exit 1
@@ -183,10 +183,10 @@ echo "Job TRESRunMin: $((NCPUS*minutes))"
 echo
 
 # Display job reason code (if other than "None")
-if test "$reason" != "None"
+if [[ "$reason" != "None" ]]
 then
 	echo "Job is in state $jobstate with reason=$reason"
-	if test "$reason" = "AssocGrpCPURunMinutesLimit"
+	if [[ "$reason" = "AssocGrpCPURunMinutesLimit" ]]
 	then
 		echo
 		echo Information about $reason:
@@ -195,7 +195,7 @@ then
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
-	elif test "$reason" = "AssocGrpCPUMinutesLimit"
+	elif [[ "$reason" = "AssocGrpCPUMinutesLimit" ]]
 	then
 		echo
 		echo Information about $reason:
@@ -203,7 +203,7 @@ then
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
-	elif test "$reason" = "AssocGrpCpuLimit"
+	elif [[ "$reason" = "AssocGrpCpuLimit" ]]
 	then
 		echo
 		echo Information about $reason:
@@ -215,7 +215,7 @@ then
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
-	elif test "$reason" = "AssocGrpGRES"
+	elif [[ "$reason" = "AssocGrpGRES" ]]
 	then
 		echo
 		echo Information about $reason:
@@ -225,14 +225,14 @@ then
 		echo
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s $grestype
-	elif test "$reason" = "AssocMaxJobsLimit"
+	elif [[ "$reason" = "AssocMaxJobsLimit" ]]
 	then
 		echo
 		echo Information about $reason:
 		echo User $jobuser number of running jobs is: `squeue -hO JobID -u $jobuser -t running | wc -l`
 		echo Information about Account and User limits:
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
-	elif test "$reason" = "Dependency"
+	elif [[ "$reason" = "Dependency" ]]
 	then
 		echo
 		echo "Dependency information: $dependency"
@@ -246,10 +246,10 @@ scontrol --details show job $jobid | tee $TMPFILE
 # Parse the job status information (read E-mail)
 export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//' | awk '{print $1}'`
 # Check that jobscript is defined and that the file is readable
-if test "$jobscript" != "(null)" -a -s "$jobscript"
+if [[ "$jobscript" != "(null)" && -s "$jobscript" ]]
 then
 	grep "mail-user" $jobscript > $TMPFILE
-	if test -s $TMPFILE
+	if [[ -s $TMPFILE ]]
 	then
 		echo Job script E-mail has been set:
 		cat $TMPFILE
@@ -258,7 +258,7 @@ fi
 rm -f $TMPFILE
 
 # Print accounting information only when the job is in the Running state
-if test "$jobstate" = "Running"
+if [[ "$jobstate" = "Running" ]]
 then
 	print_job_accounting
 fi
