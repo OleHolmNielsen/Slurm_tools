@@ -83,16 +83,27 @@ function print_job_accounting()
 	echo "Job parameters for jobid $jobid:"
 	export jobvars="jobid,jobname,user,account,partition,Timelimit"
 	format_sacct -j $jobid -o $jobvars
+
 	echo
 	echo "Job details information for jobid $jobid:"
 	export jobvars="jobid,Submit,Eligible,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist,State,ConsumedEnergyRaw,AllocTRES"
 	format_sacct -j $jobid -o $jobvars
+
 	echo
 	export jobvars="SubmitLine"
 	format_sacct -j $jobid -o $jobvars
+
+	# Print job script if AccountingStoreFlags=job_script was enabled in slurm.conf
+	if [[ -n "`scontrol show config | grep AccountingStoreFlags | grep job_script`" ]]
+	then
+		echo
+		sacct -j $jobid -B
+	fi
+
 	echo
 	export jobvars="WorkDir"
 	format_sacct -j $jobid -o $jobvars
+
 	# Get user fairshare information
 	echo
 	export jobuser=`sacct -nP -j $jobid -o user`
