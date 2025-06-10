@@ -88,12 +88,14 @@ function print_job_accounting()
 	export jobvars="jobid,Submit,Eligible,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist,State,ConsumedEnergyRaw,AllocTRES"
 	format_sacct -j $jobid -o $jobvars
 	echo
-	echo "Workdir"
-	echo "-------"
-	sacct -j $jobid -nP -o WorkDir | head -1
-	# Get user fairshare information
-	export jobuser=`sacct -nP -j $jobid -o user`
+	export jobvars="SubmitLine"
+	format_sacct -j $jobid -o $jobvars
 	echo
+	export jobvars="WorkDir"
+	format_sacct -j $jobid -o $jobvars
+	# Get user fairshare information
+	echo
+	export jobuser=`sacct -nP -j $jobid -o user`
 	echo "User fairshare information from the sshare command:"
 	sshare -lUm -u $jobuser
 }
