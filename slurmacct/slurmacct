@@ -307,7 +307,7 @@ BEGIN {
 	totaljobs=0
 	giga=1000000000
 	# Maximum possible node power
-	maxpower = 5000
+	maxpower = 15000
 	kWh=3600000	# 1 kWh is this many Joules
 	# First get the list of user full names from /etc/passwd lines
 	COMMAND="getent passwd"
@@ -450,7 +450,7 @@ BEGIN {
 		for (ug in usernamegroup) {
 			if (length(groupselect) > 0 && usergroup[ug] != groupselect) continue
 			if (wallnodetotal > 0 && jobs[ug] > 0 && walltimesum[ug] > 0)
-				# CPU or GPU accounting
+				# CPU/NODE or GPU accounting
 				if (TRESGPU == 0) {
 					w1 = wallnodesum[ug]
 					w2 = wallnodetotal
@@ -472,7 +472,7 @@ BEGIN {
 		}
 		# Print out total usage
 		totalusers = "Number of users: " usercount
-		# CPU or GPU accounting
+		# CPU/NODE or GPU accounting
 		if (TRESGPU == 0)
 			avg = nodesaverage
 		else
