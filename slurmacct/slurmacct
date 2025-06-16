@@ -55,6 +55,8 @@ export TRESGPU=0
 export SORTCOLUMN=5
 export printheader=1
 export month="last"
+# A separator line:
+line="--------------------------------------------------------------------------------"
 
 # Process options
 while getopts "p:u:g:s:e:r:m:W:cywGTNhn" options; do
@@ -207,17 +209,25 @@ then
 	# Print a sreport header (overwrite any existing file)
 	sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
 fi
-# Empty line
-echo >> $REPORT
 
 if [[ $NODEUSAGE -gt 0 ]]
 then
-	echo " - Print NODE usage" >> $REPORT
-fi
-if [[ $TRESGPU -gt 0 ]]
+	reporttype="NODE"
+elif [[ $TRESGPU -gt 0 ]]
 then
-	echo " - Print Trackable resource (TRES) GPU usage" >> $REPORT
+	reporttype="GPU"
+else
+	reporttype="CPU"
 fi
+
+# Heading with a separating line and space
+cat <<EOF >> $REPORT
+
+$line
+
+$reporttype usage report
+
+EOF
 
 # Selection of specific partitions
 if [[ "$partition" != "" ]]
