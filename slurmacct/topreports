@@ -14,32 +14,33 @@ PREFIX=/TOPDIR/Top
 partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test xeon32_4096 xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week xeon32_4096,xeon32_week"
 # END CONFIGURE
 
-slurmacct=slurmacct
-
-if test $# -eq 0
+if [[ $# == 0 ]]
 then
 	# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
 	periods="None -c -w -y"
 else
-	# Select month/year (like "november2019")
+	# Select month and year (like "november2019")
 	periods="-m$1"
 fi
 
 # The empty string selects the default period (last month)
 for period in $periods
 do
-	echo "================================================"
-	echo
-	echo Generating reports for period=$period
-	echo
-	if test "$period" = "None"
+	cat << EOF
+	================================================
+	
+	Generating reports for period=$period
+	
+EOF
+	if [[ "$period" == "None" ]]
 	then
 		period=""
 	fi
 	# The empty string selects all partitions in the cluster
 	for p in "" $partitionlist
 	do
-		if test -z "$p"
+		TRESGPU=0
+		if [[ "$p" == "" ]]
 		then
 			name="."
 			partition=""
@@ -47,12 +48,30 @@ do
 			name=`echo $p | cut -f1 -d,`	# Select first field in a,b,...
 			name=."$name."
 			partition="-p $p"
+			# Determine if partition $p has TRES GPU resources
+			if [[ "`scontrol show partitions $p | grep TRES | grep gres/gpu`" != "" ]]
+			then
+				TRESGPU=1
+			fi
+		fi
+		echo "Generating reports for partition=$partition and period=$period"
+		header=""	# If empty a new report will be generated
+		if [[ $TRESGPU == 1 ]]
+		then
+			echo
+			echo "Group TRES GPU report"
+			slurmacct -G $header -T $partition $period -r $PREFIX$name	# TRES GPU Group report
+			header="-n"	# No header
+			echo
+			echo "User TRES GPU report"
+			slurmacct $header -T $partition $period -r $PREFIX$name	# TRES GPU report
 		fi
 		echo
-		echo Generating report for partition=$partition and period=$period
-		echo Group report
-		$slurmacct -G $partition $period -r $PREFIX$name	# Group report
-		echo User report
-		$slurmacct -n $partition $period -r $PREFIX$name	# Append user report
+		echo "Group cpus/nodes report"
+		slurmacct -G $header $partition $period -r $PREFIX$name	# Group report
+		header="-n"	# No header
+		echo
+		echo "User cpus/nodes report"
+		slurmacct $header $partition $period -r $PREFIX$name	# Append user report
 	done
 done
