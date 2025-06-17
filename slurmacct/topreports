@@ -14,6 +14,8 @@ PREFIX=<top-directory-name>/Top
 partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test xeon32_4096 xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week xeon32_4096,xeon32_week"
 # END CONFIGURE
 
+# Add to path for crontab jobs
+PATH=$PATH:/usr/local/bin
 line="--------------------------------------------------------------------------------"
 
 if [[ $# == 0 ]]
