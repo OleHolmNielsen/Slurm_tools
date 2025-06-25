@@ -212,12 +212,12 @@ fi
 
 if [[ $NODEUSAGE -gt 0 ]]
 then
-	reporttype="NODE"
+	type="NODE"
 elif [[ $TRESGPU -gt 0 ]]
 then
-	reporttype="GPU"
+	type="GPU"
 else
-	reporttype="CPU"
+	type="CPU"
 fi
 
 # Heading with a separating line and space
@@ -225,7 +225,8 @@ cat <<EOF >> $REPORT
 
 $line
 
-$reporttype usage report
+$type usage report:
+-------------------
 
 EOF
 
@@ -444,11 +445,11 @@ BEGIN {
 	wallnodehours = wallnodetotal / 3600
 	wallgpuhours = wallgputotal / 3600
 	wallhours = wallsecs / 3600
-	if (totaljobs == 0 || cpunodehours == 0 || wallnodehours == 0 || wallhours == 0) {
-		# print "ERROR: Zero CPU hours recorded in specified date interval"
-		# print "totaljobs = ", totaljobs, "cpunodehours = ", cpunodehours, "wallnodehours = ", wallnodehours, "wallhours = ", wallhours
-		# exit 1
-	}
+	# if (totaljobs == 0 || cpunodehours == 0 || wallnodehours == 0 || wallhours == 0) {
+	#	 print "ERROR: Zero CPU hours recorded in specified date interval"
+	#	 print "totaljobs = ", totaljobs, "cpunodehours = ", cpunodehours, "wallnodehours = ", wallnodehours, "wallhours = ", wallhours
+	#	 exit 1
+	# }
 
 	if (ALLGROUPS == 0) {
 		# Per-user accounting
@@ -483,17 +484,22 @@ BEGIN {
 		# Print out total usage
 		totalusers = "Number of users: " usercount
 		# CPU/NODE or GPU accounting
-		if (TRESGPU == 0)
+		if (TRESGPU == 0) {
 			avg = nodesaverage
-		else
+			wtot = wallnodehours
+			g = groupnodehours
+		} else {
 			avg = gpuaverage
-		printf(format, "TOTAL", "(All)", totaljobs, wallnodehours, 100, totaljoules/kWh,
+			wtot = wallgpuhours
+			g = groupgpuhours
+		}
+		printf(format, "TOTAL", "(All)", totaljobs, wtot, 100, totaljoules/kWh,
 			avg, totalwaitaverage/3600, totalusers)
 		# Print out group usage
-		if (length(groupselect) > 0 && groupjobs > 0 && wallnodehours > 0 && grouphours > 0 && groupjobs > 0)
-			printf(format, "GROUP", groupselect, groupjobs, groupnodehours,
-				100*groupnodehours/wallnodehours, groupjoules/kWh,
-				groupnodehours/grouphours, groupwait/groupjobs/3600, "")
+		if (length(groupselect) > 0 && groupjobs > 0 && wtot > 0 && grouphours > 0 && groupjobs > 0)
+			printf(format, "GROUP", groupselect, groupjobs, g,
+				100*g/wtot, groupjoules/kWh,
+				g/grouphours, groupwait/groupjobs/3600, "")
 	} else {
 		# Per-group accounting
 		# --------------------
@@ -517,8 +523,15 @@ BEGIN {
 					group_jobs[group], w1/3600, 100*w1/w2,
 					w1/group_walltimesum[group], group_waittime[group]/group_jobs[group]/3600)
 		}
-		printf(format, "TOTAL", totaljobs, wallnodehours, 100,
-			nodesaverage, totalwaitaverage/3600)
+		# CPU or GPU accounting
+		if (TRESGPU == 0) {
+			avg = nodesaverage
+			wtot = wallnodehours
+		} else {
+			avg = gpuaverage
+			wtot = wallgpuhours
+		}
+		printf(format, "TOTAL", totaljobs, wtot, 100, avg, totalwaitaverage/3600)
 	}
 } ' | env LC_ALL=C sort -r -n -k $SORTCOLUMN -k 3 -k 1d >> $REPORT
 
@@ -526,6 +539,11 @@ BEGIN {
 # on keys $SORTCOLUMN and 3, and alphabetical sort on key 1
 # The LC_ALL=C ensures that Upper case is sorted before lower case.
 
-echo "Report generated to file $REPORT"
+if [[ $printheader -gt 0 ]]
+then
+	echo "Report generated to file $REPORT"
+else
+	echo "Report appended to file $REPORT"
+fi
 
 exit 0
