@@ -10,80 +10,90 @@
 # CONFIGURE THIS: 
 # Directory name and report file name prefix:
 PREFIX=<top-directory-name>/Top
-
 # Partion list: overlapping partitions are comma-separated so they will be reported together
 partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test xeon32_4096 xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week xeon32_4096,xeon32_week"
 # END CONFIGURE
 
 PATH=$PATH:/usr/local/bin
-line="--------------------------------------------------------------------------------"
 
 if [[ $# == 0 ]]
 then
 	# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
-	periods="None -c -w -y"
+	periods="Default -c -w -y"
 else
-	# Select month and year (like "november2019")
+	# Select month and year (like "november2024"), see slurmacct
 	periods="-m$1"
 fi
 
-# The empty string selects the default period (last month)
+# A separator line
+line="--------------------------------------------------------------------------------"
+
+# The empty string selects the default period (last month) in slurmacct
 for period in $periods
 do
-	cat << EOF
-$line
-	
-Generating reports for period=$period
-	
-EOF
-	if [[ "$period" == "None" ]]
+	pp="$period"		# Period argument $pp to slurmacct
+	ppnice="$period"	# Nice string for printing
+	if [[ "$period" == "Default" ]]
 	then
-		period=""
+		pp=""
+		ppnice="Last month"
+	elif [[ "$period" == "-c" ]]
+	then
+		ppnice="Current month"
+	elif [[ "$period" == "-w" ]]
+	then
+		ppnice="Current week"
+	elif [[ "$period" == "-y" ]]
+	then
+		ppnice="Current year"
 	fi
-	# The empty string selects all partitions in the cluster
+	# Adding the empty string "" selects all partitions in the cluster:
 	for p in "" $partitionlist
 	do
 		TRESGPU=0
+		nicepart="$p"
 		if [[ "$p" == "" ]]
 		then
 			name="."
 			partition=""
+			nicepart="(All)"
 		else
 			name=`echo $p | cut -f1 -d,`	# Select first field in a,b,...
 			name=."$name."
 			partition="-p $p"
-			# Determine if a partition in the list $p has TRES GPU resources
-			for i in ${p//,/ }
+			# Determine if one or more partitions in the list $p has TRES GPU resources
+			for i in ${p//,/ }	# Split $p into separate words
 			do
-				# echo "Checking partition $i"
 				if [[ "`scontrol show partitions $i | grep TRES | grep gres/gpu`" != "" ]]
 				then
 					TRESGPU=1
 				fi
 			done
 		fi
-		echo
-		echo $line
-		echo "Generating reports for partition=$partition and period=$period"
-		header=""	# If empty a new report will be generated
+		cat << EOF
+$line
+	
+Generating reports for partition=$nicepart during period: $ppnice
+	
+$line
+EOF
+		header=""	# If $header is empty a new report will be generated
 		if [[ $TRESGPU == 1 ]]
 		then
-			echo $line
 			echo
 			echo "GROUP TRES GPU report for partitions $p"
-			slurmacct -G $header -T $partition $period -r $PREFIX$name	# TRES GPU Group report
-			header="-n"	# No header
+			slurmacct -G $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
+			header="-n"	# No header will append to the current report
 			echo
 			echo "USER TRES GPU report for partitions $p"
-			slurmacct $header -T $partition $period -r $PREFIX$name	# TRES GPU report
+			slurmacct $header -T $partition $pp -r $PREFIX$name	# TRES GPU report
 		fi
-		echo $line
 		echo
-		echo "GROUP cpus/nodes report for partitions $p"
-		slurmacct -G $header $partition $period -r $PREFIX$name	# Group report
-		header="-n"	# No header
+		echo "GROUP cpus report for partitions $p"
+		slurmacct -G $header $partition $pp -r $PREFIX$name	# Group report
+		header="-n"	# No header will append to the current report
 		echo
-		echo "USER cpus/nodes report for partitions $p"
-		slurmacct $header $partition $period -r $PREFIX$name	# Append user report
+		echo "USER cpus report for partitions $p"
+		slurmacct $header $partition $pp -r $PREFIX$name	# Append user report
 	done
 done
