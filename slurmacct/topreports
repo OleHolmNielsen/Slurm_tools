@@ -10,11 +10,11 @@
 # CONFIGURE THIS: 
 # Directory name and report file name prefix:
 PREFIX=<top-directory-name>/Top
+
 # Partion list: overlapping partitions are comma-separated so they will be reported together
 partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test xeon32_4096 xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week xeon32_4096,xeon32_week"
 # END CONFIGURE
 
-# Add to path for crontab jobs
 PATH=$PATH:/usr/local/bin
 line="--------------------------------------------------------------------------------"
 
@@ -62,28 +62,28 @@ EOF
 				fi
 			done
 		fi
+		echo
+		echo $line
 		echo "Generating reports for partition=$partition and period=$period"
 		header=""	# If empty a new report will be generated
 		if [[ $TRESGPU == 1 ]]
 		then
 			echo $line
 			echo
-			echo "Group TRES GPU report for partitions $p"
+			echo "GROUP TRES GPU report for partitions $p"
 			slurmacct -G $header -T $partition $period -r $PREFIX$name	# TRES GPU Group report
-			echo $line
 			header="-n"	# No header
 			echo
-			echo "User TRES GPU report for partitions $p"
+			echo "USER TRES GPU report for partitions $p"
 			slurmacct $header -T $partition $period -r $PREFIX$name	# TRES GPU report
 		fi
 		echo $line
 		echo
-		echo "Group cpus/nodes report for partitions $p"
+		echo "GROUP cpus/nodes report for partitions $p"
 		slurmacct -G $header $partition $period -r $PREFIX$name	# Group report
-		echo $line
 		header="-n"	# No header
 		echo
-		echo "User cpus/nodes report for partitions $p"
+		echo "USER cpus/nodes report for partitions $p"
 		slurmacct $header $partition $period -r $PREFIX$name	# Append user report
 	done
 done
