@@ -90,14 +90,14 @@ while getopts "p:u:g:s:e:r:m:W:cywGTNhn" options; do
 			echo " - Print NODE usage"
 			;;
 		s )     export start_time=$OPTARG
-			echo "Start date $OPTARG"
+			echo " - Start date $OPTARG"
 			REPORT_NAME=${start_time}_${end_time}
 			;;
 		e )     export end_time=$OPTARG
-			echo "End date $OPTARG"
+			echo " - End date $OPTARG"
 			REPORT_NAME=${start_time}_${end_time}
 			;;
-		m )     echo "Select month $OPTARG"
+		m )     echo " - Select month $OPTARG"
 			start_time=`date -d "1$OPTARG" +%m01%y`
 			end_time=`date -d "1$OPTARG + 1 month" +%m01%y`
 			MONTH=`date -d "1$OPTARG" +%B`
@@ -106,24 +106,24 @@ while getopts "p:u:g:s:e:r:m:W:cywGTNhn" options; do
 			;;
 		c )     export start_time=`date +%m01%y`
 			export end_time=`date +%m%d%y`
-			echo "Select current month from $start_time until $end_time"
+			echo " - Select current month from $start_time until $end_time"
 			REPORT_NAME=Current_month
 			;;
 		y )     export start_time=`date +0101%y`
 			export end_time=`date +%m%d%y`
-			echo "Select current year from $start_time until $end_time"
+			echo " - Select current year from $start_time until $end_time"
 			REPORT_NAME=Current_year
 			;;
 		w )     export start_time=`date -d 'last week' +%m%d%y`
 			export end_time=`date +%m%d%y`
-			echo "Select last week from $start_time until $end_time"
+			echo " - Select last week from $start_time until $end_time"
 			REPORT_NAME=Last_week
 			;;
 		W )     export workdir=$OPTARG
 			echo " - Print only accounting data for jobs with working directory $workdir"
 			;;
 		r )     export REPORT_PREFIX="$OPTARG"
-			echo "Copy report to $OPTARG"
+			echo " - Report prefix: $OPTARG"
 			;;
 		n )     export printheader=0
 			;;
@@ -212,12 +212,12 @@ fi
 
 if [[ $NODEUSAGE -gt 0 ]]
 then
-	type="NODE"
+	reporttype="NODE"
 elif [[ $TRESGPU -gt 0 ]]
 then
-	type="GPU"
+	reporttype="GPU"
 else
-	type="CPU"
+	reporttype="CPU"
 fi
 
 # Heading with a separating line and space
@@ -225,8 +225,7 @@ cat <<EOF >> $REPORT
 
 $line
 
-$type usage report:
--------------------
+$reporttype usage report
 
 EOF
 
@@ -541,9 +540,9 @@ BEGIN {
 
 if [[ $printheader -gt 0 ]]
 then
-	echo "Report generated to file $REPORT"
+        echo "Report generated to file $REPORT"
 else
-	echo "Report appended to file $REPORT"
+        echo "Report appended to file $REPORT"
 fi
 
 exit 0
