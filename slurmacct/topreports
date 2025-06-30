@@ -89,11 +89,11 @@ EOF
 			slurmacct $header -T $partition $pp -r $PREFIX$name	# TRES GPU report
 		fi
 		echo
-		echo "GROUP cpus report for partitions $p"
+		echo "GROUP CPUs report for partitions $p"
 		slurmacct -G $header $partition $pp -r $PREFIX$name	# Group report
 		header="-n"	# No header will append to the current report
 		echo
-		echo "USER cpus report for partitions $p"
+		echo "USER CPUs report for partitions $p"
 		slurmacct $header $partition $pp -r $PREFIX$name	# Append user report
 	done
 done
