@@ -46,6 +46,7 @@ export username=""
 export groupname=""
 export workdir=""
 export ALLGROUPS=0
+export reportby="users"
 # Default: CPU accounting
 export TRES="cpus"
 # Alternative accountings: NODEUSAGE or TRES/GPU
@@ -74,6 +75,7 @@ while getopts "p:u:g:s:e:r:m:W:cywGTNhn" options; do
 			echo " - Print only users in UNIX group $OPTARG"
 			;;
 		G )     export ALLGROUPS=1
+			export reportby="groups"
 			export username=""
 			export groupname=""
 	    		export SORTCOLUMN=4
@@ -225,7 +227,7 @@ cat <<EOF >> $REPORT
 
 $line
 
-$reporttype usage report
+$reporttype usage report by $reportby
 
 EOF
 
