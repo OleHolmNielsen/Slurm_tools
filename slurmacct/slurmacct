@@ -265,7 +265,7 @@ then
 	# echo "                             Wallclock          Average Average" >> $REPORT
 	# echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
 	# echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
-cat <<EOF >> $REPORT
+	cat <<EOF >> $REPORT
                              Wallclock           Energy Average Average
 Username    Group    #jobs   $TRES-hrs   Percent    kWh   #$TRES  q-hours    Full name
 --------    -----  ------- -----------  ------- ------- ------- -------  ---------
@@ -280,9 +280,11 @@ else
 	fi
 	echo "Usage sorted by top groups:" >> $REPORT
 	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
-	echo "                    Wallclock          Average Average" >> $REPORT
-	echo "   Group    #jobs   $TRES-hrs   Percent  #$TRES   q-hours" >> $REPORT
-	echo "   -----  ------- -----------  ------- ------- -------" >> $REPORT
+	cat <<EOF >> $REPORT
+                      Wallclock           Energy  Average Average
+     Group    #jobs   $TRES-hrs   Percent     kWh  #$TRES   q-hours
+     -----  ------- -----------  ------- -------  ------- -------
+EOF
 fi
 
 #####################################################################################
@@ -504,7 +506,7 @@ BEGIN {
 	} else {
 		# Per-group accounting
 		# --------------------
-		format = "%8s %8d  %10.1f  %7.2f %7.2f %7.2f\n"
+		format = "%10s %8d  %10.1f  %7.2f %7.0f  %7.2f %7.2f\n"
 		# Sort arrays by element values:
 		# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 		PROCINFO["sorted_in"] = "@ind_num_desc"
@@ -521,7 +523,7 @@ BEGIN {
 			}
 			if (group_jobs[group] > 0 && group_walltimesum[group] > 0)
 				printf(format, groupname[group],
-					group_jobs[group], w1/3600, 100*w1/w2,
+					group_jobs[group], w1/3600, 100*w1/w2, groupjoulesused[group]/kWh,
 					w1/group_walltimesum[group], group_waittime[group]/group_jobs[group]/3600)
 		}
 		# CPU or GPU accounting
@@ -532,7 +534,7 @@ BEGIN {
 			avg = gpuaverage
 			wtot = wallgpuhours
 		}
-		printf(format, "TOTAL", totaljobs, wtot, 100, avg, totalwaitaverage/3600)
+		printf(format, "TOTAL", totaljobs, wtot, 100, totaljoules/kWh, avg, totalwaitaverage/3600)
 	}
 } ' | env LC_ALL=C sort -r -n -k $SORTCOLUMN -k 3 -k 1d >> $REPORT
 
