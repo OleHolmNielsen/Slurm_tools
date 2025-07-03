@@ -51,12 +51,12 @@ do
 	for p in "" $partitionlist
 	do
 		TRESGPU=0
-		nicepart="$p"
+		displaypart="partition=$p"
 		if [[ "$p" == "" ]]
 		then
 			name="."
 			partition=""
-			nicepart="(All)"
+			displaypart="ALL partitions"
 		else
 			name=`echo $p | cut -f1 -d,`	# Select first field in a,b,...
 			name=."$name."
@@ -73,7 +73,7 @@ do
 		cat << EOF
 $line
 	
-Generating reports for partition=$nicepart during period: $ppnice
+Generating reports for $displaypart during period: $ppnice
 	
 $line
 EOF
