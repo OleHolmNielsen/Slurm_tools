@@ -50,11 +50,13 @@ export ALLGROUPS=0
 export reportby="users"
 # Default: CPU accounting
 export TRES="cpus"
-# Alternative accountings: NODEUSAGE or TRES/GPU
+# Alternative accounting types: CPUUSAGE, NODEUSAGE or TRES/GPU
+export CPUUSAGE=0
 export NODEUSAGE=0
 export TRESGPU=0
 
-export SORTCOLUMN=5
+# Sorting on the percentage(%) usage column.
+SORTCOLUMN=5
 export printheader=1
 export month="last"
 # A separator line:
@@ -72,32 +74,30 @@ while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
 			;;
 		g )     export groupname="$OPTARG"
 			export ALLGROUPS=0
-	    		export SORTCOLUMN=5
+			SORTCOLUMN=5
 			echo " - Print only users in UNIX group $OPTARG"
 			;;
 		G )     export ALLGROUPS=1
 			export reportby="groups"
 			export username=""
 			export groupname=""
-	    		export SORTCOLUMN=4
+			SORTCOLUMN=4
 			echo " - Print only groupwise summed accounting data"
 			;;
-		T )     export TRESGPU=1	# TRES GPU accounting
-			export TRES="gpus"
-	    		export SORTCOLUMN=4
-			echo " - Print Trackable resource (TRES) GPU usage"
-			;;
-		C )     export NODEUSAGE=0	# CPU accounting: The default option
-			export TRESGPU=0
+		C )     export CPUUSAGE=1	# CPU accounting: The default option
 			export TRES="cpus"
-	    		export SORTCOLUMN=4
+			SORTCOLUMN=5
 			echo " - Print CPU usage"
 			;;
 		N )     export NODEUSAGE=1	# NODE accounting
-			export TRESGPU=0
 			export TRES="node"
-	    		export SORTCOLUMN=4
+			SORTCOLUMN=5
 			echo " - Print NODE usage"
+			;;
+		T )     export TRESGPU=1	# TRES GPU accounting
+			export TRES="gpus"
+			SORTCOLUMN=5
+			echo " - Print Trackable resource (TRES) GPU usage"
 			;;
 		s )     export start_time=$OPTARG
 			echo " - Start date $OPTARG"
@@ -145,10 +145,32 @@ while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
 done
 shift $((OPTIND-1))
 
-if [[ $TRESGPU -eq 1 && $NODEUSAGE -eq 1 ]]
+# Check for default option and mutual exclusivity
+if (( CPUUSAGE + NODEUSAGE + TRESGPU == 0 ))
 then
-	echo "ERROR: Cannot specify both TRES/GPU and NODE usage"
-	exit -1
+	# Select CPU accounting: The default option
+	export CPUUSAGE=1
+	export TRES="cpus"
+	SORTCOLUMN=4
+	echo " - Print CPU usage (default option)"
+elif (( CPUUSAGE + NODEUSAGE + TRESGPU > 1 ))
+then
+	echo "ERROR: Options -C, -N, and -T are mutually exclusive. Please specify only one."
+	exit 1
+fi
+
+if (( CPUUSAGE > 0 ))
+then
+	reporttype="CPU"
+elif (( NODEUSAGE > 0 ))
+then
+	reporttype="NODE"
+elif (( TRESGPU > 0 ))
+then
+	reporttype="GPU"
+else
+	echo "ERROR: No -C|-N|-T report type was chosen"
+	exit 1
 fi
 
 #
@@ -218,16 +240,6 @@ if [[ $printheader -gt 0 ]]
 then
 	# Print a sreport header (overwrite any existing file)
 	sreport cluster utilization start=$start_time end=$end_time -t percent > $REPORT
-fi
-
-if [[ $NODEUSAGE -gt 0 ]]
-then
-	reporttype="NODE"
-elif [[ $TRESGPU -gt 0 ]]
-then
-	reporttype="GPU"
-else
-	reporttype="CPU"
 fi
 
 # Heading with a separating line and space
@@ -322,8 +334,9 @@ BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
 	ALLGROUPS=ENVIRON["ALLGROUPS"]
-	TRESGPU=ENVIRON["TRESGPU"]
+	CPUUSAGE=ENVIRON["CPUUSAGE"]
 	NODEUSAGE=ENVIRON["NODEUSAGE"]
+	TRESGPU=ENVIRON["TRESGPU"]
 	workdir=ENVIRON["workdir"]
 	totaljobs=0
 	giga=1000000000
@@ -349,7 +362,7 @@ BEGIN {
 	alloccpus = $6		# Total number of CPUs allocated (>= allocnodes)
 	alloctres = $7		# TRES resources (GPUs etc.) allocated
 	# Usage of resources: cpus or nodes
-	if (NODEUSAGE == 0)
+	if (CPUUSAGE == 1)
 		usage = alloccpus
 	else
 		usage = allocnodes
