@@ -11,8 +11,11 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct [-s Start_time -e End_time | -c | -y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-T/-N] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
+	-C: Print CPU usage (Default option)
+	-T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
+	-N: Print NODE usage in stead of CPU usage
 	-s Start_time [last month]: Starting time of accounting period.
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
@@ -23,8 +26,6 @@ where:
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
-	-T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
-	-N: Print NODE usage in stead of CPU usage
 	-W directory: Print only jobs with this string in the job WorkDir
 	-r: Report name prefix
 	-n: No header information is printed (append to existing report)
@@ -60,7 +61,7 @@ export month="last"
 line="--------------------------------------------------------------------------------"
 
 # Process options
-while getopts "p:u:g:s:e:r:m:W:cywGTNhn" options; do
+while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo " - Print only accounting in Slurm partition $OPTARG"
@@ -86,7 +87,14 @@ while getopts "p:u:g:s:e:r:m:W:cywGTNhn" options; do
 	    		export SORTCOLUMN=4
 			echo " - Print Trackable resource (TRES) GPU usage"
 			;;
+		C )     export NODEUSAGE=0	# CPU accounting: The default option
+			export TRESGPU=0
+			export TRES="cpus"
+	    		export SORTCOLUMN=4
+			echo " - Print CPU usage"
+			;;
 		N )     export NODEUSAGE=1	# NODE accounting
+			export TRESGPU=0
 			export TRES="node"
 	    		export SORTCOLUMN=4
 			echo " - Print NODE usage"
@@ -309,7 +317,6 @@ export FORMAT="JobID,User${ulen},Group${glen},Partition,AllocNodes,AllocCPUS,All
 export STATE="ca,rq,cd,f,to,pr,oom"
 
 # Get Slurm individual job accounting records using the "sacct" command
-# The "-a" flag was removed 04-Jan-2023
 sacct $selection -np -X -S $start_time -E $end_time -o $FORMAT -s $STATE | awk -F"|" '
 BEGIN {
 	userselect=ENVIRON["username"]
@@ -320,9 +327,9 @@ BEGIN {
 	workdir=ENVIRON["workdir"]
 	totaljobs=0
 	giga=1000000000
-	# Maximum possible node power
+	# Maximum possible node power (Watt)
 	maxpower = 15000
-	kWh=3600000	# 1 kWh is this many Joules
+	kWh=3600000	# 1 kilo-Watt-hour (kWh) is this many Joules
 	# First get the list of user full names from /etc/passwd lines
 	COMMAND="getent passwd"
 	while (COMMAND | getline ) {
@@ -341,6 +348,11 @@ BEGIN {
 	allocnodes = $5		# Number of nodes allocated
 	alloccpus = $6		# Total number of CPUs allocated (>= allocnodes)
 	alloctres = $7		# TRES resources (GPUs etc.) allocated
+	# Usage of resources: cpus or nodes
+	if (NODEUSAGE == 0)
+		usage = alloccpus
+	else
+		usage = allocnodes
 	submit	= $8		# submit time
 	eligible= $9		# eligible time
 	if (eligible == "Unknown") eligible = submit
@@ -383,17 +395,11 @@ BEGIN {
 	if (power > maxpower) joules = 0
 	jobworkdir	= $16	# Job working directory
 
-	# Usage of resources: cpus or nodes
-	if (NODEUSAGE == 0)
-		usage = alloccpus
-	else
-		usage = allocnodes
-
 	# Cluster TOTAL accounting
 	totaljobs++
 	totalwait += wait
-	totalusage += usage*elapsed
-	wallnodetotal += usage*wall
+	# totalusage += usage*elapsed
+	wallusagetotal += usage*wall
 	wallgputotal += ngpus*wall
 	wallsecs += wall
 
@@ -407,11 +413,7 @@ BEGIN {
 	fullnamegroup[user,group] = fullname[user]
 	usergroup[user,group] = group
 	jobs[user,group]++
-	# Currently unused data:
-	# usagesum[user,group] += usage*elapsed
-	# if (usage < minnodes[user,group]) minnodes[user,group] = usage
-	# if (usage > maxnodes[user,group]) maxnodes[user,group] = usage
-	wallnodesum[user,group] += usage*wall
+	wallusagesum[user,group] += usage*wall
 	wallgpusum[user,group] += ngpus*wall
 	walltimesum[user,group] += wall
 	joulesused[user,group] += joules
@@ -420,11 +422,7 @@ BEGIN {
 	# Group accounting
 	groupname[group]=group
 	group_jobs[group]++
-	# Currently unused data:
-	# group_usagesum[group] += usage*elapsed
-	# if (usage < group_minnodes[group]) group_minnodes[group] = usage
-	# if (usage > group_maxnodes[group]) group_maxnodes[group] = usage
-	group_wallnodesum[group] += usage*wall
+	group_wallusagesum[group] += usage*wall
 	group_wallgpusum[group] += ngpus*wall
 	group_walltimesum[group] += wall
 	group_waittime[group] += wait
@@ -437,22 +435,17 @@ BEGIN {
 	else
 		totalwaitaverage = 0
 	if (wallsecs > 0) {
-		nodesaverage = wallnodetotal/wallsecs
+		wallusageaverage = wallusagetotal/wallsecs
 		gpuaverage = wallgputotal/wallsecs
 	} else {
-		nodesaverage = 0
+		wallusageaverage = 0
 		gpuaverage = 0
 	}
 	# Usage in hours
-	cpunodehours = totalusage / 3600
-	wallnodehours = wallnodetotal / 3600
+	# totalusagehours = totalusage / 3600
+	wallusagehours = wallusagetotal / 3600
 	wallgpuhours = wallgputotal / 3600
 	wallhours = wallsecs / 3600
-	# if (totaljobs == 0 || cpunodehours == 0 || wallnodehours == 0 || wallhours == 0) {
-	#	 print "ERROR: Zero CPU hours recorded in specified date interval"
-	#	 print "totaljobs = ", totaljobs, "cpunodehours = ", cpunodehours, "wallnodehours = ", wallnodehours, "wallhours = ", wallhours
-	#	 exit 1
-	# }
 
 	if (ALLGROUPS == 0) {
 		# Per-user accounting
@@ -463,11 +456,11 @@ BEGIN {
 		groupjoules = 0
 		for (ug in usernamegroup) {
 			if (length(groupselect) > 0 && usergroup[ug] != groupselect) continue
-			if (wallnodetotal > 0 && jobs[ug] > 0 && walltimesum[ug] > 0)
+			if (wallusagetotal > 0 && jobs[ug] > 0 && walltimesum[ug] > 0)
 				# CPU/NODE or GPU accounting
 				if (TRESGPU == 0) {
-					w1 = wallnodesum[ug]
-					w2 = wallnodetotal
+					w1 = wallusagesum[ug]
+					w2 = wallusagetotal
 				} else {
 					w1 = wallgpusum[ug]
 					w2 = wallgputotal
@@ -477,7 +470,7 @@ BEGIN {
 					jobs[ug], w1/3600, 100*w1/w2, joulesused[ug]/kWh,
 					w1/walltimesum[ug], waittime[ug]/jobs[ug]/3600, fullnamegroup[ug])
 			groupjobs += jobs[ug]
-			groupnodehours += wallnodesum[ug]/3600
+			groupusagehours += wallusagesum[ug]/3600
 			groupgpuhours += wallgpusum[ug]/3600
 			grouphours += walltimesum[ug]/3600
 			groupwait += waittime[ug]
@@ -488,9 +481,9 @@ BEGIN {
 		totalusers = "Number of users: " usercount
 		# CPU/NODE or GPU accounting
 		if (TRESGPU == 0) {
-			avg = nodesaverage
-			wtot = wallnodehours
-			g = groupnodehours
+			avg = wallusageaverage
+			wtot = wallusagehours
+			g = groupusagehours
 		} else {
 			avg = gpuaverage
 			wtot = wallgpuhours
@@ -514,8 +507,8 @@ BEGIN {
 		for (group in groupname) {
 			# CPU or GPU accounting
 			if (TRESGPU == 0) {
-				w1 = group_wallnodesum[group]
-				w2 = wallnodetotal
+				w1 = group_wallusagesum[group]
+				w2 = wallusagetotal
 			} else {
 				w1 = group_wallgpusum[group]
 				w2 = wallgputotal
@@ -528,8 +521,8 @@ BEGIN {
 		}
 		# CPU or GPU accounting
 		if (TRESGPU == 0) {
-			avg = nodesaverage
-			wtot = wallnodehours
+			avg = wallusageaverage
+			wtot = wallusagehours
 		} else {
 			avg = gpuaverage
 			wtot = wallgpuhours
