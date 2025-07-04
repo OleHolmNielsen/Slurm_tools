@@ -136,10 +136,12 @@ BEGIN {
 	part	= $4		# Slurm partition name for this job
 	nodect	= $5		# Number of nodes used
 	total_ncpus = $6	# Total number of CPUs used (>=nodect)
+	if (total_ncpus == 0) next	# Assume failed job
 	submit	= $7		# submit time
 	eligible= $8		# eligible time
-	if (eligible == "Unknown") eligible = submit
+	if (eligible ~ "Unknown") eligible = submit
 	start	= $9		# Job start time in epoch seconds
+	if (start ~ "None") next	# Assume failed job
 	end	= $10		# Job end time in epoch seconds
 	cput	= $11		# CPU time in seconds
 	maxrss	= $12		# MaxRSS: Maximum resident set size of all tasks in job
@@ -147,6 +149,7 @@ BEGIN {
 	alloctres = $13		# AllocTRES: Trackable resources (GPUs used)
 	state	= $14		# Job state
 	wall	= end - start
+	if (wall < 10) next	# Assume failed job < 10 sec
 	wait	= start - eligible
 
 	# Parse the alloctres field and look for gres/gpu=XX number of gpus field
@@ -160,9 +163,8 @@ BEGIN {
 	# This is a local hack (delete if you do not want it):
 	# Since we do not have complete AllocTRES records in our database,
 	# fudge the number of GPUs=1 for jobs in the sm3090 partition.
-	if (ngpus == 0 && part == "sm3090") ngpus = 1
+	# if (ngpus == 0 && part == "sm3090") ngpus = 1
 
-	if (wall < 10) next	# Assume failed job < 10 sec
 	wallhours = wall/3600
 	printf("%d\t%s\t%d\t%.3f\t%d\t%d\n", JobID, user, total_ncpus, wallhours, nodect, ngpus)
 } ' > $REPORT
