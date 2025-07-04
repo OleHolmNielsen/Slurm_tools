@@ -90,10 +90,10 @@ EOF
 		fi
 		echo
 		echo "GROUP CPUs report for partitions $p"
-		slurmacct -G $header $partition $pp -r $PREFIX$name	# Group report
+		slurmacct -G $header -C $partition $pp -r $PREFIX$name	# Group report
 		header="-n"	# No header will append to the current report
 		echo
 		echo "USER CPUs report for partitions $p"
-		slurmacct $header $partition $pp -r $PREFIX$name	# Append user report
+		slurmacct $header -C $partition $pp -r $PREFIX$name	# Append user report
 	done
 done
