@@ -348,12 +348,14 @@ BEGIN {
 			if (gres[p] == "") gres[p] = "(No_GRES)     "
 			printf(" %s", gres[p])
 		}
-		if (nodelist[p] != "" && printnodelist == 1) {	# Print the Node list information (collapsed and sorted)
+		if (printnodelist == 1) {	# Print the Node list information (collapsed and sorted)
 			nodelistsorted[p] = "(None)"	# Default
-			# Use scontrol to collapse the nodelist
-			COMMAND = "scontrol show hostlistsorted " nodelist[p]
-			COMMAND | getline nodelistsorted[p]
-			close(COMMAND)
+			if (nodelist[p] != "") {
+				# Use scontrol to collapse the nodelist
+				COMMAND = "scontrol show hostlistsorted " nodelist[p]
+				COMMAND | getline nodelistsorted[p]
+				close(COMMAND)
+			}
 			printf(" %s", nodelistsorted[p])
 		}
 		print ""	# Print end-of-line
