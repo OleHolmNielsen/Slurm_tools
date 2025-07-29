@@ -12,7 +12,7 @@ state=`sinfo -h -O StateCompact:4 -n $nodelist`
 if [[ "$state" == "idle" ]]
 then
 	echo
-	echo "No jobs on nodes $nodelist"
+	echo "Node(s) $nodelist have no running jobs"
 else
 	echo
 	echo "Node $nodelist job information:"
