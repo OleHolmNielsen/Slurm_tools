@@ -29,4 +29,4 @@ fi
 
 # Show recent node events
 echo "NODE EVENTS:"
-sacctmgr show event Format=NodeName,TimeStart,Duration,State,Reason where nodes=$nodelist
+sacctmgr show event Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
