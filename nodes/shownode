@@ -28,6 +28,5 @@ then
 fi
 
 # Show recent node events
-echo
 echo "NODE EVENTS:"
 sacctmgr show event Format=NodeName,TimeStart,Duration,State,Reason where nodes=$nodelist
