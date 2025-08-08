@@ -61,7 +61,7 @@ default_tasks=1			-- Number of tasks if none was requested
 
 -- Check for interactive jobs
 -- Policy: Interactive jobs are limited to 4 hours
-function check_interactive_job (job_desc, submit_uid, log_prefix)
+function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
 	if (job_desc.script == nil or job_desc.script == '') then
 		local time_limit = 240
 		slurm.log_info("%s: user %s submitted an interactive job to partition %s",
@@ -79,7 +79,7 @@ end
 -- Policy: the partition MUST be specified by the job
 partitions_page="Our partitions are listed in https://wiki.fysik.dtu.dk/Niflheim_users/Niflheim_Getting_Started/#compute-node-partitions"
 script_error="ERROR: Please modify your batch job script"
-function check_partition_unspecified (job_desc, submit_uid, log_prefix)
+function check_partition_unspecified (job_desc, part_list, submit_uid, log_prefix)
 	-- Informational web pages
 	local sbatch_msg="Please read the sbatch manual page about setting partitions with -p/--partition"
 	local support_msg="NOTICE: Please contact your local support people if you do not know how to use partitions"
@@ -104,7 +104,7 @@ end
 
 -- Sanity check of partition
 -- The above check_partition_unspecified should be called first
-function check_partition_name (job_desc, submit_uid, log_prefix)
+function check_partition_name (job_desc, part_list, submit_uid, log_prefix)
 	-- Check if the partition name is valid (maybe sbatch already checked this)
 	-- Loop over partitions
 	for i, p in ipairs(partitions) do
@@ -139,7 +139,7 @@ end
 --    sbatch [OPTIONS(0)...] [ : [OPTIONS(N)...]] script(0) [args(0)...]
 -- Do not allow too long argument strings:
 -- Very long strings might potentially cause Slurm to crash due to a database issue!
-function check_arg_list (job_desc, submit_uid, log_prefix)
+function check_arg_list (job_desc, part_list, submit_uid, log_prefix)
 	local maxargc=10	-- Maximum number of job script arguments
 	local maxarglen=1024	-- Maximum length of job script arguments, should be less than 1000000
 	if job_desc.argc == 1 then
@@ -176,7 +176,7 @@ function check_arg_list (job_desc, submit_uid, log_prefix)
 end
 
 -- Sanity check of number of nodes (default=slurm.NO_VAL)
-function check_num_nodes (job_desc, submit_uid, log_prefix)
+function check_num_nodes (job_desc, part_list, submit_uid, log_prefix)
 	local sbatch_msg="Please read the sbatch manual page about setting nodes with -N/--nodes"
 	if job_desc.min_nodes == slurm.NO_VAL and job_desc.max_nodes == slurm.NO_VAL then
 		slurm.log_user("WARNING: The number of nodes has not been specified!")
@@ -212,7 +212,7 @@ function modify_num_nodes (job_desc, job_ptr, part_list, modify_uid, log_prefix)
 end
 
 -- Sanity check of number of tasks (default num_tasks=slurm.NO_VAL)
-function check_num_tasks (job_desc, submit_uid, log_prefix)
+function check_num_tasks (job_desc, part_list, submit_uid, log_prefix)
 	-- NOTE: From Slurm 23.02 job_desc.num_tasks may be undefined, see https://bugs.schedmd.com/show_bug.cgi?id=17564
 	-- In https://bugs.schedmd.com/show_bug.cgi?id=17564#c6 --ntasks-per-gpu currently causes num_tasks to be set (might change in the future)
 	local sbatch_msg="Please read the sbatch manual page about setting tasks with -n/--tasks or --ntasks-per-node or --ntasks-per-gpu"
@@ -262,7 +262,7 @@ end
 
 
 --Forbid the use of jobname="MAINT"
-function forbid_reserved_name (job_desc, submit_uid, log_prefix)
+function forbid_reserved_name (job_desc, part_list, submit_uid, log_prefix)
 	local reserved="MAINT"
 	if job_desc.name ~= nil and job_desc.name == reserved then
 		slurm.log_info("%s: user %s %s JobName=%s reserved",
@@ -276,7 +276,7 @@ function forbid_reserved_name (job_desc, submit_uid, log_prefix)
 end
 
 -- Check usage of big-memory nodes using --mem=xxx etc.
-function check_big_memory (job_desc, submit_uid, log_prefix)
+function check_big_memory (job_desc, part_list, submit_uid, log_prefix)
 	-- Policy: Define acceptable lower limits on memory on a 4 TB node (32 cores)
 	local min_mem_per_node = 700000
 	local cores_per_node = 32
@@ -314,7 +314,7 @@ function check_big_memory (job_desc, submit_uid, log_prefix)
 end
 
 -- Forbid unlimited memory using --mem=0 etc.
-function forbid_memory_eq_0 (job_desc, submit_uid, log_prefix)
+function forbid_memory_eq_0 (job_desc, part_list, submit_uid, log_prefix)
 	local checklist = {
 		{ name="--mem",		value=job_desc.min_mem_per_node },
 		{ name="--mem-per-cpu",	value=job_desc.min_mem_per_cpu },
@@ -335,7 +335,7 @@ end
 -- Check the match of number of CPUs and tasks
 -- Policy: We require the use of entire nodes for some partitions (xeon40 etc.)
 -- as defined by "entirenode" in the "partitions" table.
-function check_cpus_tasks (job_desc, submit_uid, log_prefix)
+function check_cpus_tasks (job_desc, part_list, submit_uid, log_prefix)
 	local cpus_per_task = 1		-- Default value
 	-- Informational web page
 	local cpucores_page="See https://wiki.fysik.dtu.dk/Niflheim_users/Niflheim_Getting_Started/#usage-of-multi-cpu-nodes"
@@ -388,7 +388,7 @@ function check_cpus_tasks (job_desc, submit_uid, log_prefix)
 end
 
 -- Check if GPU partitions are used correctly
-function check_gpus (job_desc, submit_uid, log_prefix)
+function check_gpus (job_desc, part_list, submit_uid, log_prefix)
 	-- Loop over partitions
 	for i, p in ipairs(partitions) do
 		if p.num_gpus > 0 then
@@ -448,7 +448,7 @@ end
 
 
 -- Sets a global string "userinfo" containing user, account and job information for this job
-function get_userinfo (job_desc, submit_uid)
+function get_userinfo (job_desc, part_list, submit_uid)
 	if job_desc.account ~= NIL then
 		userinfo = string.format("%s(UID=%u) account=%s job_name=%s",
 			job_desc.user_name, submit_uid, job_desc.account, job_desc.name)
@@ -477,7 +477,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	if submit_uid == 0 then
 		return slurm.SUCCESS
 	end
-	get_userinfo(job_desc, submit_uid) 
+	get_userinfo(job_desc, part_list, submit_uid) 
 
 	-- Loop over the function list
 	-- We will call these functions in the order listed
@@ -487,7 +487,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 
 	local check = slurm.SUCCESS
 	for i, func in ipairs(functionlist) do
-		check = func(job_desc, submit_uid, log_prefix) 
+		check = func(job_desc, part_list, submit_uid, log_prefix) 
 		if check ~= slurm.SUCCESS then
 			return check
 		end
