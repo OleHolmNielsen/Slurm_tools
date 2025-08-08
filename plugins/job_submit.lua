@@ -64,23 +64,20 @@ default_tasks=1			-- Number of tasks if none was requested
 -- Policy: Interactive jobs are limited to 4 hours
 function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
 	if (job_desc.script == nil or job_desc.script == '') then
-		-- This is a default maximum time for all interactive jobs
+		-- This is a default maximum time in minutes for all interactive jobs
 		local max_time = 240
 		slurm.log_info("%s: user %s submitted an interactive job to partition %s",
 			log_prefix, userinfo, job_desc.partition)
 		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
-		-- Loop over partitions in part_list to determine part.max_time
-		for i, part in pairs(part_list) do
-			if job_desc.partition == part.name then
-				-- slurm.log_info("%s: partition name %s matches job partition %s", log_prefix, part.name, job_desc.partition)
-				if part.max_time ~= nil then
-					max_time = part.max_time
-				end
+		-- Loop over partitions in part_list to determine the partition's max_time
+		for i, p in pairs(part_list) do
+			if job_desc.partition == p.name and p.max_time ~= nil then
+				max_time = p.max_time
 			end
 		end
 		if job_desc.time_limit == nil or job_desc.time_limit > max_time then
 			job_desc.time_limit = max_time
-			slurm.log_info("%s: NOTICE: partition %s has a max_time=%d minutes. The job time_limit has been reduced.",
+			slurm.log_info("%s: NOTICE: partition %s has a max_time of %d minutes: The job time_limit has been set",
 				log_prefix, job_desc.partition, max_time)
 			slurm.log_user("        Job timelimit is set to a maximum value of %d minutes", max_time)
 		end
