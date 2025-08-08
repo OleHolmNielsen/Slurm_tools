@@ -2,6 +2,7 @@
 Niflheim job_submit.lua file for Slurm based upon the source file etc/job_submit.lua.example
 
 For more information check https://slurm.schedmd.com/job_submit_plugins.html
+An example is in the source code at .../etc/job_submit.lua.example
 See also the Wiki page https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#job-submit-plugins
 
 NOTES:
@@ -63,13 +64,30 @@ default_tasks=1			-- Number of tasks if none was requested
 -- Policy: Interactive jobs are limited to 4 hours
 function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
 	if (job_desc.script == nil or job_desc.script == '') then
-		local time_limit = 240
+		local max_time = 240
 		slurm.log_info("%s: user %s submitted an interactive job to partition %s",
 			log_prefix, userinfo, job_desc.partition)
 		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
-		if job_desc.time_limit == nil or job_desc.time_limit > time_limit then
-			job_desc.time_limit = time_limit
-			slurm.log_user("        Job timelimit is set to %d minutes", time_limit)
+		-- Loop over partitions in part_list
+		-- local inx = 0
+		local p = nil
+		for name, part in pairs(part_list) do
+			-- Partition parameters are in part['xx']
+			p = part['name']
+			-- slurm.log_info("%s: part name[%d]:%s", log_prefix, inx, p)
+			-- inx = inx + 1
+			if job_desc.partition == p then
+			-- slurm.log_info("%s: partition name %s matches job partition %s", log_prefix, p, job_desc.partition)
+				if part['max_time'] ~= nil then
+					max_time = part['max_time']
+				end
+			end
+		end
+		if job_desc.time_limit == nil or job_desc.time_limit > max_time then
+			job_desc.time_limit = max_time
+			slurm.log_info("%s: NOTICE: partition %s has a max_time=%d minutes. The job time_limit has been reduced.",
+				log_prefix, job_desc.partition, max_time)
+			slurm.log_user("        Job timelimit is set to the maximum value of %d minutes", max_time)
 		end
 	end
 	return slurm.SUCCESS
