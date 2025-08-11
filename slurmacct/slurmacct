@@ -50,7 +50,7 @@ export ALLGROUPS=0
 export reportby="users"
 # Default: CPU accounting
 export TRES="cpus"
-# Alternative accounting types: CPUUSAGE, NODEUSAGE or TRES/GPU
+# Mutually exclusive accounting types: CPUUSAGE, NODEUSAGE or TRES/GPU
 export CPUUSAGE=0
 export NODEUSAGE=0
 export TRESGPU=0
@@ -86,17 +86,17 @@ while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
 			;;
 		C )     export CPUUSAGE=1	# CPU accounting: The default option
 			export TRES="cpus"
-			SORTCOLUMN=5
+			SORTCOLUMN=4
 			echo " - Print CPU usage"
 			;;
 		N )     export NODEUSAGE=1	# NODE accounting
 			export TRES="node"
-			SORTCOLUMN=5
+			SORTCOLUMN=4
 			echo " - Print NODE usage"
 			;;
 		T )     export TRESGPU=1	# TRES GPU accounting
 			export TRES="gpus"
-			SORTCOLUMN=5
+			SORTCOLUMN=4
 			echo " - Print Trackable resource (TRES) GPU usage"
 			;;
 		s )     export start_time=$OPTARG
@@ -341,7 +341,7 @@ BEGIN {
 	totaljobs=0
 	giga=1000000000
 	# Maximum possible node power (Watt)
-	maxpower = 15000
+	maxpower = 20000
 	kWh=3600000	# 1 kilo-Watt-hour (kWh) is this many Joules
 	# First get the list of user full names from /etc/passwd lines
 	COMMAND="getent passwd"
@@ -361,11 +361,13 @@ BEGIN {
 	allocnodes = $5		# Number of nodes allocated
 	alloccpus = $6		# Total number of CPUs allocated (>= allocnodes)
 	alloctres = $7		# TRES resources (GPUs etc.) allocated
-	# Usage of resources: cpus or nodes
+	# Usage of resources: cpus or nodes (TRES/GPU is below)
 	if (CPUUSAGE == 1)
 		usage = alloccpus
-	else
+	else if (NODEUSAGE == 1)
 		usage = allocnodes
+	else
+		usage = 0
 	submit	= $8		# submit time
 	eligible= $9		# eligible time
 	if (eligible == "Unknown") eligible = submit
@@ -386,34 +388,34 @@ BEGIN {
 	#   AllocTRES requires AccountingStorageTRES=gres/gpu in slurm.conf
 	#   Parse the alloctres field and look for gres/gpu=XX number of gpus field
 	#     Example: billing=4,cpu=2,gres/gpu:rtx3090=1,gres/gpu=1,mem=4000M,node=1
-	ngpus = 0	# Number of GPUs allocated
+	ngpus = 0	# The number of GPUs allocated
 	if (TRESGPU > 0 && alloctres != "" && split(alloctres, array, ",") > 0) {
 		for (i in array) {
 			if (gsub("gres/gpu=", "", array[i]) == 1)
 				ngpus = array[i]
 		}
 		delete array
-		if (ngpus == 0) next	# Skip non_GPU jobs
+		if (ngpus == 0) next	# Skip jobs that used zero GPUs
+		# When TRESGPU > 0 we set "usage" to "ngpus" (the number of GPUs used)
+		# in stead of cpus or nodes:
+		usage = ngpus
 	}
 
 	# Total energy consumed by a job, in joules. 
 	# BEWARE: If multiple jobs share a node, we cannot assign an energy to each individual job but only the total energy!
-	# Therefore the energy usage may be counted multiple times.
+	# Therefore the energy usage may be accounted for multiple times!
 	joules	= $15
 	# Incorrect astronomically large joules numbers may occur, see https://support.schedmd.com/show_bug.cgi?id=20207
 	# The acct_gather_energy/ipmi issues were fixed in Slurm 24.11
 	if (joules == "" || joules > 10*giga) joules = 0
-	# Check sanity of power (joules/elapsed) must be less than maxpower Watts
-	power = joules / elapsed
-	if (power > maxpower) joules = 0
+	# Check sanity of joules: Must be less than elapsed*maxpower Watts
+	if (joules > elapsed * maxpower) joules = 0
 	jobworkdir	= $16	# Job working directory
 
 	# Cluster TOTAL accounting
 	totaljobs++
 	totalwait += wait
-	# totalusage += usage*elapsed
 	wallusagetotal += usage*wall
-	wallgputotal += ngpus*wall
 	wallsecs += wall
 
 	# Check if this job matches selection criteria
@@ -427,7 +429,6 @@ BEGIN {
 	usergroup[user,group] = group
 	jobs[user,group]++
 	wallusagesum[user,group] += usage*wall
-	wallgpusum[user,group] += ngpus*wall
 	walltimesum[user,group] += wall
 	joulesused[user,group] += joules
 	waittime[user,group] += wait
@@ -436,7 +437,6 @@ BEGIN {
 	groupname[group]=group
 	group_jobs[group]++
 	group_wallusagesum[group] += usage*wall
-	group_wallgpusum[group] += ngpus*wall
 	group_walltimesum[group] += wall
 	group_waittime[group] += wait
 	groupjoulesused[group] += joules
@@ -449,15 +449,11 @@ BEGIN {
 		totalwaitaverage = 0
 	if (wallsecs > 0) {
 		wallusageaverage = wallusagetotal/wallsecs
-		gpuaverage = wallgputotal/wallsecs
 	} else {
 		wallusageaverage = 0
-		gpuaverage = 0
 	}
 	# Usage in hours
-	# totalusagehours = totalusage / 3600
 	wallusagehours = wallusagetotal / 3600
-	wallgpuhours = wallgputotal / 3600
 	wallhours = wallsecs / 3600
 
 	if (ALLGROUPS == 0) {
@@ -470,21 +466,13 @@ BEGIN {
 		for (ug in usernamegroup) {
 			if (length(groupselect) > 0 && usergroup[ug] != groupselect) continue
 			if (wallusagetotal > 0 && jobs[ug] > 0 && walltimesum[ug] > 0)
-				# CPU/NODE or GPU accounting
-				if (TRESGPU == 0) {
-					w1 = wallusagesum[ug]
-					w2 = wallusagetotal
-				} else {
-					w1 = wallgpusum[ug]
-					w2 = wallgputotal
-					if (w1 == 0) continue	# Zero GPU usage
-				}
+				w1 = wallusagesum[ug]
+				w2 = wallusagetotal
 				printf(format, usernamegroup[ug], usergroup[ug],
 					jobs[ug], w1/3600, 100*w1/w2, joulesused[ug]/kWh,
 					w1/walltimesum[ug], waittime[ug]/jobs[ug]/3600, fullnamegroup[ug])
 			groupjobs += jobs[ug]
 			groupusagehours += wallusagesum[ug]/3600
-			groupgpuhours += wallgpusum[ug]/3600
 			grouphours += walltimesum[ug]/3600
 			groupwait += waittime[ug]
 			groupjoules += groupjoulesused[ug]
@@ -492,16 +480,9 @@ BEGIN {
 		}
 		# Print out total usage
 		totalusers = "Number of users: " usercount
-		# CPU/NODE or GPU accounting
-		if (TRESGPU == 0) {
-			avg = wallusageaverage
-			wtot = wallusagehours
-			g = groupusagehours
-		} else {
-			avg = gpuaverage
-			wtot = wallgpuhours
-			g = groupgpuhours
-		}
+		avg = wallusageaverage
+		wtot = wallusagehours
+		g = groupusagehours
 		printf(format, "TOTAL", "(All)", totaljobs, wtot, 100, totaljoules/kWh,
 			avg, totalwaitaverage/3600, totalusers)
 		# Print out group usage
@@ -518,28 +499,15 @@ BEGIN {
 		PROCINFO["sorted_in"] = "@ind_num_desc"
 
 		for (group in groupname) {
-			# CPU or GPU accounting
-			if (TRESGPU == 0) {
-				w1 = group_wallusagesum[group]
-				w2 = wallusagetotal
-			} else {
-				w1 = group_wallgpusum[group]
-				w2 = wallgputotal
-				if (w1 == 0) continue	# Zero GPU usage
-			}
+			w1 = group_wallusagesum[group]
+			w2 = wallusagetotal
 			if (group_jobs[group] > 0 && group_walltimesum[group] > 0)
 				printf(format, groupname[group],
 					group_jobs[group], w1/3600, 100*w1/w2, groupjoulesused[group]/kWh,
 					w1/group_walltimesum[group], group_waittime[group]/group_jobs[group]/3600)
 		}
-		# CPU or GPU accounting
-		if (TRESGPU == 0) {
-			avg = wallusageaverage
-			wtot = wallusagehours
-		} else {
-			avg = gpuaverage
-			wtot = wallgpuhours
-		}
+		avg = wallusageaverage
+		wtot = wallusagehours
 		printf(format, "TOTAL", totaljobs, wtot, 100, totaljoules/kWh, avg, totalwaitaverage/3600)
 	}
 } ' | env LC_ALL=C sort -r -n -k $SORTCOLUMN -k 3 -k 1d >> $REPORT
