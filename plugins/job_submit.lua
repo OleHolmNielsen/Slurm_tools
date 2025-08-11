@@ -64,25 +64,32 @@ default_tasks=1			-- Number of tasks if none was requested
 -- Policy: Interactive jobs are limited to 4 hours (240 minutes)
 function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
 	if (job_desc.script == nil or job_desc.script == '') then
-		-- This is a default maximum time in minutes for all interactive jobs
+		-- Policy: The default maximum time in minutes for all interactive jobs
 		local max_time = 240
 		slurm.log_info("%s: user %s submitted an interactive job to partition %s",
 			log_prefix, userinfo, job_desc.partition)
 		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
-		-- Loop over partitions in part_list to determine the partition's max_time
-		for i, p in pairs(part_list) do
-			if job_desc.partition == p.name then
-				if p.max_time ~= nil and p.max_time < max_time then
-					max_time = p.max_time		-- Reduce max_time to the partition max_time
+		-- Loop over the (multiple) partitions requested by the job
+		--   Split job_desc.partition on the "," separator between multiple PartitionNames (such as a,b,c)
+		--   gmatch: see http://lua-users.org/wiki/StringLibraryTutorial
+		for pjob in string.gmatch(job_desc.partition, "[^,]+") do
+			-- slurm.log_user("Submit to partition %s", pjob)
+			-- Loop over partitions in part_list to determine the partition's max_time time limit
+			for i, p in pairs(part_list) do
+				if pjob == p.name then
+					if p.max_time ~= nil and p.max_time < max_time then
+						max_time = p.max_time		-- Reduce max_time to the partition max_time
+					end
+					break	-- no more partitions to check
 				end
-				break	-- no more partitions to check
 			end
-		end
-		if job_desc.time_limit == nil or job_desc.time_limit > max_time then
-			job_desc.time_limit = max_time
-			slurm.log_info("%s: NOTICE: Job time_limit in partition %s has been set to %d minutes",
-				log_prefix, job_desc.partition, max_time)
-			slurm.log_user("        Job time limit is set to %d minutes", max_time)
+			if job_desc.time_limit == nil or job_desc.time_limit > max_time then
+				job_desc.time_limit = max_time
+				slurm.log_info("%s: NOTICE: Job time_limit in partition %s has been set to %d minutes",
+					log_prefix, pjob, max_time)
+				slurm.log_user("        Job time limit is set to %d minutes on partition %s",
+					max_time, pjob)
+			end
 		end
 	end
 	return slurm.SUCCESS
