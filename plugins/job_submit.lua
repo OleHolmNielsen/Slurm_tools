@@ -77,13 +77,13 @@ function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
 			for i, p in pairs(part_list) do
 				if pjob == p.name then
 					if p.max_time ~= nil and p.max_time < max_time then
-						max_time = p.max_time		-- Reduce max_time to the partition max_time
+						max_time = p.max_time		-- Reduce job max_time to the partition p.max_time
 					end
 					break	-- no more partitions to check
 				end
 			end
 			if job_desc.time_limit == nil or job_desc.time_limit > max_time then
-				job_desc.time_limit = max_time
+				job_desc.time_limit = max_time	-- Set a new job max_time
 				slurm.log_info("%s: NOTICE: Job time_limit in partition %s has been set to %d minutes",
 					log_prefix, pjob, max_time)
 				slurm.log_user("        Job time limit is set to %d minutes on partition %s",
