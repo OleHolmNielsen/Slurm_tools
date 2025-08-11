@@ -62,18 +62,17 @@ interactive_max_time=240	-- Default maximum time in minutes for all interactive 
 --
 
 -- Check for interactive jobs
--- Policy: Interactive jobs are limited to 4 hours (240 minutes)
 function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
 	if (job_desc.script == nil or job_desc.script == '') then
-		slurm.log_info("%s: user %s submitted an interactive job to partition %s",
+		-- Job script is missing, assuming an interactive job
+		slurm.log_info("%s: user %s submitted an interactive job to partition(s) %s",
 			log_prefix, userinfo, job_desc.partition)
 		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
-		-- Loop over the (multiple) partitions requested by the job
+		-- Loop over the (possibly multiple) partitions requested by the job
 		--   Split job_desc.partition on the "," separator between multiple PartitionNames (such as a,b,c)
 		--   gmatch: see http://lua-users.org/wiki/StringLibraryTutorial
 		local max_time = interactive_max_time
-		for pjob in string.gmatch(job_desc.partition, "[^,]+") do
-			-- slurm.log_user("Submit to partition %s", pjob)
+		for pjob in string.gmatch(job_desc.partition, "[^,]+") do	-- Select substrings without comma ("^," means not-comma)
 			-- Loop over partitions in part_list to determine the partition's max_time time limit
 			for i, p in pairs(part_list) do
 				if pjob == p.name then
