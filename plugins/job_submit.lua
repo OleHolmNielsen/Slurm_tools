@@ -52,7 +52,8 @@ partitions = {
 	{ partition="a100", numcores=128, entirenode=0, num_gpus=4 },
 	{ partition="h200", numcores=96, entirenode=0, num_gpus=4 }
 }
-default_partition="xeon24el8"	-- This partition will be set if none was requested
+-- We do not define the default_partition, so jobs MUST specify partition
+-- default_partition="xeon24el8"	-- This partition will be set if none was requested
 default_nodes=1			-- Number of nodes if none was requested
 default_tasks=1			-- Number of tasks if none was requested
 interactive_max_time=240	-- Default maximum time in minutes for all interactive jobs
@@ -63,15 +64,20 @@ interactive_max_time=240	-- Default maximum time in minutes for all interactive 
 
 -- Check for interactive jobs
 function check_interactive_job (job_desc, part_list, submit_uid, log_prefix)
-	if (job_desc.script == nil or job_desc.script == '') then
-		-- Job script is missing, assuming an interactive job
+	if job_desc.script == nil or job_desc.script == "" then
+		-- Job script is missing, so we assume that this is an interactive job
 		slurm.log_info("%s: user %s submitted an interactive job to partition(s) %s",
 			log_prefix, userinfo, job_desc.partition)
 		slurm.log_user("NOTICE: Job script is missing, assuming an interactive job")
+		local max_time = interactive_max_time
+		if job_desc.partition == nil or job_desc.partition == "" then	-- Just a sanity check of partition
+			job_desc.time_limit = max_time	-- Set a new job max_time
+			slurm.log_user("Interactive job time limit is set to %d minutes", max_time)
+			return slurm.SUCCESS
+		end
 		-- Loop over the (possibly multiple) partitions requested by the job
 		--   Split job_desc.partition on the "," separator between multiple PartitionNames (such as a,b,c)
-		--   gmatch: see http://lua-users.org/wiki/StringLibraryTutorial
-		local max_time = interactive_max_time
+		--   See gmatch examples at http://lua-users.org/wiki/StringLibraryTutorial
 		for pjob in string.gmatch(job_desc.partition, "[^,]+") do	-- Select substrings without comma ("^," means not-comma)
 			-- Loop over partitions in part_list to determine the partition's max_time time limit
 			for i, p in pairs(part_list) do
@@ -108,13 +114,15 @@ function check_partition_unspecified (job_desc, part_list, submit_uid, log_prefi
 		slurm.log_user("WARNING: The compute node partition has not been specified!")
 		slurm.log_user(sbatch_msg)
 		slurm.log_user(partitions_page)
+		slurm.log_user(script_error)
 		slurm.log_user(support_msg)
+		-- Setting partition to the default partition (if defined)
 		if default_partition ~= nil then
 			job_desc.partition = default_partition
 			slurm.log_user("Setting default partition: %s", job_desc.partition)
 			return slurm.SUCCESS
 		else
-			slurm.log_user(script_error)
+			-- Reject jobs that did not specify any partitions
 			return slurm.ESLURM_INVALID_PARTITION_NAME
 		end
 	end
