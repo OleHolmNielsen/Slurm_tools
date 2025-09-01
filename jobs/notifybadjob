@@ -48,7 +48,7 @@ done
 
 # Get the jobid as the arguments
 JOBLIST="$*"
-if test -z "$JOBLIST"
+if [[ -z "$JOBLIST" ]]
 then
 	echo $USAGE
 	exit 1
@@ -62,13 +62,13 @@ reason02="Your job has grossly exceeded the available physical RAM memory and is
 reason03="Your job has grossly exceeded the physical RAM memory available per CPU core."
 reason04="Your job is running too many processes/threads and is overloading the CPU(s)."
 reason05="Your job is using more CPU cores than your job has requested."
-reason06="Your job is not using all of the CPU cores that you have requested."
-reason07="Your job is not laid out correctly for xeon8 multi-CPU nodes - you MUST use the xeon8 partition correctly."
-reason08="Your job is not laid out correctly for xeon16 multi-CPU nodes - you MUST use the xeon16 partition correctly."
-reason09="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly."
+reason06="Your job is not using all of the CPU cores or GPUs that you have requested."
+reason07="Your job is not using all of the GPUs that you have requested."
+reason09="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly, see $BASEURL/Niflheim_Getting_Started#correct-usage-of-multi-cpu-nodes"
+reason96="Your job is not laid out correctly for 4TB big-memory nodes - you MUST use this partition for big-memory jobs only"
 reason97="Your job is not laid out correctly for xeon56 multi-CPU nodes - you MUST use the xeon56 partition correctly."
-reason98="Your job is not laid out correctly for sm3090 multi-CPU nodes - you MUST use the sm3090 partition correctly."
-reason99="Your job is not laid out correctly for xeon40 multi-CPU nodes - you MUST use the xeon40 partition correctly."
+reason98="Your job is not laid out correctly for sm3090 GPU nodes - you MUST use the sm3090 partition correctly, see $BASEURL/Niflheim_Getting_Started/#usage-of-gpu-compute-nodes"
+reason99="Your job is not laid out correctly for xeon40 multi-CPU nodes - you MUST use the xeon40 partition correctly, see $BASEURL/Niflheim_Getting_Started#correct-usage-of-multi-cpu-nodes"
 reason10="Your job is unfortunately running on a node that has a hardware or electrical error."
 reason11="Error in the input file caused job to fail."
 reason12="Job failed - please examine the output file."
@@ -82,7 +82,7 @@ reason19="Your job requests resources that cannot be satisfied or do not exist."
 reason20="Please ask $ADMINMAIL for the reason."
 reason21="Your MPI job uses 1 Gbit Ethernet in stead of the fast OPA/IB, please correct your MPI command."
 ANS=-1
-while test $ANS -le 0
+while [[ $ANS -le 0 ]]
 do
 	echo
 	echo Please select one of the following reasons why you want to $action this job:
@@ -95,6 +95,7 @@ do
 	echo "  7. $reason07"
 	echo "  8. $reason08"
 	echo "  9. $reason09"
+	echo " 96. $reason96"
 	echo " 97. $reason97"
 	echo " 98. $reason98"
 	echo " 99. $reason99"
@@ -121,6 +122,7 @@ do
 		7) action_reason=$reason07;;
 		8) action_reason=$reason08;;
 		9) action_reason=$reason09;;
+	       96) action_reason=$reason96;;
 	       97) action_reason=$reason97;;
 	       98) action_reason=$reason98;;
 	       99) action_reason=$reason99;;
@@ -151,7 +153,7 @@ do
 #
 # Define strings to be used in the report
 #
-if test $killjob -eq 1
+if [[ $killjob -eq 1 ]]
 then
 	action='Kill'
 	action_done='killed'
@@ -164,7 +166,7 @@ fi
 
 # Check if this jobid can be inquired successfully.
 JOBSTATE="`squeue -h -O State -j $jobid`"
-if test "$?" != "0"
+if [[ "$?" != "0" ]]
 then
         echo Error inquiring about job $jobid
         exit 1
@@ -182,7 +184,7 @@ fi
 echo -n Get job information...
 scontrol --details show job $jobid >$JOBMSGS 2>$JOBERRS
 # Check for errors from job status
-if test -s $JOBERRS
+if [[ -s $JOBERRS ]]
 then
 	echo
 	cat $JOBERRS
@@ -191,7 +193,7 @@ fi
 
 # Get user E-mail address and name (job arrays handled by uniq)
 USERID=`squeue -h -O UserName: -j $jobid | uniq`
-if test -z "$USERID"
+if [[ -z "$USERID" ]]
 then
 	echo ERROR: Could not get userid of job $jobid
 	exit 1
@@ -240,7 +242,7 @@ cat $JOBMSGS >> $MESSAGE
 # Is the job still in a queued state ?
 JOBSTATE=`grep JobState= $JOBMSGS | awk '{print $1}'`
 echo NOTE: This job has a state of $JOBSTATE
-if test "$JOBSTATE" = "JobState=PENDING"
+if [[ "$JOBSTATE" = "JobState=PENDING" ]]
 then
 	JOBQUEUED=1
 else
@@ -248,7 +250,7 @@ else
 fi
 
 # Only print job information for running jobs
-if test "$JOBQUEUED" = 0
+if [[ "$JOBQUEUED" = 0 ]]
 then
 	# Memory and CPU usage
 	cat <<EOF >> $MESSAGE
@@ -298,7 +300,7 @@ fi
 #fi
 # List of nodes used
 NODELIST=`grep NodeList= $JOBMSGS | awk -F= '{print $2}'`
-if test -z "$NODELIST"
+if [[ -z "$NODELIST" ]]
 then
 	NODELIST="Nodes:unknown"
 fi
@@ -306,15 +308,15 @@ fi
 # Working directory
 echo -n Listing files...
 WORKDIR=`grep WorkDir= $JOBMSGS | awk -F= '{print $2}'`
-if test -z "$WORKDIR"
+if [[ -z "$WORKDIR" ]]
 then
 	WORKDIR="WORKDIR:unknown"
 else
 	# Check how many files in workdir
-	NUMFILESINDIR=`ls -f $WORKDIR | wc -l`
-	if test $NUMFILESINDIR -lt 1000
+	NUMFILESINDIR=`ls -1f $WORKDIR | wc -l`
+	if [[ $NUMFILESINDIR -lt 1000 ]]
 	then
-		# If < 1000 files then list them
+		# If <1000 files then list some of them
 		MAXFILES=20
 		cat <<EOF >> $MESSAGE
 
@@ -357,7 +359,7 @@ if [ "${killjob}" = "1" ]; then
   #
   # Write statistics to the Syslog logfile
   #
-  if test ! -f $LOGFILE
+  if [[ ! -f $LOGFILE ]]
   then
 	echo Creating logfile $LOGFILE
 	touch $LOGFILE
