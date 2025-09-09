@@ -483,7 +483,7 @@ function get_userinfo (job_desc, part_list, submit_uid)
 		-- The job's account is the user's default account
 		userinfo = string.format("%s(UID=%u) job_name=%s",
 			job_desc.user_name, submit_uid, job_desc.name)
-	else submit_uid ~= nil then
+	elseif submit_uid ~= nil then
 		userinfo = string.format("%s(UID=%u) job_name=(nil)",
 			job_desc.user_name, submit_uid)
 	end
