@@ -476,18 +476,16 @@ end
 
 -- Sets a global string "userinfo" containing user, account and job information for this job
 function get_userinfo (job_desc, part_list, submit_uid)
-	if job_desc.account ~= NIL then
+	if job_desc.account ~= nil then
 		userinfo = string.format("%s(UID=%u) account=%s job_name=%s",
 			job_desc.user_name, submit_uid, job_desc.account, job_desc.name)
-	else
+	elseif job_desc.name ~= nil then
 		-- The job's account is the user's default account
-		if job_desc.name ~= NIL then
-			userinfo = string.format("%s(UID=%u) job_name=%s",
-				job_desc.user_name, submit_uid, job_desc.name)
-		else
-			userinfo = string.format("%s(UID=%u) job_name=(nil)",
-				job_desc.user_name, submit_uid)
-		end
+		userinfo = string.format("%s(UID=%u) job_name=%s",
+			job_desc.user_name, submit_uid, job_desc.name)
+	else submit_uid ~= nil then
+		userinfo = string.format("%s(UID=%u) job_name=(nil)",
+			job_desc.user_name, submit_uid)
 	end
 	return slurm.SUCCESS
 end
@@ -532,10 +530,12 @@ function slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
 	local log_prefix = 'slurm_job_modify'
 
 	--Don't block/modify any update from root 
-	if modify_uid == 0 then
+	if modify_uid == nil then
+		return slurm.ESLURM_USER_ID_MISSING
+	elseif modify_uid == 0 then
 		return slurm.SUCCESS
 	end
-	get_userinfo(job_desc, modify_uid) 
+	get_userinfo(job_desc, part_list, modify_uid) 
 
 	-- Loop over the function list no. 1 for checking job_desc
 	-- We will call these functions in the order listed
