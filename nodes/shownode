@@ -28,5 +28,12 @@ then
 fi
 
 # Show recent node events
+
+# Default period of start of events is 00:00:00 of the previous day, but this can be changed with the Start= option.
+# Example event start times:
+EventStart=""
+# EventStart=Start=now-4weeks
+# EventStart=All_Time
+
 echo "NODE EVENTS:"
-sacctmgr show event Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
+sacctmgr show event $EventStart Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
