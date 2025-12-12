@@ -153,7 +153,8 @@ while getopts "p:Pu:g:A:q:s:t:n:j:w:m:M:R:aCcdhVFf12SETNG" options; do
 			;;
 		P )	export all_partitions="--all"
 			;;
-		u )	export username=$OPTARG
+		u )	# Keep only the 1st username in a comma-separated list
+			export username=`echo -n $OPTARG | sed '/,.*$/s///g'`
 			# Only a single username is supported, so detect any non-alphanumeric characters
 			if [[ "$username" =~ [^a-zA-Z0-9] ]]
 			then
