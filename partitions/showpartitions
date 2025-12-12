@@ -17,7 +17,7 @@ where:
 	-N: Print also Node list in each partition
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a|-P: Display information about all partitions (including hidden ones),
-		 and include also nodes that are in maintenance mode.
+		 and include also nodes that are in maintenance mode or reserved.
 	-f: Show all partitions from the federation if a member of one. Requires Slurm 18.08 and newer.
 	-n: no headers or colors will be printed (for parsing).
 	-h: Print this help information.
@@ -51,6 +51,17 @@ export colors=1
 # Print headers
 export noheaders=0
 
+# Skip nodes that are in specified states (e.g., RESERVED) when using sinfo
+slurm_version=`sinfo --version | awk '{version=$2; split(version,v,"."); print v[1]v[2]}'`
+if [[ $slurm_version -ge 2505 ]]
+then
+	# Note: The state NOT prefix ~ is only available from Slurm 25.05.
+	export skip_states="-t ~RESERVED"
+else
+	# Older Slurm versions do not support ~ prefix
+	export skip_states=""
+fi
+
 while getopts "p:gNmaPfnh" options; do
 case $options in
 	p ) 	export partitionlist="-p $OPTARG"
@@ -65,6 +76,7 @@ case $options in
 		;;
 	a|P ) 	export all_partitions="--all"
 		export skip_maintenance=0
+		export skip_states=""
 		;;
 	f ) 	export federation="--federation"
 		;;
@@ -95,7 +107,7 @@ then
 	echo "Partition statistics for cluster $mycluster at `date`"
 fi
 
-sinfo --noheader --exact $federation $partitionlist $all_partitions -O "$sinfo_options2" | awk '
+sinfo --noheader --exact $federation $partitionlist $skip_states $all_partitions -O "$sinfo_options2" | awk '
 BEGIN {
 	# Environment variables
 	printgres	= ENVIRON["printgres"]

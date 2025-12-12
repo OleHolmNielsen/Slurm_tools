@@ -26,7 +26,7 @@ where:
 	-N: Print also Node list in each partition
 	-m: Print minimum and maximum values for memory and cores/node.
 	-a|-P: Display information about all partitions (including hidden ones),
-		 and include also nodes that are in maintenance mode.
+		 and include also nodes that are in maintenance mode or reserved.
 	-f: Show all partitions from the federation if a member of one. Requires Slurm 18.08 and newer.
 	-n: no headers or colors will be printed (for parsing).
 	-h: Print this help information.
