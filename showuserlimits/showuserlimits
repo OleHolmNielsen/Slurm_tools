@@ -36,7 +36,8 @@ printNone=0
 #
 while getopts "u:A:p:M:q:l:s:hn" options; do
 	case $options in
-		u ) username=$OPTARG	# Select user
+		u ) # Keep only the 1st username in a comma-separated list
+                    export username=`echo -n $OPTARG | sed '/,.*$/s///g'`
 	    	;;
 		A ) account=$OPTARG	# Select account
 	    	;;
