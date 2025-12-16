@@ -8,9 +8,9 @@ The [Bash shell](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) includes a
 TAB [command-completion](https://en.wikipedia.org/wiki/Command-line_completion) feature
 as described in these resources:
 
-* [Bash TAB completion tutorial](https://www.gnu.org/software/gnuastro/manual/html_node/Bash-TAB-completion-tutorial.html)
+* [Bash TAB completion](https://www.gnu.org/software/gnuastro/manual/html_node/Bash-TAB-completion-tutorial.html) tutorial.
 
-* [Programmable Completion Builtins](https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html)
+* [Programmable Completion Builtins](https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html) manual page.
 
 * [bash-completion](https://github.com/scop/bash-completion) source code on GitHub.
 
