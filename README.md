@@ -34,6 +34,8 @@ tools have been developed for management and monitoring of our cluster:
 
 14. Tools for managing [InfiniBand and Omni-Path](InfiniBand/) network fabrics.
 
+15. [Command completions](bash-completion/) for our Slurm tools.
+
 Slurm deployment HOWTO
 ----------------------
 
