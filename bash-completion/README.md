@@ -2,10 +2,11 @@ Slurm command completions for our Slurm tools
 ===============================================
 
 Bash command completion 
-==================================
+--------------------------
 
-The [Bash shell](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) includes a TAB command-completion feature
-described in these resources:
+The [Bash shell](https://en.wikipedia.org/wiki/Bash_(Unix_shell)) includes a
+TAB [command-completion](https://en.wikipedia.org/wiki/Command-line_completion) feature
+as described in these resources:
 
 * [Bash TAB completion tutorial](https://www.gnu.org/software/gnuastro/manual/html_node/Bash-TAB-completion-tutorial.html)
 
