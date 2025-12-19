@@ -68,7 +68,8 @@ while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
 		p )     export partition=$OPTARG
 			echo " - Print only accounting in Slurm partition $OPTARG"
 			;;
-		u )     export username=$OPTARG
+		u )     # Keep only the 1st username in a comma-separated list
+                        export username=`echo -n $OPTARG | sed '/,.*$/s///g'`
 			export ALLGROUPS=0
 			echo " - Print only user $OPTARG"
 			;;
