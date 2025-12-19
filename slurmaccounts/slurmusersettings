@@ -90,8 +90,9 @@ export newlimits=""
 
 while getopts "u:l:a:hdnc" options; do
 	case $options in
-		u ) export username=$OPTARG	# Select user
-		    echo "### Select only user $username"
+		u ) # Keep only the 1st username in a comma-separated list
+                    export username=`echo -n $OPTARG | sed '/,.*$/s///g'`
+		    echo "### Select only user \"$username\""
 		    if [ -z "`getent passwd $username`" ]
 		    then
 			# Just a warning. Delete the user at the end of the script.
@@ -116,7 +117,7 @@ while getopts "u:l:a:hdnc" options; do
 			echo "### WARNING: User $selectedaccount is not in the group database"
 		    fi
 		;;
-		d ) export debugflag=1
+		d ) export debugflag=2
 		    echo "### Print debugging output"
 		;;
 		n ) export omitnonlogin=1
@@ -266,7 +267,6 @@ BEGIN {
 
 	# Set the Field Separator to | for the parseable account list
 	FS="|"
-
 	# Read list of existing Slurm users and their default account (parseable output)
 	# Header of sacctmgr -nrp show user: See the "userfmt" variable above.
 	while ((getline < users) > 0) {
@@ -295,6 +295,8 @@ BEGIN {
 	if (newuserprint == 1 && comm) print "### NEWUSER list user(date): " newuserlist
 
 	# Read list of existing accounts (parseable output)
+	# Set the Field Separator to | for the parseable account list
+	FS="|"
 	# Header of sacctmgr -snrp show associations: See the "assocfmt" variable above.
 	while ((getline < assoc) > 0) {
 		if (debug > 1) print "Got account " $0
@@ -319,7 +321,7 @@ BEGIN {
 			if (debug > 0 && a != defaultaccount[u])
 				print "### NOTICE: Default account for user " u "=" useraccount[u] ", cannot set it to " a
 		}
-		# Record the user/group settings
+		# Record the user/group settings:
 		setting[item][current]["fairshare"]	= $5
 		setting[item][current]["GrpJobs"]	= $6
 		setting[item][current]["GrpTRES"]	= tolower($7)	# cpu= must be in lowercase
@@ -424,7 +426,7 @@ $3 >= MINUID {
 	else
 		# The case where the UNIX group g is an alias for a Slurm account name
 		acct = group2account[g]
-	if (selectedaccount != acct) next	# Skip account != selectedaccount
+	if (selectedaccount != "" && selectedaccount != acct) next	# Skip account != selectedaccount
 	FULLNAME	= $5
 	HOMEDIR		= $6
 	SHELL		= $7
