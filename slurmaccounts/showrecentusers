@@ -53,17 +53,22 @@ while read -r line
 do
 	words=( $line )
 	u=${words[0]}
-	added=${words[1]}
+	timestamp=${words[1]}
 	echo "========================================================"
-	echo "Slurm user $u was added on $added"
+	echo "Slurm user $u was added on $timestamp"
+	numjobs=`sacct -nX -S "now - $jobperiod" -b -u $u | wc -l`
+	# Skip details for users with zero jobs
+	if [ $numjobs -eq 0 ]
+	then
+		continue
+	fi
 	echo -n "Password entry: "
 	getent passwd $u
-	echo -n "Number of Slurm jobs in the last $jobperiod: "
-	sacct -nX -S "now - $jobperiod" -b -u $u | wc -l
+	echo "Number of Slurm jobs in the last $jobperiod: $numjobs"
 	if [ -x "$(command -v slurmusersettings)" ]
 	then
 		# Print Slurm user settings that should be updated
-		echo -n "Slurm account settings to be updated: "
+		echo "Slurm account settings to be updated: "
 		slurmusersettings $commentsoff -u $u
 	fi
 done < $tempfile
