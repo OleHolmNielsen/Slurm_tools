@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+# Print node events from the Slurm database using sacctmgr.
+# Usage: showevents < -w node-list | -p partition(s) | -a | -h > [ -t time_period ]
+# The sacctmgr manual specifies Start as: now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage: $0 < -w node-list | -p partition(s) | -a | -h > [ -t time_period ]
+where:
+	-w node-list: Select this node-list
+	-p partition(s): Select this partition
+	-a: Select all nodes in the cluster
+	-t: Specify time_period as <count>(seconds|minutes|hours|days|weeks), (default:1days)
+	-h: Print help information
+EOF
+}
+
+if [[ $# = 0 ]]
+then
+	echo "ERROR: No arguments given"
+	usage
+	exit 1
+fi
+
+# Set time format, see scontrol/squeue/sinfo and strftime man-pages
+# export SLURM_TIME_FORMAT="%a_%T"
+export SLURM_TIME_FORMAT="%d-%b-%Y_%R"
+
+# sacctmgr where select nodes
+select_nodelist=""
+# Default time_period
+time_period=1days
+
+while getopts "p:w:t:ah" options; do
+	case $options in
+		p ) 	export nodelist="`sinfo -h -p $OPTARG -O NodeList:`"
+			if [[ -z $nodelist ]]
+			then
+				echo "ERROR: Partition $OPTARG does not exist on this cluster"
+				usage
+				exit 1
+			fi
+			select_nodelist="where nodes=$nodelist"
+			;;
+		w )	export nodelist=$OPTARG
+			select_nodelist="where nodes=$nodelist"
+			;;
+		a ) 	select_nodelist=""	# Default is all nodes
+			;;
+		t )	export time_period=$OPTARG ;;
+		h|? ) 	usage
+			exit 0 ;;
+	esac
+done
+
+# Test for extraneous command line arguments
+if test $# -gt $(($OPTIND-1))
+then
+        echo ERROR: Too many command line arguments: $*
+        usage
+        exit 1
+fi
+
+# Sanity check of nodelist
+if [[ -n "$nodelist" && -z "`sinfo -h -N -n $nodelist -O NodeList:`" ]]
+then
+	echo "ERROR: Node-list $nodelist does not exist on this cluster"
+	usage
+	exit 1
+fi
+
+cat <<EOF
+NodeName                   TimeStart      Duration State  Reason
+--------------- -------------------- ------------- ------ ----------------------------------------
+EOF
+
+# Show events from the Slurm database:
+sacctmgr --noheader show event Start=now-$time_period Format=NodeName,TimeStart%20,Duration,State%-6,Reason%-40 $select_nodelist | sort -k 2

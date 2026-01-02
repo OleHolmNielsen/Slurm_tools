@@ -7,6 +7,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Resume a node-list: ```sresume node-list```.
 * Reboot and resume a node-list: ```sreboot node-list```.
 * Show node status: ```shownode <node-list>```.
+* Show node events in Slurm database: ```showevents < -w <node-list> | -p partition | -a | -h > [ -t time_period ]```.
 * Show node power values: ```showpower < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ] -s```.
 * Check dead nodes with a ping: ```alive``` (may be run from crontab every 10 minutes)
 * Check node BMCs with a ping: ```alive_bmc``` (may be run from crontab regularly)
