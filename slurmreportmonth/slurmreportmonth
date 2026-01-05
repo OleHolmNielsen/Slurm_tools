@@ -28,13 +28,14 @@ function usage()
 {
 	cat << EOF
 
-Usage: $0 [-m -c -y -w] [-a accountlist] [-s startdate -e enddate] [-r report-directory]
+Usage: $0 [-m|-c|-y|-Y|-w] [-a accountlist] [-s startdate -e enddate] [-r report-directory]
 where:
 	-m: Send report by E-mail to $SUBSCRIBERS
 	-a: Select an account (or list of accounts)
 	-s -e: Select Start and End dates of the report
 	-c: Select current month from the 1st until today
 	-y: Select current year from January 1st until today
+	-Y: Select last year 
 	-w: Select the last week
 	-r: Copy the report to a specified directory as well
 
@@ -48,7 +49,7 @@ EOF
 # Parse command options
 #
 
-while getopts "a:s:e:r:mcywh" options; do
+while getopts "a:s:e:r:mcyYwh" options; do
 	case $options in
 		a )	export accountlist="Accounts=$OPTARG"
 			echo Select accounts $OPTARG
@@ -69,8 +70,13 @@ while getopts "a:s:e:r:mcywh" options; do
 			;;
 		y )	export START=`date +0101%y`
 			export END=`date +%m%d%y`
-			echo Select current year from $START until $END
+			echo Select CURRENT YEAR from $START until $END
 			REPORT_NAME=Current_year
+			;;
+		Y )	export START=`date -d 'last year' +0101%y`
+                        export END=`date +0101%y`
+                        echo " - Select LAST YEAR from $start_time until $end_time"
+                        REPORT_NAME=Last_year
 			;;
 		w )	export START=`date -d "last week" +%m%d%y`
 			export END=`date +%m%d%y`

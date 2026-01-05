@@ -11,14 +11,16 @@ Usage
 -----
 
 ```
-slurmreportmonth [-m] [-c | -w] [-a accountlist] [-s startdate -e enddate] [-r report-directory]
+Usage: $0 [-m|-c|-y|-Y|-w] [-a accountlist] [-s startdate -e enddate] [-r report-directory]
 where:
-	-m: Send report by E-mail to root@localhost
-	-a: Select an account (or list of accounts)
-	-s -e: Select Start and End dates of the report
+        -m: Send report by E-mail to $SUBSCRIBERS
+        -a: Select an account (or list of accounts)
+        -s -e: Select Start and End dates of the report
         -c: Select current month from the 1st until today
-	-w: Select the last week
-	-r: Copy the report to a specified directory as well
+        -y: Select current year from January 1st until today
+        -Y: Select last year 
+        -w: Select the last week
+        -r: Copy the report to a specified directory as well
 ```
 
 Date format: MMDD (Month-Day)
