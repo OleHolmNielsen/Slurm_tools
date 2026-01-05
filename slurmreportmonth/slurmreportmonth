@@ -75,8 +75,8 @@ while getopts "a:s:e:r:mcyYwh" options; do
 			;;
 		Y )	export START=`date -d 'last year' +0101%y`
                         export END=`date +0101%y`
-                        echo " - Select LAST YEAR from $start_time until $end_time"
-                        REPORT_NAME=Last_year
+                        echo " - Select LAST YEAR from $START until $END"
+                        REPORT_NAME=${START}_${END}
 			;;
 		w )	export START=`date -d "last week" +%m%d%y`
 			export END=`date +%m%d%y`
