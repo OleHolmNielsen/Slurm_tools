@@ -39,7 +39,7 @@ but there are some advantages of ```slurmacct```  over the ```sreport``` command
 * User full name is printed (useful to managers).
 
 ```
-Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -Y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
         -C: Print CPU usage (Default option)
         -T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
@@ -48,6 +48,7 @@ where:
         -e End_time [last month]: End time of accounting period.
         -c: Current month
         -y: Current year
+        -Y: Last year
         -w: Last week
         -m monthyear: Select month and year (like "november2019")
         -p partition(s): Select only Slurm partion <partition>[,partition2,...]

@@ -11,7 +11,7 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -Y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
 	-C: Print CPU usage (Default option)
 	-T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
@@ -20,6 +20,7 @@ where:
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
 	-y: Current year
+	-Y: Last year
 	-w: Last week
 	-m monthyear: Select month and year (like "november2019")
 	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
@@ -63,7 +64,7 @@ export month="last"
 line="--------------------------------------------------------------------------------"
 
 # Process options
-while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
+while getopts "p:u:g:s:e:r:m:W:cyYwGCTNhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo " - Print only accounting in Slurm partition $OPTARG"
@@ -122,8 +123,13 @@ while getopts "p:u:g:s:e:r:m:W:cywGCTNhn" options; do
 			;;
 		y )     export start_time=`date +0101%y`
 			export end_time=`date +%m%d%y`
-			echo " - Select current year from $start_time until $end_time"
+			echo " - Select CURRENT YEAR from $start_time until $end_time"
 			REPORT_NAME=Current_year
+			;;
+		Y )     export start_time=`date -d 'last year' +0101%y`
+			export end_time=`date +0101%y`
+			echo " - Select LAST YEAR from $start_time until $end_time"
+			REPORT_NAME=Last_year
 			;;
 		w )     export start_time=`date -d 'last week' +%m%d%y`
 			export end_time=`date +%m%d%y`
@@ -190,16 +196,23 @@ fi
 # Check partition names
 if [[ "$partition" != "" ]]
 then
+	pname=""
+	sep=""
 	for p in `echo $partition | sed 's/,/ /g'`
 	do
 		# echo "Check partition $p"
-	if [[ "`sinfo -h -p $p -O PartitionName`" == "" ]]
-	then
+		if [[ "`sinfo -h -p $p -O PartitionName`" == "" ]]
+		then
 			echo "WARNING: Invalid partition name $p"
+			# Debug:
 			# echo "Valid partition names are:"
 			# sinfo -O "PartitionName"
 		fi
+		pname=${pname}${sep}${p}
+	       	sep="_"
 	done
+	# Append partition name(s) to report filename
+	REPORT_NAME=${REPORT_NAME}_${pname}
 fi
 
 # Test username
