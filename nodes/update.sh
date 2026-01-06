@@ -203,15 +203,6 @@ then
 fi
 
 # Finished all updates
-# Remove this node from any possible update related reservations
-# Only relevant if this is a non-exclusive node, i.e. more jobs can run at the same time.
-if scontrol show partition $(scontrol show node "$(hostname -s)" | awk -F= '/Partitions/{print $2}' | tr ',' ' ') | grep -q "ExclusiveUser=NO"
-then
-    echo "Deleteting reservation"
-    scontrol delete ReservationName=update-$(hostname -s)
-fi
-
-
 # Now do the crontab cleanup
 crontab_cleanup
 
@@ -247,7 +238,18 @@ then
 	shortname=`hostname -s`
 	if [[ -n "`sinfo -N -hn $shortname`" ]]
 	then
-		NEXTSTATE=resume
+                # Remove this node from any possible update related
+                # reservations.  Only relevant if this is a
+                # non-exclusive node, i.e. more jobs can run at the
+                # same time.
+                if scontrol show partition $(scontrol show node "$(hostname -s)" | awk -F= '/Partitions/{print $2}' | tr ',' ' ') | grep -q "ExclusiveUser=NO"
+                then
+                    echo "Deleteting reservation"
+                    scontrol delete ReservationName=update-$(hostname -s)
+                fi
+
+
+                NEXTSTATE=resume
 		echo "Next Slurm node state is: $NEXTSTATE"
 		echo "Reboot node by Slurm scontrol reboot, setting nextstate=$NEXTSTATE"
 		scontrol reboot nextstate=$NEXTSTATE reason=Update_done $shortname
