@@ -22,7 +22,7 @@ command -v nodeset  >/dev/null 2>&1 || err "nodeset not found"
 # Expand node expression -> list of nodes
 HOSTLIST=$(nodeset -f "$NODES_EXPR" 2>/dev/null || true)
 [[ -n "$HOSTLIST" ]] || err "No nodes matched expression: $NODES_EXPR"
-# scontrol show hostnames prints one per line
+# scontrol show hostnames prints one node per line
 readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
 
 for node in "${NODES[@]}"; do
