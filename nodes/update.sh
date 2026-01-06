@@ -202,6 +202,15 @@ then
 	lenovo_update SD665V3 UEFI lnvgy_fw_uefi_qge124h-5.20_anyos_comp
 fi
 
+# Finished all updates
+# Remove this node from any possible update related reservations
+# Only relevant if this is a non-exclusive node, i.e. more jobs can run at the same time.
+if scontrol show partition $(scontrol show node "$(hostname -s)" | awk -F= '/Partitions/{print $2}' | tr ',' ' ') | grep -q "ExclusiveUser=NO"
+then
+    echo "Deleteting reservation"
+    scontrol delete ReservationName=update-$(hostname -s)
+fi
+
 
 # Now do the crontab cleanup
 crontab_cleanup
