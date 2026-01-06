@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEFAULT_RESERVATION_DURATION="00:02:00"
+RES_NAME_PREFIX="update"
+
+err(){ echo "Error: $*" >&2; exit 1; }
+warn(){ echo "[warn] $*" >&2; }
+info(){ echo "[info] $*"; }
+
+
+[[ $# -ge 2 ]] || err "Usage: $0 \"<NODES>\" \"<REASON>\""
+
+NODES_EXPR="$1"
+REASON="$2"
+
+# ---------- sanity checks ----------
+command -v scontrol >/dev/null 2>&1 || err "scontrol not found"
+command -v squeue   >/dev/null 2>&1 || err "squeue not found"
+command -v nodeset  >/dev/null 2>&1 || err "nodeset not found"
+
+# Expand node expression -> list of nodes
+HOSTLIST=$(nodeset -f "$NODES_EXPR" 2>/dev/null || true)
+[[ -n "$HOSTLIST" ]] || err "No nodes matched expression: $NODES_EXPR"
+# scontrol show hostnames prints one per line
+readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
+
+for node in "${NODES[@]}"; do
+    info "Processing $node ..."
+
+    endtime=$(squeue -h -w $node -O Endtime | sort | tail -1)
+
+    res_name="${RES_NAME_PREFIX}-${node}"
+
+    # Create reservation (per node). This lets backfill allow only
+    # jobs that finish before start.
+    info "  Creating reservation $res_name starting $endtime for node $node"
+    scontrol create reservation \
+             ReservationName="$res_name" \
+             StartTime="$endtime" \
+             Duration="$DEFAULT_RESERVATION_DURATION" \
+             Nodes="$node" \
+             Users=root \
+             Flags=MAINT >/dev/null
+
+    # Issue a reboot
+    scontrol reboot \
+             nextstate=DOWN \
+             reason="$REASON" \
+             $node >/dev/null
+
+done
+
+# Notes:
+# If jobs end before reservation starts it will reboot immediately and
+# the reservation will still be in effect after reboot. The solution
+# is to use update.sh to remove the leftover reservation.
