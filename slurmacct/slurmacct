@@ -129,7 +129,7 @@ while getopts "p:u:g:s:e:r:m:W:cyYwGCTNhn" options; do
 		Y )     export start_time=`date -d 'last year' +0101%y`
 			export end_time=`date +0101%y`
 			echo " - Select LAST YEAR from $start_time until $end_time"
-			REPORT_NAME=Last_year
+			REPORT_NAME=${start_time}_${end_time}
 			;;
 		w )     export start_time=`date -d 'last week' +%m%d%y`
 			export end_time=`date +%m%d%y`
@@ -196,23 +196,14 @@ fi
 # Check partition names
 if [[ "$partition" != "" ]]
 then
-	pname=""
-	sep=""
 	for p in `echo $partition | sed 's/,/ /g'`
 	do
 		# echo "Check partition $p"
 		if [[ "`sinfo -h -p $p -O PartitionName`" == "" ]]
 		then
 			echo "WARNING: Invalid partition name $p"
-			# Debug:
-			# echo "Valid partition names are:"
-			# sinfo -O "PartitionName"
 		fi
-		pname=${pname}${sep}${p}
-	       	sep="_"
 	done
-	# Append partition name(s) to report filename
-	REPORT_NAME=${REPORT_NAME}_${pname}
 fi
 
 # Test username
