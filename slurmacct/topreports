@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Make Slurm cluster usage statistics
-# Usage: topreports [period-see-below]
+# Usage: topreports [periods (see below)]
 # Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
 
 # Author:       Ole.H.Nielsen@fysik.dtu.dk
@@ -9,19 +9,26 @@
 
 # CONFIGURE THIS: 
 # Directory name and report file name prefix:
-PREFIX=<top-directory-name>/Top
+# PREFIX=<top-directory-name>/Top
 # Partion list: overlapping partitions are comma-separated so they will be reported together
-partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test xeon32_4096 xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week xeon32_4096,xeon32_week"
+PREFIX=/tmp/Top
+# Partion list: overlapping partitions are comma-separated so they will be reported together
+partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test  xeon32_4096,xeon32_week xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week h200,h200_week"
 # END CONFIGURE
 
-PATH=$PATH:/usr/local/bin
+export PATH=$PATH:/usr/local/bin
+export TIMEFORMAT='Real time %R'
 
 if [[ $# == 0 ]]
 then
 	# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
 	periods="Default -c -w -y"
+elif [[ "$1" -eq "-Y" ]]
+then
+	# Select periods: Last year
+	periods="-Y"
 else
-	# Select month and year (like "november2024"), see slurmacct
+	# Select periods: month and year (like "november2024"), see slurmacct
 	periods="-m$1"
 fi
 
@@ -46,6 +53,9 @@ do
 	elif [[ "$period" == "-y" ]]
 	then
 		ppnice="Current year"
+	elif [[ "$period" == "-Y" ]]
+	then
+		ppnice="LAST year"
 	fi
 	# Adding the empty string "" selects all partitions in the cluster:
 	for p in "" $partitionlist
@@ -73,7 +83,7 @@ do
 		cat << EOF
 $line
 	
-Generating reports for $displaypart during period: $ppnice
+Generating reports for $displaypart (report name=$name) during period: $ppnice
 	
 $line
 EOF
@@ -82,18 +92,18 @@ EOF
 		then
 			echo
 			echo "GROUP TRES GPU report for partitions $p"
-			slurmacct -G $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
+			time slurmacct -G $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
 			header="-n"	# No header will append to the current report
 			echo
 			echo "USER TRES GPU report for partitions $p"
-			slurmacct $header -T $partition $pp -r $PREFIX$name	# TRES GPU report
+			time slurmacct $header -T $partition $pp -r $PREFIX$name	# TRES GPU report
 		fi
 		echo
 		echo "GROUP CPUs report for partitions $p"
-		slurmacct -G $header -C $partition $pp -r $PREFIX$name	# Group report
+		time slurmacct -G $header -C $partition $pp -r $PREFIX$name	# Group report
 		header="-n"	# No header will append to the current report
 		echo
 		echo "USER CPUs report for partitions $p"
-		slurmacct $header -C $partition $pp -r $PREFIX$name	# Append user report
+		time slurmacct $header -C $partition $pp -r $PREFIX$name	# Append user report
 	done
 done
