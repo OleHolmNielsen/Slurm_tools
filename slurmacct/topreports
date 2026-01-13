@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 
-# Make Slurm cluster usage statistics
-# Usage: topreports [periods (see below)]
-# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
+# Make Slurm cluster usage statistics for specified periods, using slurmacct
+
+# Command usage:
+function usage()
+{
+        cat <<EOF
+Usage: $0 [-m monthyear] | -Y yyyy ] [-h]
+where:
+        -m: Select periods: month and year (like "november2024"), see slurmacct
+	    Default periods: last-month, current-month, current-week, and current-year 
+	-Y: Select an entire year yyyy (like 2025)
+        -h: Print this help information
+EOF
+}
 
 # Author:       Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
@@ -16,21 +27,34 @@ PREFIX=/tmp/Top
 partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test  xeon32_4096,xeon32_week xeon40el8,xeon40el8_768,xeon40el8_clx xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel epyc96 a100,a100_week h200,h200_week"
 # END CONFIGURE
 
-export PATH=$PATH:/usr/local/bin
-export TIMEFORMAT='Real time %R'
+# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
+periods="Default -c -w -y"
 
-if [[ $# == 0 ]]
-then
-	# Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
-	periods="Default -c -w -y"
-elif [[ "$1" -eq "-Y" ]]
-then
-	# Select periods: Last year
-	periods="-Y"
-else
-	# Select periods: month and year (like "november2024"), see slurmacct
-	periods="-m$1"
-fi
+export PATH=$PATH:/usr/local/bin:/usr/local/sbin
+export TIMEFORMAT=' - Time: %R seconds'
+
+# Process options
+while getopts "m:Y:h" options; do
+        case $options in
+                m )     periods="-m"
+			monthyear="$OPTARG"
+                        ;;
+                Y )     periods="-Y"
+			selectyear="$OPTARG"
+			if [[ $selectyear -lt 2010 || $selectyear -gt 2040 ]]
+			then
+				echo "Please select a year in the range 2010..2040"
+				usage
+				exit 1
+			fi
+                        ;;
+                h|? ) usage
+                        exit 1;;
+                * ) usage
+                        exit 1;;
+        esac
+done
+shift $((OPTIND-1))
 
 # A separator line
 line="--------------------------------------------------------------------------------"
@@ -53,9 +77,14 @@ do
 	elif [[ "$period" == "-y" ]]
 	then
 		ppnice="Current year"
+	elif [[ "$period" == "-m" ]]
+	then
+		pp="-m $monthyear"
+		ppnice="The month/year $monthyear"
 	elif [[ "$period" == "-Y" ]]
 	then
-		ppnice="LAST year"
+		pp="-Y $selectyear"
+		ppnice="The year $selectyear"
 	fi
 	# Adding the empty string "" selects all partitions in the cluster:
 	for p in "" $partitionlist
@@ -87,6 +116,7 @@ Generating reports for $displaypart (report name=$name) during period: $ppnice
 	
 $line
 EOF
+
 		header=""	# If $header is empty a new report will be generated
 		if [[ $TRESGPU == 1 ]]
 		then

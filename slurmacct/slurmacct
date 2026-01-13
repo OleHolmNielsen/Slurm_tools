@@ -11,7 +11,7 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -Y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
 	-C: Print CPU usage (Default option)
 	-T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
@@ -20,9 +20,9 @@ where:
 	-e End_time [last month]: End time of accounting period.
 	-c: Current month
 	-y: Current year
-	-Y: Last year
 	-w: Last week
 	-m monthyear: Select month and year (like "november2019")
+	-Y yyyy: Select the entire year yyyy (like "2025")
 	-p partition(s): Select only Slurm partion <partition>[,partition2,...]
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
@@ -64,7 +64,7 @@ export month="last"
 line="--------------------------------------------------------------------------------"
 
 # Process options
-while getopts "p:u:g:s:e:r:m:W:cyYwGCTNhn" options; do
+while getopts "p:u:g:s:e:r:m:W:Y:cywGCTNhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo " - Print only accounting in Slurm partition $OPTARG"
@@ -126,9 +126,10 @@ while getopts "p:u:g:s:e:r:m:W:cyYwGCTNhn" options; do
 			echo " - Select CURRENT YEAR from $start_time until $end_time"
 			REPORT_NAME=Current_year
 			;;
-		Y )     export start_time=`date -d 'last year' +0101%y`
-			export end_time=`date +0101%y`
-			echo " - Select LAST YEAR from $start_time until $end_time"
+		Y )     selectyear="$OPTARG"
+			export start_time=`date -d "01 jan $selectyear" +0101%y`
+			export end_time=`date -d "01 jan $selectyear next year" +0101%y`
+			echo " - Select the YEAR $selectyear from $start_time until $end_time"
 			REPORT_NAME=${start_time}_${end_time}
 			;;
 		w )     export start_time=`date -d 'last week' +%m%d%y`
