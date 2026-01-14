@@ -94,18 +94,20 @@ The ```topreports``` tool uses ```slurmacct``` to generate specific useful repor
 It may be executed daily to get updated weekly and monthly reports.
 
 ```
-topreports [monthyear]
+Usage: $0 [-m monthyear] | -Y yyyy ] [-r report-prefix] [-h]
+where:
+        -m: Select periods: month and year (like "november2024"), see slurmacct
+            Default periods: last-month, current-month, current-week, and current-year 
+        -Y: Select an entire year yyyy (like 2025)
+        -r: Report name prefix (Default PREFIX=/tmp/Top)
+        -h: Print this help information
 ```
 
-By default 3 report periods will be generated: Last month, current month, and current week.
-The optional monthyear argument selects month and year (like "november2019")
+You have to configure some items in the script:
 
-You have to configure two items in the script:
+* Partition list: overlapping partitions are comma-separated so they will be reported together.
 
-* Directory and report file name prefix: PREFIX
-
-* Partition list: overlapping partitions are comma-separated so they are reported together.
-
+* Directory and report file name prefix: PREFIX or use the option [-r report-prefix]
 
 jobstats tool
 -------------

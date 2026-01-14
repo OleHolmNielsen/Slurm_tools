@@ -6,11 +6,12 @@
 function usage()
 {
         cat <<EOF
-Usage: $0 [-m monthyear] | -Y yyyy ] [-h]
+Usage: $0 [-m monthyear] | -Y yyyy ] [-r report-prefix] [-h]
 where:
         -m: Select periods: month and year (like "november2024"), see slurmacct
 	    Default periods: last-month, current-month, current-week, and current-year 
 	-Y: Select an entire year yyyy (like 2025)
+	-r: Report name prefix (Default PREFIX=/tmp/Top)
         -h: Print this help information
 EOF
 }
@@ -34,7 +35,7 @@ export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 export TIMEFORMAT=' - Time: %R seconds'
 
 # Process options
-while getopts "m:Y:h" options; do
+while getopts "m:Y:r:h" options; do
         case $options in
                 m )     periods="-m"
 			monthyear="$OPTARG"
@@ -47,6 +48,9 @@ while getopts "m:Y:h" options; do
 				usage
 				exit 1
 			fi
+                        ;;
+		r )     export PREFIX="$OPTARG"
+                        echo " - Report prefix: $OPTARG"
                         ;;
                 h|? ) usage
                         exit 1;;
