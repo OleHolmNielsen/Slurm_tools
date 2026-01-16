@@ -74,17 +74,27 @@ Example
 -------
 
 ```
-$ slurmacct -s 1201 -e 1231 -p xeon8
+$ slurmacct -s 1201 -e 1231 -p xeon40el8
+ - Start date 1201
+ - End date 1231
+ - Print only accounting in Slurm partition xeon40el8
+ - Print CPU usage (default option)
+Report generated to file /tmp/Slurm_report_acct_1201_1231
+```
+The generated report file is:
+```
+CPU usage report by USERS
 
-Jobs completed/terminated between date/time 1201 and 1231
-Partition selected: xeon8
-                             Wallclock          Average Average
-Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name
---------    -----  ------- -----------  ------- ------- -------  ---------
-   TOTAL    (All)    38189   2511099.3   100.00    0.00   21.60  
-  user01   group1      621    492932.0    19.63   16.00   26.16  Name 1
-  user02   group2      547    431252.9    17.17   16.00   29.55  Name 2
-  user03   group3      423    349400.0    13.91   16.00   74.40  Name 3
+ - Partition(s) selected: xeon40el8
+
+Usage sorted by top users:
+                                         Wallclock           Energy Average Average
+Username        Group(parent)    #jobs   cpus-hrs   Percent    kWh   #cpus  q-hours    Full name
+--------        -------------  ------- -----------  ------- ------- ------- -------  ---------
+   TOTAL                (All)    22812   7597623.0   100.00   89757   52.82   17.39  Number of users: 81
+   user1        camdvip(camd)      402    792609.3    10.43   10181  120.00  347.77  Fullname 1
+   user2    ecsvip(batteries)     1689    774121.1    10.19    8713   40.00   17.57  Fullname 2
+   user3    ecsvip(batteries)      388    618520.5     8.14    6742   40.00  100.74  Fullname 3
   ...
 ```
 
