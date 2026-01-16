@@ -11,7 +11,7 @@
 function usage()
 {
 	cat <<EOF
-Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G | -P ] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
 	-C: Print CPU usage (Default option)
 	-T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
@@ -27,6 +27,7 @@ where:
 	-u username: Print only user <username> 
 	-g groupname: Print only users in UNIX group <groupname>
 	-G: Print only groupwise summed accounting data
+	-P: Print only Parent group summed accounting data
 	-W directory: Print only jobs with this string in the job WorkDir
 	-r: Report name prefix
 	-n: No header information is printed (append to existing report)
@@ -41,14 +42,18 @@ EOF
 
 #####################################################################################
 
-# Report file prefix
+# Default report file prefix
 REPORT_PREFIX=/tmp/Slurm_report_acct_
+# The Slurm accounts file, see:
+# https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmacct
+export PARENTFILE="/etc/slurm/accounts.conf"
+
 export partition=""
 export username=""
 export groupname=""
 export workdir=""
 export ALLGROUPS=0
-export reportby="users"
+export reportby="USERS"
 # Default: CPU accounting
 export TRES="cpus"
 # Mutually exclusive accounting types: CPUUSAGE, NODEUSAGE or TRES/GPU
@@ -64,7 +69,7 @@ export month="last"
 line="--------------------------------------------------------------------------------"
 
 # Process options
-while getopts "p:u:g:s:e:r:m:W:Y:cywGCTNhn" options; do
+while getopts "p:u:g:s:e:r:m:W:Y:cywGPCTNhn" options; do
 	case $options in
 		p )     export partition=$OPTARG
 			echo " - Print only accounting in Slurm partition $OPTARG"
@@ -80,11 +85,24 @@ while getopts "p:u:g:s:e:r:m:W:Y:cywGCTNhn" options; do
 			echo " - Print only users in UNIX group $OPTARG"
 			;;
 		G )     export ALLGROUPS=1
-			export reportby="groups"
+			export reportby="GROUPS"
 			export username=""
 			export groupname=""
 			SORTCOLUMN=4
 			echo " - Print only groupwise summed accounting data"
+			;;
+		P )     export ALLGROUPS=1
+			export PARENTGROUPS=1
+			if [[ ! -f $PARENTFILE ]]
+			then
+				echo "ERROR: Parent group file $PARENTFILE not found"
+				exit -1
+			fi
+			export reportby="PARENT GROUPS"
+			export username=""
+			export groupname=""
+			SORTCOLUMN=4
+			echo " - Print only Parent group summed accounting data"
 			;;
 		C )     export CPUUSAGE=1	# CPU accounting: The default option
 			export TRES="cpus"
@@ -275,41 +293,40 @@ fi
 
 if [[ $ALLGROUPS -eq 0 ]]
 then
+	# -------------------------
 	# User statistics
+	# -------------------------
 	if [[ "$workdir" != "" ]]
 	then
 		echo " - Print only accounting data for jobs with working directory $workdir" >> $REPORT
 	fi
 	echo >> $REPORT
 	echo "Usage sorted by top users:" >> $REPORT
-	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	if [[ "$groupname" != "" ]]
 	then
 		echo "Group name selected: $groupname" >> $REPORT
 		selection="--group $groupname $selection"
 	fi
-	# echo "                             Wallclock          Average Average" >> $REPORT
-	# echo "Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name" >> $REPORT
-	# echo "--------    -----  ------- -----------  ------- ------- -------  ---------" >> $REPORT
 	cat <<EOF >> $REPORT
-                             Wallclock           Energy Average Average
-Username    Group    #jobs   $TRES-hrs   Percent    kWh   #$TRES  q-hours    Full name
---------    -----  ------- -----------  ------- ------- ------- -------  ---------
+                                         Wallclock           Energy Average Average
+Username        Group(parent)    #jobs   $TRES-hrs   Percent    kWh   #$TRES  q-hours    Full name
+--------        -------------  ------- -----------  ------- ------- ------- -------  ---------
 EOF
 else
+	# -------------------------
 	# Group statistics
-	echo >> $REPORT
+	# -------------------------
 	if [[ "$workdir" != "" ]]
 	then
 		echo " - Print only accounting data for jobs with working directory $workdir" >> $REPORT
 		echo >> $REPORT
 	fi
+	echo >> $REPORT
 	echo "Usage sorted by top groups:" >> $REPORT
-	# echo "Jobs completed/terminated between date/time $start_time and $end_time"
 	cat <<EOF >> $REPORT
-                      Wallclock           Energy  Average Average
-     Group    #jobs   $TRES-hrs   Percent     kWh  #$TRES   q-hours
-     -----  ------- -----------  ------- -------  ------- -------
+                                Wallclock           Energy  Average Average
+       Group(parent)    #jobs   $TRES-hrs   Percent     kWh  #$TRES   q-hours
+       -------------  ------- -----------  ------- -------  ------- -------
 EOF
 fi
 
@@ -340,6 +357,8 @@ BEGIN {
 	userselect=ENVIRON["username"]
 	groupselect=ENVIRON["groupname"]
 	ALLGROUPS=ENVIRON["ALLGROUPS"]
+	PARENTGROUPS=ENVIRON["PARENTGROUPS"]
+	PARENTFILE=ENVIRON["PARENTFILE"]
 	CPUUSAGE=ENVIRON["CPUUSAGE"]
 	NODEUSAGE=ENVIRON["NODEUSAGE"]
 	TRESGPU=ENVIRON["TRESGPU"]
@@ -357,12 +376,20 @@ BEGIN {
 		# print b[1], fullname[b[1]]
 	}
 	close(COMMAND)
+	# Read parent accounts from PARENTFILE (/etc/slurm/accounts.conf)
+	COMMAND="cat " PARENTFILE
+	while (COMMAND | getline ) {
+		n = split($0,b,":")	# Split PARENTFILE line into fields
+		if (n >= 2) parentgroup[b[1]] = b[2]	
+	}
 }
 {
 	# Parse input data and make sanity checks
 	JobID	= $1		# JobID
 	user	= $2		# User name
 	group	= $3		# Group name
+	if (PARENTGROUPS == 1)
+		group = parentgroup[$3]	# Use Parent groups in stead of groups
 	part	= $4		# Slurm partition name for this job
 	allocnodes = $5		# Number of nodes allocated
 	alloccpus = $6		# Total number of CPUs allocated (>= allocnodes)
@@ -463,9 +490,10 @@ BEGIN {
 	wallhours = wallsecs / 3600
 
 	if (ALLGROUPS == 0) {
+		#
 		# Per-user accounting
 		# -------------------
-		format = "%8.8s %8.8s %8d  %10.1f  %7.2f %7.0f %7.2f %7.2f  %s\n"
+		format = "%8.8s %20.20s %8d  %10.1f  %7.2f %7.0f %7.2f %7.2f  %s\n"
 		groupjobs = 0
 		grouphours = 0
 		groupjoules = 0
@@ -474,7 +502,10 @@ BEGIN {
 			if (wallusagetotal > 0 && jobs[ug] > 0 && walltimesum[ug] > 0)
 				w1 = wallusagesum[ug]
 				w2 = wallusagetotal
-				printf(format, usernamegroup[ug], usergroup[ug],
+				group = usergroup[ug]
+				parent = parentgroup[group]	# Parent account
+				group = group "(" parent ")"	# Append (parent)
+				printf(format, usernamegroup[ug], group,
 					jobs[ug], w1/3600, 100*w1/w2, joulesused[ug]/kWh,
 					w1/walltimesum[ug], waittime[ug]/jobs[ug]/3600, fullnamegroup[ug])
 			groupjobs += jobs[ug]
@@ -497,18 +528,22 @@ BEGIN {
 				100*g/wtot, groupjoules/kWh,
 				g/grouphours, groupwait/groupjobs/3600, "")
 	} else {
+		#
 		# Per-group accounting
 		# --------------------
-		format = "%10s %8d  %10.1f  %7.2f %7.0f  %7.2f %7.2f\n"
+		format = "%20s %8d  %10.1f  %7.2f %7.0f  %7.2f %7.2f\n"
 		# Sort arrays by element values:
 		# https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html
 		PROCINFO["sorted_in"] = "@ind_num_desc"
 
 		for (group in groupname) {
+			grname = groupname[group]
+			grandparent = parentgroup[group]	# Grandparent account
+			grname = grname "(" grandparent ")"	# Append (grandparent)
 			w1 = group_wallusagesum[group]
 			w2 = wallusagetotal
 			if (group_jobs[group] > 0 && group_walltimesum[group] > 0)
-				printf(format, groupname[group],
+				printf(format, grname,
 					group_jobs[group], w1/3600, 100*w1/w2, groupjoulesused[group]/kWh,
 					w1/group_walltimesum[group], group_waittime[group]/group_jobs[group]/3600)
 		}
