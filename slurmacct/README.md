@@ -34,6 +34,7 @@ but there are some advantages of ```slurmacct```  over the ```sreport``` command
 * Average CPU count (job parallelism) is printed.
 * Average waiting time in the queue is printed (answer to "My jobs wait for too long").
 * User full name is printed (useful to managers).
+
 The list of command options are:
 ```
 Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G | -P ] [-W workdir] [-r report-prefix] [-n] [-h]
@@ -57,13 +58,11 @@ where:
         -r: Report name prefix
         -n: No header information is printed (append to existing report)
         -h: Print this help information
+```
 
 The ```Start_time``` and ```End_time``` values select the date/time interval of
 job completion/termination (see ```man sacct```).
-
-Hint: Specify Start/End time as ```MMDD``` (Month and Date)
-```
-Time/Date format: MMDD (Month-Day)
+Hint: Specify Start/End time as ```MMDD``` (Month and Date) Time/Date format: MMDD (Month-Day)
 
 Example
 -------
