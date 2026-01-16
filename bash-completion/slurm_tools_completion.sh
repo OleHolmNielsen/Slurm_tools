@@ -34,6 +34,7 @@ then
 		complete -o nospace -F _squeue slurmusersettings
 		complete -o nospace -F _sinfo showpartitions
 		complete -o nospace -F _sinfo slurmacct
+		complete -o nospace -F _sinfo jobstats
 		complete -o nospace -F _hostlist shownode
 		complete -o nospace -F _hostlist sdrain
 		complete -o nospace -F _hostlist sresume
