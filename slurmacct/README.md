@@ -62,7 +62,7 @@ where:
 
 The ```Start_time``` and ```End_time``` values select the date/time interval of
 job completion/termination (see ```man sacct```).
-Hint: Specify Start/End time as ```MMDD``` (Month and Date) Time/Date format: MMDD (Month-Day)
+Hint: Specify ```Start_time``` and ```End_time``` as ```MMDD``` (Month and Date).
 
 Example
 -------
