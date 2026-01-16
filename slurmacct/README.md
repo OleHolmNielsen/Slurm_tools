@@ -75,7 +75,7 @@ $ slurmacct -s 1201 -e 1231 -p xeon40el8
  - Print CPU usage (default option)
 Report generated to file /tmp/Slurm_report_acct_1201_1231
 ```
-The generated report file is:
+The generated report file contains:
 ```
 CPU usage report by USERS
 
@@ -111,7 +111,7 @@ where:
         -h: Print this help information
 ```
 
-You have to configure some items in the script:
+You should configure some items in the script:
 
 * Partition list: overlapping partitions are comma-separated so they will be reported together.
 * Directory and report file name prefix: PREFIX or use the option ```[-r report-prefix]```.
