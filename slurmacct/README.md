@@ -39,7 +39,7 @@ but there are some advantages of ```slurmacct```  over the ```sreport``` command
 * User full name is printed (useful to managers).
 
 ```
-Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G | -P ] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
         -C: Print CPU usage (Default option)
         -T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
@@ -48,13 +48,14 @@ where:
         -e End_time [last month]: End time of accounting period.
         -c: Current month
         -y: Current year
-        -Y yyyy: Select year yyyy (like "2025")
         -w: Last week
         -m monthyear: Select month and year (like "november2019")
+        -Y yyyy: Select the entire year yyyy (like "2025")
         -p partition(s): Select only Slurm partion <partition>[,partition2,...]
         -u username: Print only user <username> 
         -g groupname: Print only users in UNIX group <groupname>
         -G: Print only groupwise summed accounting data
+        -P: Print only Parent group summed accounting data
         -W directory: Print only jobs with this string in the job WorkDir
         -r: Report name prefix
         -n: No header information is printed (append to existing report)
@@ -94,7 +95,7 @@ The ```topreports``` tool uses ```slurmacct``` to generate specific useful repor
 It may be executed daily to get updated weekly and monthly reports.
 
 ```
-Usage: $0 [-m monthyear] | -Y yyyy ] [-r report-prefix] [-h]
+Usage: topreports [-m monthyear] | -Y yyyy ] [-r report-prefix] [-h]
 where:
         -m: Select periods: month and year (like "november2024"), see slurmacct
             Default periods: last-month, current-month, current-week, and current-year 

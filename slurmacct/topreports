@@ -25,7 +25,7 @@ EOF
 # Partion list: overlapping partitions are comma-separated so they will be reported together
 PREFIX=/tmp/Top
 # Partion list: overlapping partitions are comma-separated so they will be reported together
-partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test,xeon24 xeon32_4096,xeon32_week xeon40,xeon40el8,xeon40el8_768,xeon40el8_clx,xeon40 xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel,sm3090 epyc96 a100,a100_week h200,h200_week"
+partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test,xeon24 xeon32_4096,xeon32_week xeon40el8,xeon40el8_768,xeon40el8_clx,xeon40 xeon56,xeon56cmr sm3090el8,sm3090el8_768,sm3090_devel,sm3090 epyc96 a100,a100_week h200,h200_week"
 # END CONFIGURE
 
 # Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
@@ -125,17 +125,23 @@ EOF
 		if [[ $TRESGPU == 1 ]]
 		then
 			echo
+			echo "PARENT GROUP TRES GPU report for partitions $p"
+			time slurmacct -P $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
+			header="-n"	# No header will append to the next report
+			echo
 			echo "GROUP TRES GPU report for partitions $p"
 			time slurmacct -G $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
-			header="-n"	# No header will append to the current report
 			echo
 			echo "USER TRES GPU report for partitions $p"
 			time slurmacct $header -T $partition $pp -r $PREFIX$name	# TRES GPU report
 		fi
 		echo
+		echo "PARENT GROUP CPUs report for partitions $p"
+		time slurmacct -P $header -C $partition $pp -r $PREFIX$name	# Group report
+		header="-n"	# No header will append to the next report
+		echo
 		echo "GROUP CPUs report for partitions $p"
 		time slurmacct -G $header -C $partition $pp -r $PREFIX$name	# Group report
-		header="-n"	# No header will append to the current report
 		echo
 		echo "USER CPUs report for partitions $p"
 		time slurmacct $header -C $partition $pp -r $PREFIX$name	# Append user report
