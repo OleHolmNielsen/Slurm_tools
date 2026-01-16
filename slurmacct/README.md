@@ -15,12 +15,12 @@ jobstats
 slurmacct tool
 --------------
 
-Specific start and end Time/Date for the report may be specified.
+Specific start and end Time/Date for the report may be selected.
 The default period is the last full month.
 
 The ```-c``` option selects the current month until today, and ```-w``` selects the last week.
 
-A specific user, group or node partition may be specified.
+A specific user, group or node partition may be selected.
 
 Output lines are sorted in order of decreasing usage, so it's easy to identify top users and groups.
 
@@ -58,10 +58,10 @@ where:
         -n: No header information is printed (append to existing report)
         -h: Print this help information
 
-The Start_time and End_time values specify the date/time interval of
-job completion/termination (see "man sacct").
+The ```Start_time``` and ```End_time``` values select the date/time interval of
+job completion/termination (see ```man sacct```).
 
-Hint: Specify Start/End time as MMDD (Month and Date)
+Hint: Specify Start/End time as ```MMDD``` (Month and Date)
 ```
 Time/Date format: MMDD (Month-Day)
 
@@ -96,8 +96,11 @@ Username        Group(parent)    #jobs   cpus-hrs   Percent    kWh   #cpus  q-ho
 topreports tool
 ---------------
 
-The ```topreports``` tool uses ```slurmacct``` to generate specific useful reports.
-It may be executed daily to get updated weekly and monthly reports.
+The ```topreports``` tool uses ```slurmacct``` to generate specific reports for specified periods,
+and for all the partitions configured in the script.
+
+The ```topreports``` tool may be executed daily cron ```crontab``` to get updated weekly and monthly reports,
+and can also be run with ```-Y``` for annual reports.
 
 ```
 Usage: topreports [-m monthyear] | -Y yyyy ] [-r report-prefix] [-h]
