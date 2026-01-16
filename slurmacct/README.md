@@ -1,7 +1,9 @@
 Slurm accounting report tools
 -----------------------------
 
-Generate top user and group accounting statistics from Slurm as an alternative to the ```sreport``` command.
+Generate top user and group accounting statistics from Slurm as a supplement to the ```sreport``` command,
+allowing much more flexibility in the reports.
+
 The tools are:
 
 ```
@@ -16,28 +18,23 @@ slurmacct tool
 Specific start and end Time/Date for the report may be specified.
 The default period is the last full month.
 
-The -c option selects the current month until today, and -w selects the last week.
+The ```-c``` option selects the current month until today, and ```-w``` selects the last week.
 
 A specific user, group or node partition may be specified.
 
 Output lines are sorted in order of decreasing usage, so it's easy to identify top users and groups.
 
 The ```sreport``` command can show a top user report:
-
 ```
 sreport user top start=0101 end=0110 TopCount=50 -t hourper --tres=cpu,gpu
 ```
-
 but there are some advantages of ```slurmacct```  over the ```sreport``` command:
 
 * Partition specific accounting is possible.
-
 * Average CPU count (job parallelism) is printed.
-
 * Average waiting time in the queue is printed (answer to "My jobs wait for too long").
-
 * User full name is printed (useful to managers).
-
+The list of command options are:
 ```
 Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G | -P ] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
@@ -66,9 +63,7 @@ job completion/termination (see "man sacct").
 
 Hint: Specify Start/End time as MMDD (Month and Date)
 ```
-
 Time/Date format: MMDD (Month-Day)
-
 
 Example
 -------
