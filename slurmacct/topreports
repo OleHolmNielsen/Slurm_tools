@@ -30,6 +30,8 @@ partitionlist="xeon24el8,xeon24el8_512,xeon24el8_test,xeon24 xeon32_4096,xeon32_
 
 # Default periods: last-month ("") current-month (-c) current-week (-w) current-year (-y)
 periods="Default -c -w -y"
+# A separator line
+line="--------------------------------------------------------------------------------"
 
 export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 export TIMEFORMAT=' - Time: %R seconds'
@@ -50,7 +52,6 @@ while getopts "m:Y:r:h" options; do
 			fi
                         ;;
 		r )     export PREFIX="$OPTARG"
-                        echo " - Report prefix: $OPTARG"
                         ;;
                 h|? ) usage
                         exit 1;;
@@ -60,8 +61,15 @@ while getopts "m:Y:r:h" options; do
 done
 shift $((OPTIND-1))
 
-# A separator line
-line="--------------------------------------------------------------------------------"
+SYSTEMNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
+
+cat <<EOF
+$line"
+
+Slurm cluster $SYSTEMNAME usage statistics
+ - Report prefix: $PREFIX
+
+EOF
 
 # The empty string selects the default period (last month) in slurmacct
 for period in $periods
@@ -125,25 +133,25 @@ EOF
 		if [[ $TRESGPU == 1 ]]
 		then
 			echo
-			echo "PARENT GROUP TRES GPU report for partitions $p"
+			echo "PARENT GROUP TRES GPU report for $displaypart"
 			time slurmacct -P $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
 			header="-n"	# No header will append to the next report
 			echo
-			echo "GROUP TRES GPU report for partitions $p"
+			echo "GROUP TRES GPU report for $displaypart"
 			time slurmacct -G $header -T $partition $pp -r $PREFIX$name	# TRES GPU Group report
 			echo
-			echo "USER TRES GPU report for partitions $p"
+			echo "USER TRES GPU report for $displaypart"
 			time slurmacct $header -T $partition $pp -r $PREFIX$name	# TRES GPU report
 		fi
-		echo
-		echo "PARENT GROUP CPUs report for partitions $p"
-		time slurmacct -P $header -C $partition $pp -r $PREFIX$name	# Group report
 		header="-n"	# No header will append to the next report
 		echo
-		echo "GROUP CPUs report for partitions $p"
+		echo "PARENT GROUP CPUs report for $displaypart"
+		time slurmacct -P $header -C $partition $pp -r $PREFIX$name	# Group report
+		echo
+		echo "GROUP CPUs report for $displaypart"
 		time slurmacct -G $header -C $partition $pp -r $PREFIX$name	# Group report
 		echo
-		echo "USER CPUs report for partitions $p"
+		echo "USER CPUs report for $displaypart"
 		time slurmacct $header -C $partition $pp -r $PREFIX$name	# Append user report
 	done
 done
