@@ -114,7 +114,7 @@ where:
 You should configure some items in the script:
 
 * Partition list: overlapping partitions are comma-separated so they will be reported together.
-* Directory and report file name prefix: PREFIX or use the option ```[-r report-prefix]```.
+* Directory and report file name prefix: ```PREFIX``` or use the option ```[-r report-prefix]```.
 
 Note: Since the ```topreports``` tool prints **Slurm parent accounts** when using  the option ```slurmacct -P```,
 use of this option requires the Slurm accounts **PARENTFILE** ```/etc/slurm/accounts.conf```.
