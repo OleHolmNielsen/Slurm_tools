@@ -1,7 +1,8 @@
 Slurm accounting report tools
 -----------------------------
 
-Generate top user and group accounting statistics from Slurm as a supplement to the ```sreport``` command,
+Generate top user and group accounting statistics from Slurm as a supplement to the
+[sreport](https://slurm.schedmd.com/sreport.html) command,
 allowing much more flexibility in the reports.
 
 The tools are:
@@ -24,11 +25,11 @@ A specific user, group or node partition may be selected.
 
 Output lines are sorted in order of decreasing usage, so it's easy to identify top users and groups.
 
-The ```sreport``` command can show a top user report:
+The [sreport](https://slurm.schedmd.com/sreport.html) command can show a top user report:
 ```
 sreport user top start=0101 end=0110 TopCount=50 -t hourper --tres=cpu,gpu
 ```
-but there are some advantages of ```slurmacct```  over the ```sreport``` command:
+but there are some advantages of ```slurmacct```  over the [sreport](https://slurm.schedmd.com/sreport.html) command:
 
 * Partition specific accounting is possible.
 * Average CPU count (job parallelism) is printed.
