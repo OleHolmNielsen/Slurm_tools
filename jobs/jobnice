@@ -6,7 +6,7 @@
 
 # Usage:
 # Listing: $0 -l | -p partition [-u username]"
-# Setting: $0 [-n nice-value] [-f jobfile] [-u username] job [[,]jobs ...]"
+# Setting: $0 [-n nice-value] [-f jobfile | -u username] job [[,]jobs ...]"
 # Jobs should be comma or space separated.
 
 # Requires also the helper script "joblist".
@@ -54,7 +54,7 @@ while getopts "lp:n:f:u:h" options; do
 			;;
 		h | * )	echo "Usage:"
 			echo "Listing: $0 -l | -p partition [-u username]"
-			echo "Setting: $0 [-n nice-value] [-f jobfile] [-u username] job [[,]jobs ...]"
+			echo "Setting: $0 [-n nice-value] [-f jobfile | -u username] job [[,]jobs ...]"
 			exit 1;;
 	esac
 done
