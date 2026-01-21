@@ -6,38 +6,55 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Command usage:
-USAGE="Usage: $0 down|up"
+USAGE="Usage: $0 [-p partition1[,partition2],...] down|up"
 
-if test $# -ne 1
+# Default is the list of ALL Slurm partitions
+export partitionlist="`sinfo -h -O PartitionName:.`"
+
+while getopts "p:" options; do
+case $options in
+	p ) 	export partitionlist="`sinfo -h -O PartitionName:. -p $OPTARG | tr '\n' ' ' `"	# List only known partitions
+		if [[ -z "$partitionlist" ]]
+		then
+			echo "No recognized Slurm partitions in argument: $OPTARG"
+			exit -1
+		fi
+		echo "Change scheduling for selected partitions: $partitionlist"
+		;;
+	h|? ) echo "$USAGE"
+		exit 1;;
+	* ) echo "$USAGE"
+		exit 1;;
+esac
+done
+shift $((OPTIND-1))
+
+# Command argument $1 (state) must be down or up
+if [[ "$1" == "down"  ]]
 then
-	echo $USAGE
+	state="down"
+	cat <<EOF
+	
+	NOTICE: Setting partition state=down will be reset to defaults when slurmctld is restarted.
+	Read the slurmctld man-page under the -R parameter.
+	
+EOF
+elif [[ "$1" == "up"  ]]
+then
+	state="up"
+else
+	echo "Unrecognized command argument: $1"
+	echo "$USAGE"
 	exit 1
 fi
 
-state=$1
-if test "$state" != "down" -a "$state" != "up"
-then
-	echo $USAGE
-	exit 1
-fi
-if test "$state" = "down" 
-then
-	echo
-	echo NOTICE: Setting partition state=down will be reset if slurmctld is restarted.
-	echo Read the slurmctld man-page under the -R parameter.
-	echo
-fi
-
-# Find list of ALL Slurm partitions
-PARTITIONLIST=`sinfo -h -o "%R"`
-
-# Stop scheduling in each partition separately
-for p in $PARTITIONLIST
+# Stop scheduling in each partition separately in a loop
+for p in $partitionlist
 do
-	echo Partition $p set to $state
+	echo "Partition $p set to $state"
 	scontrol update PartitionName=$p State=$state
 done
 
 echo
-echo Current partition status is:
+echo "Current partition status is:"
 sinfo
