@@ -5,17 +5,20 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Usage:
-# Listing: $0 -l | -p partition"
-# Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
+# Listing: $0 -l | -p partition [-u username]"
+# Setting: $0 [-n nice-value] [-f jobfile] [-u username] job [[,]jobs ...]"
 # Jobs should be comma or space separated.
 
 # Requires also the helper script "joblist".
 JOBLISTFORMAT=`which joblist`
-if test $? -ne 0
+if [[ $? -ne 0 ]]
 then
 	echo ERROR: The joblist script cannot be found
 	exit 1
 fi
+
+# Select a user:
+userselect=""
 # List or set nice values:
 listnice=0
 # Default nice value
@@ -23,7 +26,7 @@ NICE=-50000
 SQUEUE_FORMAT=Nice,PriorityLong,State,JobID,Partition,UserName,GroupName,StartTime,EndTime,Name,tres-per-node,Reason
 
 # Parse command options
-while getopts "lp:n:f:h" options; do
+while getopts "lp:n:f:u:h" options; do
 	case $options in
 		l )	listnice=1
 			;;
@@ -35,8 +38,13 @@ while getopts "lp:n:f:h" options; do
 			listnice=0
 			echo Set job nice value to $NICE
 			;;
+		u )	userselect="-u $OPTARG"
+			echo "Select all pending jobs of user $OPTARG"
+			JOBFILE=`mktemp`
+			squeue -t pending -O JobID -h $userselect > $JOBFILE
+			;;
 		f )	export JOBFILE=$OPTARG
-			if test ! -s "$JOBFILE"
+			if [[ ! -s "$JOBFILE" ]]
 			then
 				echo File $JOBFILE is not a regular file or is empty
 				exit 1
@@ -45,22 +53,22 @@ while getopts "lp:n:f:h" options; do
 			echo Append jobid list from file $JOBFILE
 			;;
 		h | * )	echo "Usage:"
-			echo "Listing: $0 -l | -p partition"
-			echo "Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
+			echo "Listing: $0 -l | -p partition [-u username]"
+			echo "Setting: $0 [-n nice-value] [-f jobfile] [-u username] job [[,]jobs ...]"
 			exit 1;;
 	esac
 done
 shift $((OPTIND-1))
 
-if test $listnice -eq 0
+if [[ $listnice -eq 0 ]]
 then
-	if test -z "$JOBFILE"
+	if [[ -z "$JOBFILE" ]]
 	then
 		JOBLIST="`$JOBLISTFORMAT $*`"
 	else
 		JOBLIST="`$JOBLISTFORMAT -f $JOBFILE $*`"
 	fi
-	if test $? -ne 0
+	if [[ $? -ne 0 ]]
 	then
 		# The $JOBLISTFORMAT script returned an error on this job list:
 		echo $JOBLIST
@@ -71,7 +79,13 @@ then
 	squeue -O "$SQUEUE_FORMAT" -j $JOBLIST
 else
 	echo; echo "Jobs with a non-zero nice value:"; echo
-	squeue $partition -O "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
+	squeue $userselect $partition -O "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
+fi
+
+# Remove the temporary JOBFILE
+if [[ $JOBFILE =~ /tmp/tmp. ]]
+then
+	rm -f $JOBFILE
 fi
 
 # Read the bf_min_prio_reserve scheduler parameter (see 'man slurm.conf').
