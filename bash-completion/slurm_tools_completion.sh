@@ -29,6 +29,7 @@ then
 		complete -o nospace -F _squeue pestat
 		complete -o nospace -F _squeue showpower
 		complete -o nospace -F _squeue showuserjobs
+		complete -o nospace -F _squeue jobnice
 		complete -o nospace -F _squeue showuserlimits
 		complete -o nospace -F _squeue showevents
 		complete -o nospace -F _squeue slurmusersettings
