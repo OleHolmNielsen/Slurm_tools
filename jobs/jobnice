@@ -11,23 +11,27 @@ Usage:
 Listing:
 $0 -l | -p partition [-u username]
 Setting:
-$0 [-n nice-value] [-f jobfile | -u username [ -p partition] | job [,jobs...] ]
+$0 [-d] [-n nice-value] [-f jobfile | -u username [ -p partition] | job [,jobs...] ]
+where:
+* -n is the Slurm job Nice value
+* -f is a file with jobids
+* -u is a username
+* -p is a partition name
+* -d means "dry run" (do nothing)
+Jobs should be comma or space separated.
 EOF
 }
-
-# Usage:
-# Listing: $0 -l | -p partition [-u username]"
-# Setting: $0 [-n nice-value] [-f jobfile | -u username | job[,jobs ...] ]"
-# Jobs should be comma or space separated.
 
 # Requires the helper script "joblist".
 JOBLISTFORMAT=`which joblist`
 if [[ $? -ne 0 ]]
 then
-	echo ERROR: The joblist script cannot be found
+	echo "ERROR: The joblist script cannot be found"
 	exit 1
 fi
 
+# Dry run (do nothing)
+dryrun=0
 # Select a user:
 userselect=""
 # List or set nice values:
@@ -37,12 +41,15 @@ NICE=-50000
 SQUEUE_FORMAT=Nice,PriorityLong,State,JobID,Partition,UserName,GroupName,StartTime,EndTime,Name,tres-per-node,Reason
 
 # Parse command options
-while getopts "lp:n:f:u:h" options; do
+while getopts "dlp:n:f:u:h" options; do
 	case $options in
+		d )	dryrun=1
+			echo "Make a dry run only"
+			;;
 		l )	listnice=1
 			;;
 		n )	NICE=$OPTARG
-			echo Set job nice value to $NICE
+			echo "Set job nice value to $NICE"
 			;;
 		u )	userselect="-u $OPTARG"
 			echo "Select jobs of user $OPTARG"
@@ -53,10 +60,10 @@ while getopts "lp:n:f:u:h" options; do
 		f )	JOBFILE=$OPTARG
 			if [[ ! -s "$JOBFILE" ]]
 			then
-				echo File $JOBFILE is not a regular file or is empty
+				echo "File $JOBFILE is not a regular file or is empty"
 				exit 1
 			fi
-			echo Append jobid list from file $JOBFILE
+			echo "Append jobid list from file $JOBFILE"
 			;;
 		h | * )	usage
 			exit 1;;
@@ -71,7 +78,7 @@ then
 	if [[ $? -ne 0 ]]
 	then
 		echo "The $JOBLISTFORMAT script returned an error on this job list:"
-		echo $JOBLIST
+		echo "$JOBLIST"
 		usage
 		exit 1
 	fi
@@ -94,7 +101,10 @@ then
 		exit 1
 	fi
 	# Change nice level of jobs and print a status
-	scontrol update jobid=$JOBLIST nice=$NICE
+	if [[ $dryrun -eq 0 ]]
+	then
+		scontrol update jobid=$JOBLIST nice=$NICE
+	fi
 	squeue $userselect $partition -O "$SQUEUE_FORMAT" -j $JOBLIST
 else
 	# Just print a listing
