@@ -71,10 +71,12 @@ while getopts "dlp:n:f:u:h" options; do
 done
 shift $((OPTIND-1))
 
-# Remaining arguments should be a job list (ignore if username is set)
-if [[ -z "$userselect" && $# -gt 0 ]]
+JOBLIST="$*"
+
+if [[ -n "$JOBFILE" ]]
 then
-	JOBLIST="`$JOBLISTFORMAT $*`"
+	# Sanity check of JOBFILE
+	JOBLIST="`$JOBLISTFORMAT -f $JOBFILE`"
 	if [[ $? -ne 0 ]]
 	then
 		echo "The $JOBLISTFORMAT script returned an error on this job list:"
@@ -82,6 +84,20 @@ then
 		usage
 		exit 1
 	fi
+	echo "JOBLIST=$JOBLIST"
+# Remaining arguments should be a job list (ignore if username is set)
+elif [[ -z "$userselect" && $# -gt 0 ]]
+then
+	# Sanity check of JOBLIST
+	JOBLIST="`$JOBLISTFORMAT $JOBLIST`"
+	if [[ $? -ne 0 ]]
+	then
+		echo "The $JOBLISTFORMAT script returned an error on this job list:"
+		echo "$JOBLIST"
+		usage
+		exit 1
+	fi
+	echo "JOBLIST=$JOBLIST"
 fi
 
 if [[ $listnice -eq 0 ]]
