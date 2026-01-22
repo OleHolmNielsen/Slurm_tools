@@ -4,12 +4,23 @@
 # Requires also the helper script "joblist".
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
+function usage()
+{
+	cat <<EOF
+Usage:
+Listing:
+$0 -l | -p partition [-u username]
+Setting:
+$0 [-n nice-value] [-f jobfile | -u username [ -p partition] | job [,jobs...] ]
+EOF
+}
+
 # Usage:
 # Listing: $0 -l | -p partition [-u username]"
 # Setting: $0 [-n nice-value] [-f jobfile | -u username | job[,jobs ...] ]"
 # Jobs should be comma or space separated.
 
-# Requires also the helper script "joblist".
+# Requires the helper script "joblist".
 JOBLISTFORMAT=`which joblist`
 if [[ $? -ne 0 ]]
 then
@@ -30,63 +41,67 @@ while getopts "lp:n:f:u:h" options; do
 	case $options in
 		l )	listnice=1
 			;;
-		p )	export partition="-p $OPTARG"
-			echo "Select partition $OPTARG"
-			listnice=1
-			;;
-		n )	export NICE=$OPTARG
-			listnice=0
+		n )	NICE=$OPTARG
 			echo Set job nice value to $NICE
 			;;
 		u )	userselect="-u $OPTARG"
-			echo "Select all pending jobs of user $OPTARG"
-			JOBFILE=`mktemp`
-			squeue -t pending -O JobID -h $userselect > $JOBFILE
+			echo "Select jobs of user $OPTARG"
 			;;
-		f )	export JOBFILE=$OPTARG
+		p )	partition="-p $OPTARG"
+			echo "Select partition $OPTARG"
+			;;
+		f )	JOBFILE=$OPTARG
 			if [[ ! -s "$JOBFILE" ]]
 			then
 				echo File $JOBFILE is not a regular file or is empty
 				exit 1
 			fi
-			listnice=0
 			echo Append jobid list from file $JOBFILE
 			;;
-		h | * )	echo "Usage:"
-			echo "Listing: $0 -l | -p partition [-u username]"
-			echo "Setting: $0 [-n nice-value] [-f jobfile | -u username | job [,jobs...] ]"
+		h | * )	usage
 			exit 1;;
 	esac
 done
 shift $((OPTIND-1))
 
-if [[ $listnice -eq 0 ]]
+# Remaining arguments should be a job list (ignore if username is set)
+if [[ -z "$userselect" && $# -gt 0 ]]
 then
-	if [[ -z "$JOBFILE" ]]
-	then
-		JOBLIST="`$JOBLISTFORMAT $*`"
-	else
-		JOBLIST="`$JOBLISTFORMAT -f $JOBFILE $*`"
-	fi
+	JOBLIST="`$JOBLISTFORMAT $*`"
 	if [[ $? -ne 0 ]]
 	then
-		# The $JOBLISTFORMAT script returned an error on this job list:
+		echo "The $JOBLISTFORMAT script returned an error on this job list:"
 		echo $JOBLIST
+		usage
+		exit 1
+	fi
+fi
+
+if [[ $listnice -eq 0 ]]
+then
+	if [[ -n "$userselect" ]]
+	then
+		# Update jobs of a username and optionally partition (ignore job list arguments)
+		JOBFILE=`mktemp`
+		squeue $userselect $partition -t Pending -O JobID -h > $JOBFILE
+		JOBLIST="`$JOBLISTFORMAT -f $JOBFILE`"
+		rm -f $JOBFILE
+	elif [[ -n "$partition" ]]
+	then
+		# It would make no sense to increase the nice value for all jobs in a partition
+		echo "ERROR: The partition name must be specified together with a username"
+		usage
 		exit 1
 	fi
 	# Change nice level of jobs and print a status
 	scontrol update jobid=$JOBLIST nice=$NICE
-	squeue -O "$SQUEUE_FORMAT" -j $JOBLIST
+	squeue $userselect $partition -O "$SQUEUE_FORMAT" -j $JOBLIST
 else
+	# Just print a listing
 	echo; echo "Jobs with a non-zero nice value:"; echo
 	squeue $userselect $partition -O "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
 fi
 
-# Remove the temporary JOBFILE
-if [[ $JOBFILE =~ /tmp/tmp. ]]
-then
-	rm -f $JOBFILE
-fi
 
 # Read the bf_min_prio_reserve scheduler parameter (see 'man slurm.conf').
 cat <<EOF
