@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Print Slurm users which have been deleted from the passwd database
+# or have an expired account in the system shadow database.
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+# Get today's date as number of days since 01-Jan-1970
+export TODAY=$(( `date +%s` / 86400 ))
+
+# List all Slurm users in the Slurm database
+sacctmgr -nr show user format=user | sort | awk '
+BEGIN {
+	TODAY=ENVIRON["TODAY"]
+	todaydate = strftime("%F", TODAY*86400)
+	# Read the system passwd and shadow databases
+	while ("getent passwd" | getline ) {
+		split($0,b,":")	 	# Split password line into fields
+		username[b[1]] = b[1]	# Username b[1]
+		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
+	}
+	close("getent passwd")
+	while ("getent shadow" | getline ) {
+		split($0,b,":")	 	# Split shadow line into fields
+		expire[b[1]] = b[8]	# Expiration b[8] of this account (b[1])
+	}
+	close("getent shadow")
+}
+{
+	u = $1
+	numusers++
+	if (username[u] != "") {
+		# Slurm user exists in passwd
+		if (expire[u] != "") {
+			remain = expire[u] - TODAY # Remaining days until expiration
+			if (remain <= 0) {
+				numexpired++
+				# %Y-%m-%d ISO 8601 date format
+				expi = strftime("%F", expire[u]*86400)
+				printf("Slurm user %8.8s expired on %s %s\n",
+					u, expi, fullname[u])
+			}
+		}
+	} else {
+		numdeleted++
+		printf("Slurm user %8.8s is not found in the passwd database\n", u)
+	}
+} END {
+	printf("Statistics: %d users total, %d deleted users in passwd database, %d expired accounts in shadow database\n",
+		numusers, numdeleted, numexpired)
+	if (numdeleted > 0 || numexpired > 0)
+		printf("   Note: Slurm users may be deleted from the database using: sacctmgr -i delete user\n")
+}'
