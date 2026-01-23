@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Show recently added Slurm users.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 #
