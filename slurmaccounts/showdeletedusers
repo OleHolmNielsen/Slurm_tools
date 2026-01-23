@@ -45,8 +45,9 @@ BEGIN {
 		printf("Slurm user %8.8s is not found in the passwd database\n", u)
 	}
 } END {
-	printf("Statistics: %d users total, %d deleted users in passwd database, %d expired accounts in shadow database\n",
+	printf("\nSlurm user statistics on %s:\n", todaydate)
+	printf("%4d Slurm users total\n%4d Slurm users not found in passwd database\n%4d passwd accounts expired in shadow database\n",
 		numusers, numdeleted, numexpired)
 	if (numdeleted > 0 || numexpired > 0)
-		printf("   Note: Slurm users may be deleted from the database using: sacctmgr -i delete user\n")
+		printf("     Note: Slurm users may be deleted from the database using: sacctmgr -i delete user\n")
 }'
