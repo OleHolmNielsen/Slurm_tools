@@ -247,10 +247,18 @@ Usage:
 slurmusertable [username(s)]
 ```
 
-
 showrecentusers tool
 --------------------
 
-This tool prints Slurm user settings that may need to be updated:
-Selects users that were added in the last $newuserperiod".
-It uses the ```slurmusersettings``` tool.
+The ```showrecentusers``` tool prints Slurm user settings that may need to be updated:
+Selects users that were added in the last ```newuserperiod``` days.
+
+This tool uses the ```slurmusersettings``` tool to suggest updates to account settings .
+
+showdeletedusers tool
+-----------------------
+
+This tool ```showdeletedusers``` prints Slurm users which have been deleted from the passwd database
+or have an expired account in the system shadow database.
+
+The Slurm administrator may decide to delete the deleted/expired Slurm users.
