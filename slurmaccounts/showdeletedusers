@@ -4,7 +4,7 @@
 # or (optionally) have an expired account in the system shadow database.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-# Whether or not to list expired accounts
+# Whether or not to list expired accounts also
 export LIST_EXPIRED=0
 
 # Get today's date as number of days since 01-Jan-1970
@@ -54,7 +54,7 @@ BEGIN {
 } END {
 	printf("\nSlurm user statistics on %s:\n", todaydate)
 	printf("%4d Slurm users total\n", numusers)
-	printf("%4d Slurm users were not present in the passwd database\n", numdeleted)
+	printf("%4d Slurm users are absent in the passwd database\n", numdeleted)
 	if (LIST_EXPIRED > 0)
 		printf("%4d passwd accounts expired in shadow database\n", numexpired)
 	if (numdeleted > 0 || numexpired > 0)
