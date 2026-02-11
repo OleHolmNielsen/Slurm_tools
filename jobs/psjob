@@ -93,7 +93,7 @@ squeue -O JobID:10,Partition:14,NumNodes:6,NumTasks:6,UserName:10$arrayprint,Sta
 # Print the NodeList
 NODELIST="`squeue -h -O NodeList: -j $jobid`"
 echo NODELIST: $NODELIST
-# Print the Username
+# Read the job's Username (if needed)
 USERNAME="`squeue -h -O Username -j $jobid`"
 
 bar="===================================================="
@@ -127,7 +127,7 @@ then
 	color=""
 	# The "/bin/true" catches the case of grep returning an error code
 	# Sort output on nodenames using "sort -k 1"
-	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk -vUSERNAME=$USERNAME '{if (int(\$1)>0) {print \"-e \" \$1}else{print \"-e \" USERNAME}}') || /bin/true" | sort -k 1
+	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk '{if (int(\$1)>0) {print \"-e \" \$1}else{print \"-e \" \$2}}') || /bin/true" | sort -k 1
 fi
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
