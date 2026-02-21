@@ -16,7 +16,7 @@ export prefix=/usr/bin
 # The awk command
 my_awk=$prefix/awk
 # Job grace time (seconds) before we may flag the node
-export jobgracetime=300
+export jobgracetime=900
 # Global configuration file for pestat
 export PESTAT_GLOBAL_CONFIG=/etc/pestat.conf
 # Per-user configuration file for pestat
@@ -659,7 +659,7 @@ BEGIN {
 	}
 
 	# Do not flag nodes whose most recently started job was < jobgracetime seconds ago
-	# because Slurm reports the 5-minute load average.
+	# because Slurm reports the 15-minute load average.
 	if (mostrecentjob[node] > 0 && mostrecentjob[node] < jobgracetime) {
 		# Override the listnode flag which may have been set above
 		listnode = printallnodes
