@@ -484,11 +484,11 @@ BEGIN {
 		}
 		# Populate the jobs arrays with "JobID User" (Multiple jobs may exist on each node, and EndTime may be added).
 		# Populate the partitions array from job info.
-		sep = "| "	# Separating the job list with |
 		for (i in jobnodes) {
 			n = jobnodes[i]
 			hostname[n] = n
-			jobs[n] = jobs[n] sep JobInfo 
+			jobs[n] = jobs[n] sep[n] JobInfo 
+			sep[n] = "| "	# Separating the job list with |
 			# Record the TimeUsedSec for the most recently started job on this node
 			if (mostrecentjob[n] == 0 || TimeUsedSec < mostrecentjob[n])
 				mostrecentjob[n] = TimeUsedSec
