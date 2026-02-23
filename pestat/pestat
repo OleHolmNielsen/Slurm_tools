@@ -525,7 +525,7 @@ BEGIN {
 	if (printjobstarttime == 1) JobInfo = JobInfo " StartTime"
 	if (printjobendtime == 1) JobInfo = JobInfo " EndTime"
 	if (printtimeused == 1) JobInfo = JobInfo " TimeUsed"
-	JobInfo = JobInfo " ..."
+	JobInfo = JobInfo " | ..."
 	# Print a header line (variable hostnamelength)
 	if (printgres == 1) {	# Print GRES column (if requested)
 		printf("%-*s %15s %8s %7s %8s %8s %8s  %*-s %s\n", hostnamelength, "Hostname", "Partition", "Node", "Num_CPU", "CPUload", "Memsize", "Freemem", nodegreswidth, "GRES/node", "Joblist")
