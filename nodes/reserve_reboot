@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DEFAULT_RESERVATION_DURATION="00:02:00"
-RES_NAME_PREFIX="update"
+RESERVATION_NAME_PREFIX="update"
 
 err(){ echo "Error: $*" >&2; exit 1; }
 warn(){ echo "[warn] $*" >&2; }
@@ -30,7 +30,7 @@ for node in "${NODES[@]}"; do
 
     endtime=$(squeue -h -w $node -O Endtime | sort | tail -1)
 
-    res_name="${RES_NAME_PREFIX}-${node}"
+    res_name="${RESERVATION_NAME_PREFIX}-${node}"
 
     # Create reservation (per node). This lets backfill allow only
     # jobs that finish before start.
