@@ -282,7 +282,7 @@ then
                 if node_is_non_exclusive
                 then
                     echo "Deleteting reservation"
-                    scontrol delete ReservationName=update-$(hostname -s)
+                    scontrol delete ReservationName=update-$shortname
                 fi
 
 
