@@ -98,6 +98,43 @@ function crontab_cleanup ()
 	cat /etc/crontab
 }
 
+# True (return 0) if the node is NON-exclusive in at least one of its partitions
+# i.e. if any partition has ExclusiveUser=NO.
+function node_is_non_exclusive() {
+    local node="${1:-$(hostname -s)}"
+    local parts part
+
+    # Get comma-separated partition list from node record (-o = one line)
+    parts="$(scontrol show node -o "$node" 2>/dev/null \
+        | awk -F'Partitions=' '{print $2}' \
+        | awk '{print $1}')"
+
+    # If we couldn't determine partitions, treat as exclusive-only
+    [[ -z "$parts" || "$parts" == "(null)" ]] && return 1
+
+    # Iterate partitions
+    for part in ${parts//,/ }; do
+        if scontrol show partition -o "$part" 2>/dev/null \
+            | awk '
+                {
+                    for (i = 1; i <= NF; i++) {
+                        if ($i ~ /^ExclusiveUser=/) {
+                            split($i, a, "=")
+                            if (a[2] == "NO") exit 0
+                            else exit 1
+                        }
+                    }
+                }
+            '
+        then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+
 # Check for a lock file and exit if it exists.
 # Duplicates may happen if multiple lines have been added to /etc/crontab by mistake.
 # Sleep a random number of microseconds in order to avoid a race condition:
@@ -242,7 +279,7 @@ then
                 # reservations.  Only relevant if this is a
                 # non-exclusive node, i.e. more jobs can run at the
                 # same time.
-                if scontrol show partition $(scontrol show node "$(hostname -s)" | awk -F= '/Partitions/{print $2}' | tr ',' ' ') | grep -q "ExclusiveUser=NO"
+                if node_is_non_exclusive
                 then
                     echo "Deleteting reservation"
                     scontrol delete ReservationName=update-$(hostname -s)
