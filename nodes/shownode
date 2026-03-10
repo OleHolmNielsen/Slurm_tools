@@ -16,7 +16,10 @@ then
 else
 	echo
 	echo "Node $nodelist job information:"
-	squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime,NodeList:50 -w $nodelist
+	if ! squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime,NodeList:50 -w $nodelist
+	then
+		exit 1
+	fi
 fi
 
 # Check if squeue returned without error
@@ -37,3 +40,16 @@ EventStart=""
 
 echo "NODE EVENTS:"
 sacctmgr show event $EventStart Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
+
+# Print node reservations (if any)
+header="NODE RESERVATIONS:"
+for n in $(scontrol show hostnames $nodelist)
+do
+	resv="`scontrol -o show reservations | grep $n`"
+	if [[ -n "$resv" ]]
+	then
+		echo "$header"
+		echo "$n: $resv"
+		header=""
+	fi
+done
