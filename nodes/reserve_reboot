@@ -30,6 +30,9 @@ HOSTLIST=$(nodeset -f "$NODES_EXPR" 2>/dev/null || true)
 # scontrol show hostnames prints one node per line
 readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
 
+# We want to undo any custom time formats and just use the default
+# when parsing end times from squeue
+unset SLURM_TIME_FORMAT
 for node in "${NODES[@]}"; do
     info "Processing $node ..."
 
