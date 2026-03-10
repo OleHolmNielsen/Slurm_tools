@@ -22,13 +22,9 @@ else
 	fi
 fi
 
-# Check if squeue returned without error
-if [[ "$?" == 0 ]]
-then
-	echo
-	echo "NODE CONFIGURATION:"
-	scontrol show node $nodelist
-fi
+echo
+echo "NODE CONFIGURATION:"
+scontrol show node $nodelist
 
 # Show recent node events
 
@@ -48,8 +44,13 @@ do
 	resv="`scontrol -o show reservations | grep $n`"
 	if [[ -n "$resv" ]]
 	then
-		echo "$header"
+		if [[ -n "$header" ]]
+		then
+			# Print a header
+			echo
+			echo "$header"
+			header=""
+		fi
 		echo "$n: $resv"
-		header=""
 	fi
 done
