@@ -12,8 +12,9 @@ RESERVATION_NAME_PREFIX="update"
 err(){ echo "Error: $*" >&2; exit 1; }
 info(){ echo "[info] $*"; }
 
-
-[[ $# -ge 2 ]] || err "Usage: $0 \"<NODES>\" \"<REASON>\""
+if [[ $# -ne 2 ]]; then
+    err "Usage: $0 \"<NODES>\" \"<REASON>\""
+fi
 
 NODES_EXPR="$1"
 REASON="$2"
