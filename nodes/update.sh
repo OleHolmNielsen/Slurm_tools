@@ -104,10 +104,8 @@ function node_is_non_exclusive() {
     local node="${1:-$(hostname -s)}"
     local parts part
 
-    # Get comma-separated partition list from node record (-o = one line)
-    parts="$(scontrol show node -o "$node" 2>/dev/null \
-        | awk -F'Partitions=' '{print $2}' \
-        | awk '{print $1}')"
+    # Get comma-separated partition list from node record
+    parts="$(scontrol show node "$node" 2>/dev/null | grep 'Partitions=' | awk -F= '{print $2}')"
 
     # If we couldn't determine partitions, treat as exclusive-only
     [[ -z "$parts" || "$parts" == "(null)" ]] && return 1
