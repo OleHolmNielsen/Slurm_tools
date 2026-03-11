@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Usage: reserve_reboot "<NODES>" "<REASON>"
 
-DEFAULT_RESERVATION_DURATION="00:02:00"
+DEFAULT_RESERVATION_DURATION="08:00:00"
 RESERVATION_NAME_PREFIX="update"
 
 err(){ echo "Error: $*" >&2; exit 1; }
