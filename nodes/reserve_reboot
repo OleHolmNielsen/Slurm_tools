@@ -40,7 +40,7 @@ for ((i=0;i<${#args[@]};i++)); do
             ;;
         --duration)
             # take next arg as value if present
-            ((i++))
+            i=$((i + 1))
             if [[ $i -ge ${#args[@]} ]]; then
                 err "--duration requires an argument"
             fi
