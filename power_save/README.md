@@ -18,8 +18,8 @@ Important notes:
 1. Manual power up/down of nodes can be performed by the
 [scontrol power](https://slurm.schedmd.com/scontrol.html#OPT_power) command:
    ```
-   scontrol power down [asap|force] NodeList
-   scontrol power up NodeList
+   scontrol power down [asap|force] <NodeList>
+   scontrol power up <NodeList>
    ```
 2. **Important:** The Slurm power down/up functions ONLY apply to *idle* nodes which 
    are controlled by the Slurm power saving logic.
