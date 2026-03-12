@@ -29,6 +29,10 @@ as configured in ```slurm.conf```:
    ```
    ResumeProgram=/usr/local/bin/noderesume
    ```
+   for example by:
+   ```
+   /usr/local/bin/noderesume <NodeList>
+   ```
 
 Prerequisites
 -------------
