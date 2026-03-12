@@ -4,18 +4,36 @@
 # Requires also the helper script "joblist".
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-# Usage:
-# Listing: $0 -l | -p partition"
-# Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
-# Jobs should be comma or space separated.
+function usage()
+{
+	cat <<EOF
+Usage:
+Listing:
+$0 -l | -p partition [-u username]
+Setting:
+$0 [-d] [-n nice-value] [-f jobfile | -u username [ -p partition] | job [,jobs...] ]
+where:
+* -n is the Slurm job Nice value
+* -f is a file with jobids
+* -u is a username
+* -p is a partition name
+* -d means "dry run" (do nothing)
+Jobs should be comma or space separated.
+EOF
+}
 
-# Requires also the helper script "joblist".
+# Requires the helper script "joblist".
 JOBLISTFORMAT=`which joblist`
-if test $? -ne 0
+if [[ $? -ne 0 ]]
 then
-	echo ERROR: The joblist script cannot be found
+	echo "ERROR: The joblist script cannot be found"
 	exit 1
 fi
+
+# Dry run (do nothing)
+dryrun=0
+# Select a user:
+userselect=""
 # List or set nice values:
 listnice=0
 # Default nice value
@@ -23,56 +41,93 @@ NICE=-50000
 SQUEUE_FORMAT=Nice,PriorityLong,State,JobID,Partition,UserName,GroupName,StartTime,EndTime,Name,tres-per-node,Reason
 
 # Parse command options
-while getopts "lp:n:f:h" options; do
+while getopts "dlp:n:f:u:h" options; do
 	case $options in
+		d )	dryrun=1
+			echo "Make a dry run only"
+			;;
 		l )	listnice=1
 			;;
-		p )	export partition="-p $OPTARG"
+		n )	NICE=$OPTARG
+			echo "Set job nice value to $NICE"
+			;;
+		u )	userselect="-u $OPTARG"
+			echo "Select jobs of user $OPTARG"
+			;;
+		p )	partition="-p $OPTARG"
 			echo "Select partition $OPTARG"
-			listnice=1
 			;;
-		n )	export NICE=$OPTARG
-			listnice=0
-			echo Set job nice value to $NICE
-			;;
-		f )	export JOBFILE=$OPTARG
-			if test ! -s "$JOBFILE"
+		f )	JOBFILE=$OPTARG
+			if [[ ! -s "$JOBFILE" ]]
 			then
-				echo File $JOBFILE is not a regular file or is empty
+				echo "File $JOBFILE is not a regular file or is empty"
 				exit 1
 			fi
-			listnice=0
-			echo Append jobid list from file $JOBFILE
+			echo "Append jobid list from file $JOBFILE"
 			;;
-		h | * )	echo "Usage:"
-			echo "Listing: $0 -l | -p partition"
-			echo "Setting: $0 [-n nice-value] [-f jobfile] job [[,]jobs ...]"
+		h | * )	usage
 			exit 1;;
 	esac
 done
 shift $((OPTIND-1))
 
-if test $listnice -eq 0
+JOBLIST="$*"
+
+if [[ -n "$JOBFILE" ]]
 then
-	if test -z "$JOBFILE"
+	# Sanity check of JOBFILE
+	JOBLIST="`$JOBLISTFORMAT -f $JOBFILE`"
+	if [[ $? -ne 0 ]]
 	then
-		JOBLIST="`$JOBLISTFORMAT $*`"
-	else
-		JOBLIST="`$JOBLISTFORMAT -f $JOBFILE $*`"
+		echo "The $JOBLISTFORMAT script returned an error on this job list:"
+		echo "$JOBLIST"
+		usage
+		exit 1
 	fi
-	if test $? -ne 0
+	echo "JOBLIST=$JOBLIST"
+# Remaining arguments should be a job list (ignore if username is set)
+elif [[ -z "$userselect" && $# -gt 0 ]]
+then
+	# Sanity check of JOBLIST
+	JOBLIST="`$JOBLISTFORMAT $JOBLIST`"
+	if [[ $? -ne 0 ]]
 	then
-		# The $JOBLISTFORMAT script returned an error on this job list:
-		echo $JOBLIST
+		echo "The $JOBLISTFORMAT script returned an error on this job list:"
+		echo "$JOBLIST"
+		usage
+		exit 1
+	fi
+	echo "JOBLIST=$JOBLIST"
+fi
+
+if [[ $listnice -eq 0 ]]
+then
+	if [[ -n "$userselect" ]]
+	then
+		# Update jobs of a username and optionally partition (ignore job list arguments)
+		JOBFILE=`mktemp`
+		squeue $userselect $partition -t Pending -O JobID -h > $JOBFILE
+		JOBLIST="`$JOBLISTFORMAT -f $JOBFILE`"
+		rm -f $JOBFILE
+	elif [[ -n "$partition" ]]
+	then
+		# It would make no sense to increase the nice value for all jobs in a partition
+		echo "ERROR: The partition name must be specified together with a username"
+		usage
 		exit 1
 	fi
 	# Change nice level of jobs and print a status
-	scontrol update jobid=$JOBLIST nice=$NICE
-	squeue -O "$SQUEUE_FORMAT" -j $JOBLIST
+	if [[ $dryrun -eq 0 ]]
+	then
+		scontrol update jobid=$JOBLIST nice=$NICE
+	fi
+	squeue $userselect $partition -O "$SQUEUE_FORMAT" -j $JOBLIST
 else
+	# Just print a listing
 	echo; echo "Jobs with a non-zero nice value:"; echo
-	squeue $partition -O "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
+	squeue $userselect $partition -O "$SQUEUE_FORMAT" | awk '{if ($1 != 0) print $0}' 
 fi
+
 
 # Read the bf_min_prio_reserve scheduler parameter (see 'man slurm.conf').
 cat <<EOF

@@ -1,7 +1,10 @@
 Slurm accounting report tools
 -----------------------------
 
-Generate top user and group accounting statistics from Slurm as an alternative to the ```sreport``` command.
+Generate top user and group accounting statistics from Slurm as a supplement to the
+[sreport](https://slurm.schedmd.com/sreport.html) command,
+allowing much more flexibility in the reports.
+
 The tools are:
 
 ```
@@ -13,33 +16,29 @@ jobstats
 slurmacct tool
 --------------
 
-Specific start and end Time/Date for the report may be specified.
+Specific start and end Time/Date for the report may be selected.
 The default period is the last full month.
 
-The -c option selects the current month until today, and -w selects the last week.
+The ```-c``` option selects the current month until today, and ```-w``` selects the last week.
 
-A specific user, group or node partition may be specified.
+A specific user, group or node partition may be selected.
 
 Output lines are sorted in order of decreasing usage, so it's easy to identify top users and groups.
 
-The ```sreport``` command can show a top user report:
-
+The [sreport](https://slurm.schedmd.com/sreport.html) command can show a top user report:
 ```
 sreport user top start=0101 end=0110 TopCount=50 -t hourper --tres=cpu,gpu
 ```
-
-but there are some advantages of ```slurmacct```  over the ```sreport``` command:
+but there are some advantages of ```slurmacct```  over the [sreport](https://slurm.schedmd.com/sreport.html) command:
 
 * Partition specific accounting is possible.
-
 * Average CPU count (job parallelism) is printed.
-
 * Average waiting time in the queue is printed (answer to "My jobs wait for too long").
-
 * User full name is printed (useful to managers).
 
+The list of command options are:
 ```
-Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | -Y | -w | -m monthyear] [-p partition(s)] [-u username] [-g groupname] [-G] [-W workdir] [-r report-prefix] [-n] [-h]
+Usage: slurmacct [-C|-T|-N] [-s Start_time -e End_time | -c | -y | | -w | -m monthyear | -Y yyyy ] [-p partition(s)] [-u username] [-g groupname] [-G | -P ] [-W workdir] [-r report-prefix] [-n] [-h]
 where:
         -C: Print CPU usage (Default option)
         -T: Print Trackable resource (TRES) GPU usage in stead of CPU usage
@@ -48,64 +47,80 @@ where:
         -e End_time [last month]: End time of accounting period.
         -c: Current month
         -y: Current year
-        -Y: Last year
         -w: Last week
         -m monthyear: Select month and year (like "november2019")
+        -Y yyyy: Select the entire year yyyy (like "2025")
         -p partition(s): Select only Slurm partion <partition>[,partition2,...]
         -u username: Print only user <username> 
         -g groupname: Print only users in UNIX group <groupname>
         -G: Print only groupwise summed accounting data
+        -P: Print only Parent group summed accounting data
         -W directory: Print only jobs with this string in the job WorkDir
         -r: Report name prefix
         -n: No header information is printed (append to existing report)
         -h: Print this help information
-
-The Start_time and End_time values specify the date/time interval of
-job completion/termination (see "man sacct").
-
-Hint: Specify Start/End time as MMDD (Month and Date)
 ```
 
-Time/Date format: MMDD (Month-Day)
-
+The ```Start_time``` and ```End_time``` values select the date/time interval of
+job completion/termination (see ```man sacct```).
+Hint: Specify ```Start_time``` and ```End_time``` as ```MMDD``` (Month and Date).
 
 Example
 -------
 
 ```
-$ slurmacct -s 1201 -e 1231 -p xeon8
+$ slurmacct -s 1201 -e 1231 -p xeon40el8
+ - Start date 1201
+ - End date 1231
+ - Print only accounting in Slurm partition xeon40el8
+ - Print CPU usage (default option)
+Report generated to file /tmp/Slurm_report_acct_1201_1231
+```
+The generated report file contains:
+```
+CPU usage report by USERS
 
-Jobs completed/terminated between date/time 1201 and 1231
-Partition selected: xeon8
-                             Wallclock          Average Average
-Username    Group    #jobs       hours  Percent  #cpus  q-hours  Full name
---------    -----  ------- -----------  ------- ------- -------  ---------
-   TOTAL    (All)    38189   2511099.3   100.00    0.00   21.60  
-  user01   group1      621    492932.0    19.63   16.00   26.16  Name 1
-  user02   group2      547    431252.9    17.17   16.00   29.55  Name 2
-  user03   group3      423    349400.0    13.91   16.00   74.40  Name 3
+ - Partition(s) selected: xeon40el8
+
+Usage sorted by top users:
+                                         Wallclock           Energy Average Average
+Username        Group(parent)    #jobs   cpus-hrs   Percent    kWh   #cpus  q-hours    Full name
+--------        -------------  ------- -----------  ------- ------- ------- -------  ---------
+   TOTAL                (All)    22812   7597623.0   100.00   89757   52.82   17.39  Number of users: 81
+   user1        camdvip(camd)      402    792609.3    10.43   10181  120.00  347.77  Fullname 1
+   user2    ecsvip(batteries)     1689    774121.1    10.19    8713   40.00   17.57  Fullname 2
+   user3    ecsvip(batteries)      388    618520.5     8.14    6742   40.00  100.74  Fullname 3
   ...
 ```
 
 topreports tool
 ---------------
 
-The ```topreports``` tool uses ```slurmacct``` to generate specific useful reports.
-It may be executed daily to get updated weekly and monthly reports.
+The ```topreports``` tool uses ```slurmacct``` to generate specific reports for specified periods,
+and for all the partitions configured in the script.
+
+The ```topreports``` tool may be executed daily via ```crontab``` to provide updated weekly and monthly reports,
+and it can also be run with ```-Y``` for annual reports.
 
 ```
-topreports [monthyear]
+Usage: topreports [-m monthyear] | -Y yyyy ] [-r report-prefix] [-h]
+where:
+        -m: Select periods: month and year (like "november2024"), see slurmacct
+            Default periods: last-month, current-month, current-week, and current-year 
+        -Y: Select an entire year yyyy (like 2025)
+        -r: Report name prefix (Default PREFIX=/tmp/Top)
+        -h: Print this help information
 ```
 
-By default 3 report periods will be generated: Last month, current month, and current week.
-The optional monthyear argument selects month and year (like "november2019")
+You should configure some items in the script:
 
-You have to configure two items in the script:
+* Partition list: overlapping partitions are comma-separated so they will be reported together.
+* Directory and report file name prefix: ```PREFIX``` or use the option ```[-r report-prefix]```.
 
-* Directory and report file name prefix: PREFIX
-
-* Partition list: overlapping partitions are comma-separated so they are reported together.
-
+Note: Since the ```topreports``` tool prints **Slurm parent accounts** when using  the option ```slurmacct -P```,
+use of this option requires the Slurm accounts **PARENTFILE** ```/etc/slurm/accounts.conf```.
+The **PARENTFILE** can be conveniently generated by the ```slurmaccounts2conf``` tool
+from [Slurm accounts and users](../slurmaccounts/) which dumps all Slurm associations in the required format.
 
 jobstats tool
 -------------

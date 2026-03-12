@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 
-# Print a simple node status
+# Print status for a node list
+# The output includes: Node info, job info, node events, node reservations
+
+if [[ $# -eq 0 ]]
+then
+	echo "Usage: $0 <nodelist>"
+	exit 1
+fi
+
 # Use default time format:
 unset SLURM_TIME_FORMAT
 
@@ -16,16 +24,15 @@ then
 else
 	echo
 	echo "Node $nodelist job information:"
-	squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime,NodeList:50 -w $nodelist
+	if ! squeue -O JobID:10,NumNodes:6,Partition:15,UserName:12,StartTime,EndTime,NodeList:50 -w $nodelist
+	then
+		exit 1
+	fi
 fi
 
-# Check if squeue returned without error
-if [[ "$?" == 0 ]]
-then
-	echo
-	echo "NODE CONFIGURATION:"
-	scontrol show node $nodelist
-fi
+echo
+echo "NODE CONFIGURATION:"
+scontrol show node $nodelist
 
 # Show recent node events
 
@@ -37,3 +44,41 @@ EventStart=""
 
 echo "NODE EVENTS:"
 sacctmgr show event $EventStart Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
+
+# Print node reservations (if any)
+tmplist=`mktemp`
+scontrol show hostnames $nodelist > $tmplist
+
+scontrol -o show reservations | awk -vtmplist=$tmplist '
+{
+	resvname[$1]	= $1
+	start[$1]	= $2
+	end[$1]		= $3
+	duration[$1]	= $4
+	resvnodes[$1]	= $5
+} END {
+	# Loop over reservations
+	for (r in resvname) {
+		split(resvnodes[r], a, "=")
+		command = "scontrol show hostnames " a[2]
+		while ((command | getline) > 0) {
+			# Add a reservation for node $1
+			resv[$1] = resv[$1] sep[$1] resvname[r] " " start[r] " " end[r]
+			sep[$1] = " | "
+		}
+		close(command)
+	}
+	# Loop over nodes in nodelist (file tmplist)
+	command = "cat " tmplist
+	header = "\nNODE RESERVATIONS:"
+	while ((command | getline) > 0) {
+		# Print node reservations, if any
+		if (resv[$1] != "") {
+			if (count++ == 0) print header
+			printf("%s: %s\n", $1, resv[$1])
+		}
+	}
+	close(command)
+}'
+
+rm -f $tmplist
