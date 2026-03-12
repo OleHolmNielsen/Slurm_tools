@@ -24,7 +24,8 @@ Important notes:
 2. **Important:** The Slurm power down/up functions ONLY apply to *idle* nodes which 
    are controlled by the Slurm power saving logic.
    Nodes in ```down, drain``` or other states are IGNORED,
-   and such nodes may in stead be handled by manual execution of the *ResumeProgram* script:
+   and such nodes may in stead be handled by manual execution of the ```ResumeProgram``` script 
+as configured in ```slurm.conf```:
    ```
    ResumeProgram=/usr/local/bin/noderesume
    ```
