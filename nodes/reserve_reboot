@@ -8,27 +8,43 @@ set -euo pipefail
 
 DEFAULT_RESERVATION_DURATION="08:00:00"
 RESERVATION_NAME_PREFIX="update"
-KEEP_RESERVATION_NAME_PREFIX="update-keep"
+KEEP_RESERVATION_NAME_PREFIX="node_reserved"
 
 err(){ echo "Error: $*" >&2; exit 1; }
 info(){ echo "[info] $*"; }
 usage(){
     cat <<EOF
-Usage: $0 [-k|--keep-reservation] "<NODES>" "<REASON>"
+Usage: $0 [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
   -k, --keep-reservation  update.sh will not delete the reservation
+  -d, --duration DURATION  reservation duration (e.g. 08:00:00)
 EOF
 }
 
 keep_reservation=false
+RESERVATION_DURATION="$DEFAULT_RESERVATION_DURATION"
 
 normalized_args=()
-for arg in "$@"; do
+# support long options --keep-reservation, --help, --duration <value> and --duration=VALUE
+args=("$@")
+for ((i=0;i<${#args[@]};i++)); do
+    arg="${args[i]}"
     case "$arg" in
         --keep-reservation)
             normalized_args+=("-k")
             ;;
         --help)
             normalized_args+=("-h")
+            ;;
+        --duration=*)
+            normalized_args+=("-d" "${arg#--duration=}")
+            ;;
+        --duration)
+            # take next arg as value if present
+            ((i++))
+            if [[ $i -ge ${#args[@]} ]]; then
+                err "--duration requires an argument"
+            fi
+            normalized_args+=("-d" "${args[i]}")
             ;;
         *)
             normalized_args+=("$arg")
@@ -37,10 +53,13 @@ for arg in "$@"; do
 done
 set -- "${normalized_args[@]}"
 
-while getopts ":kh" opt; do
+while getopts ":khd:" opt; do
     case "$opt" in
         k)
             keep_reservation=true
+            ;;
+        d)
+            RESERVATION_DURATION="$OPTARG"
             ;;
         h)
             usage
@@ -49,6 +68,10 @@ while getopts ":kh" opt; do
         \?)
             usage
             err "Unknown option: -$OPTARG"
+            ;;
+        :)
+            usage
+            err "Option -$OPTARG requires an argument"
             ;;
     esac
 done
@@ -94,7 +117,7 @@ for node in "${NODES[@]}"; do
     scontrol create reservation \
              ReservationName="$res_name" \
              StartTime="$endtime" \
-             Duration="$DEFAULT_RESERVATION_DURATION" \
+             Duration="$RESERVATION_DURATION" \
              Nodes="$node" \
              Users=root \
              Flags=MAINT >/dev/null
