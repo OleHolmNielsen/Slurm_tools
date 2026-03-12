@@ -2,20 +2,40 @@
 
 # Slurm: use scontrol to reboot nodes
 # NextState is "Resume" by default, use "-d" to set to Down.
+# A "Reason" variable may be specified.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
+# Default values
 action=resume
 reason="reboot and resume"
+setreason=0
+
+# Command usage:
+function usage()
+{
+cat <<EOF
+Usage:
+$0 [-d] [-r <Reason>] <nodelist>
+The default NextState after reboot is Resume.
+Use -d to set NextState to Down.
+Use -r <Reason> to specify a reason.
+EOF
+}
+
 
 # Parse command options
-while getopts "dh" options; do
+while getopts "dr:h" options; do
 	case $options in
 		d )	action=down
-			reason="reboot and down"
+			if [[ $setreason == 0 ]]
+			then
+				reason="reboot and down"
+			fi
 			;;
-		h | * )	echo "Usage:"
-			echo "$0 [-d] <nodelist>"
-			echo "The NextState after reboot is Resume.  Use -d to set NextState to Down"
+		r )	reason="$OPTARG"
+			setreason=1
+			;;
+		h | * )	usage
 			exit 1;;
 	esac
 done
@@ -24,7 +44,7 @@ NODES="$1"
 
 if [ $# -ne 1 ]
 then
-	echo "Usage: $0 [-d] nodename-list"
+	usage
 	exit 1
 fi
 
@@ -35,6 +55,6 @@ then
 	exit 1
 fi
 
-echo "Reboot nodes $NODES with nextstate=$action"
+echo "Reboot nodes $NODES with nextstate=$action and reason=$reason"
 scontrol reboot asap nextstate=$action reason="$reason" $NODES 
 sinfo -N -n $NODES
