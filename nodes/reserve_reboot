@@ -4,20 +4,68 @@ set -euo pipefail
 
 # Reserve nodes immediately after the last job ends, then reboot. This is useful for updating non-exclusive nodes so the node are not blocked while waiting for the last job to end. The reservation is needed to allow backfill to schedule jobs that end before the reboot, but not after. The reservation should be removed by update.sh after the reboot.
 
-# Usage: reserve_reboot "<NODES>" "<REASON>"
+# Usage: reserve_reboot [-k|--keep-reservation] "<NODES>" "<REASON>"
 
 DEFAULT_RESERVATION_DURATION="08:00:00"
 RESERVATION_NAME_PREFIX="update"
+KEEP_RESERVATION_NAME_PREFIX="update-keep"
 
 err(){ echo "Error: $*" >&2; exit 1; }
 info(){ echo "[info] $*"; }
+usage(){
+    cat <<EOF
+Usage: $0 [-k|--keep-reservation] "<NODES>" "<REASON>"
+  -k, --keep-reservation  update.sh will not delete the reservation
+EOF
+}
+
+keep_reservation=false
+
+normalized_args=()
+for arg in "$@"; do
+    case "$arg" in
+        --keep-reservation)
+            normalized_args+=("-k")
+            ;;
+        --help)
+            normalized_args+=("-h")
+            ;;
+        *)
+            normalized_args+=("$arg")
+            ;;
+    esac
+done
+set -- "${normalized_args[@]}"
+
+while getopts ":kh" opt; do
+    case "$opt" in
+        k)
+            keep_reservation=true
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        \?)
+            usage
+            err "Unknown option: -$OPTARG"
+            ;;
+    esac
+done
+
+shift $((OPTIND - 1))
 
 if [[ $# -ne 2 ]]; then
-    err "Usage: $0 \"<NODES>\" \"<REASON>\""
+    usage
+    err "Please provide only NODES and REASON!"
 fi
 
 NODES_EXPR="$1"
 REASON="$2"
+
+if [[ "$keep_reservation" == true ]]; then
+    RESERVATION_NAME_PREFIX="$KEEP_RESERVATION_NAME_PREFIX"
+fi
 
 # ---------- sanity checks ----------
 command -v scontrol >/dev/null 2>&1 || err "scontrol not found"
