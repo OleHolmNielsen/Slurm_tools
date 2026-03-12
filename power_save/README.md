@@ -15,7 +15,7 @@ General Slurm configurations related to power saving are described in the page h
 
 Important notes:
 
-1. The power up/down of nodes can be performed by the
+1. Manual power up/down of nodes can be performed by the
 [scontrol power](https://slurm.schedmd.com/scontrol.html#OPT_power) command:
    ```
    scontrol power down [asap|force] NodeList
