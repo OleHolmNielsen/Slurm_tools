@@ -70,8 +70,7 @@ If nodes in the node-list are in non-exclusive partitions, run ```reserve_on_idl
 reserve_on_idle <node-list> UPDATE
 ```
 
-Then set the nodes to make an automatic reboot (via Slurm)
-as soon as they become idle and change the node state to ```DOWN``` with:
+Then schedule the nodes for reboot through Slurm as soon as they become idle, and set their next state to DOWN:
 ```
 sreboot -d -r UPDATE <node-list>
 ```
