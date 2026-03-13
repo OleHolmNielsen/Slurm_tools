@@ -4,7 +4,7 @@ Slurm node scripts
 Some convenient scripts for working with nodes (or lists of nodes):
 
 * Show status, jobs, events, reservations for a list of nodes: ```shownode <node-list>```.
-  **Recommended** as an easy way to print all relevant information about a nodelist.
+  **Recommended** as an easy way to print all relevant information about a node-list.
 * Drain a node-list: ```sdrain node-list "Reason"```.
 * Resume a node-list: ```sresume node-list```.
 * Reboot and resume a node-list: ```sreboot node-list```.
