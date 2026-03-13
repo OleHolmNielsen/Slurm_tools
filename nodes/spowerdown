@@ -4,21 +4,23 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 NODES="$1"
-ACTION=power_down
+ACTION="down"
 
-if test $# -ne 1
+if [[ $# -ne 1 ]]
 then
-	echo Usage: $0 nodename-list
+	echo "Usage: $0 nodename-list"
 	exit 1
 fi
 
 # Check the node list
 if [[ "`sinfo -hN -n $NODES`" = "" ]]
 then
-	echo ERROR: Nodelist $NODES does not exist
+	echo "ERROR: Nodelist $NODES does not exist"
 	exit 1
 fi
 
-echo Action=$ACTION on nodes $NODES
-/usr/bin/scontrol update nodename=$NODES state=$ACTION
+echo "Action=$ACTION on nodes $NODES"
+# Obsolete since 24.05:
+# /usr/bin/scontrol update nodename=$NODES state=$ACTION
+/usr/bin/scontrol power $ACTION nodename=$NODES
 /usr/bin/sinfo -N -n $NODES
