@@ -98,41 +98,6 @@ function crontab_cleanup ()
 	cat /etc/crontab
 }
 
-# True (return 0) if the node is NON-exclusive in at least one of its partitions
-# i.e. if any partition has ExclusiveUser=NO.
-function node_is_non_exclusive() {
-    local node="${1:-$(hostname -s)}"
-    local parts part
-
-    # Get comma-separated partition list from node record
-    parts="$(scontrol show node "$node" 2>/dev/null | grep 'Partitions=' | awk -F= '{print $2}')"
-
-    # If we couldn't determine partitions, treat as exclusive-only
-    [[ -z "$parts" || "$parts" == "(null)" ]] && return 1
-
-    # Iterate partitions
-    for part in ${parts//,/ }; do
-        if scontrol show partition -o "$part" 2>/dev/null \
-            | awk '
-                {
-                    for (i = 1; i <= NF; i++) {
-                        if ($i ~ /^ExclusiveUser=/) {
-                            split($i, a, "=")
-                            if (a[2] == "NO") exit 0
-                            else exit 1
-                        }
-                    }
-                }
-            '
-        then
-            return 0
-        fi
-    done
-
-    return 1
-}
-
-
 # Check for a lock file and exit if it exists.
 # Duplicates may happen if multiple lines have been added to /etc/crontab by mistake.
 # Sleep a random number of microseconds in order to avoid a race condition:
@@ -274,15 +239,12 @@ then
 	if [[ -n "`sinfo -N -hn $shortname`" ]]
 	then
                 # Remove this node from any possible update related
-                # reservations.  Only relevant if this is a
-                # non-exclusive node, i.e. more jobs can run at the
-                # same time.
-                if node_is_non_exclusive
-                then
-                    echo "Deleteting reservation"
-                    scontrol delete ReservationName=update-$shortname
-                fi
-
+                # reservations. The magic reservation name is set by
+                # reserve_on_idle. If the node is not in a
+                # reservation, the delete command will just print an
+                # error message and continue.
+                echo "Deleteting reservation update-$shortname if it exists"
+                scontrol delete ReservationName=update-$shortname
 
                 NEXTSTATE=resume
 		echo "Next Slurm node state is: $NEXTSTATE"
