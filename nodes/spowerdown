@@ -22,5 +22,5 @@ fi
 echo "Action=$ACTION on nodes $NODES"
 # Obsolete since 24.05:
 # /usr/bin/scontrol update nodename=$NODES state=$ACTION
-/usr/bin/scontrol power $ACTION nodename=$NODES
+/usr/bin/scontrol power $ACTION $NODES
 /usr/bin/sinfo -N -n $NODES
