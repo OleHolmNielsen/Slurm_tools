@@ -13,6 +13,27 @@ In case you want to use the IPMI based tool ```power_ipmi```, please configure a
 
 General Slurm configurations related to power saving are described in the page https://slurm.schedmd.com/power_save.html.
 
+Important notes:
+
+1. Manual power up/down of nodes can be performed by the
+[scontrol power](https://slurm.schedmd.com/scontrol.html#OPT_power) command:
+   ```
+   scontrol power down [asap|force] <NodeList>
+   scontrol power up <NodeList>
+   ```
+2. **Important:** The Slurm power down/up functions ONLY apply to *idle* nodes which 
+   are controlled by the Slurm power saving logic.
+   Nodes in ```down, drain``` or other states are IGNORED,
+   and such nodes may in stead be handled by manual execution of the ```ResumeProgram``` script 
+as configured in ```slurm.conf```:
+   ```
+   ResumeProgram=/usr/local/bin/noderesume
+   ```
+   for example by:
+   ```
+   /usr/local/bin/noderesume <NodeList>
+   ```
+
 Prerequisites
 -------------
 
