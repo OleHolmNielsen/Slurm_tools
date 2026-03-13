@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Slurm: use scontrol to manage nodes
+# Note: This only works with nodes in Slurm power saving, NOT nodes in state DOWN, DRAIN etc.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 NODES="$1"
