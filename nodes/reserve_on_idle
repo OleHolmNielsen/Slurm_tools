@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# -e: exit immediately if any command fails, -u: treat unset variables as an error, -o pipefail: the return value of a pipeline is the status of the last command to exit with a non-zero status, or zero if no command exited with a non-zero status. This is sometimes called bash strict mode: https://ewus.de/en/hint/bash-strict-mode
+set -euo pipefail
+
+# Reserve nodes immediately after the last job ends. This is useful for e.g. updating non-exclusive nodes so the nodes are not blocked while waiting for the last job to end. The reservation is needed to allow backfill to schedule jobs that end before the reservation expires. The reservation should then be removed by update.sh after the reboot.
+
+# Usage: reserve_on_idle [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
+
+DEFAULT_RESERVATION_DURATION="08:00:00"
+RESERVATION_NAME_PREFIX="update"
+KEEP_RESERVATION_NAME_PREFIX="node_reserved"
+
+err(){ echo "Error: $*" >&2; exit 1; }
+info(){ echo "[info] $*"; }
+usage(){
+    cat <<EOF
+Usage: $0 [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
+  -k, --keep-reservation  update.sh will not delete the reservation
+  -d, --duration DURATION  reservation duration (e.g. 08:00:00)
+EOF
+}
+
+keep_reservation=false
+RESERVATION_DURATION="$DEFAULT_RESERVATION_DURATION"
+
+normalized_args=()
+# support long options --keep-reservation, --help, --duration <value> and --duration=VALUE
+args=("$@")
+for ((i=0;i<${#args[@]};i++)); do
+    arg="${args[i]}"
+    case "$arg" in
+        --keep-reservation)
+            normalized_args+=("-k")
+            ;;
+        --help)
+            normalized_args+=("-h")
+            ;;
+        --duration=*)
+            normalized_args+=("-d" "${arg#--duration=}")
+            ;;
+        --duration)
+            # take next arg as value if present
+            i=$((i + 1))
+            if [[ $i -ge ${#args[@]} ]]; then
+                err "--duration requires an argument"
+            fi
+            normalized_args+=("-d" "${args[i]}")
+            ;;
+        *)
+            normalized_args+=("$arg")
+            ;;
+    esac
+done
+set -- "${normalized_args[@]}"
+
+while getopts ":khd:" opt; do
+    case "$opt" in
+        k)
+            keep_reservation=true
+            ;;
+        d)
+            RESERVATION_DURATION="$OPTARG"
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        \?)
+            usage
+            err "Unknown option: -$OPTARG"
+            ;;
+        :)
+            usage
+            err "Option -$OPTARG requires an argument"
+            ;;
+    esac
+done
+
+shift $((OPTIND - 1))
+
+if [[ $# -ne 2 ]]; then
+    usage
+    err "Please provide only NODES and REASON!"
+fi
+
+NODES_EXPR="$1"
+REASON="$2"
+
+if [[ "$keep_reservation" == true ]]; then
+    RESERVATION_NAME_PREFIX="$KEEP_RESERVATION_NAME_PREFIX"
+fi
+
+# ---------- sanity checks ----------
+command -v scontrol >/dev/null 2>&1 || err "scontrol not found"
+command -v squeue   >/dev/null 2>&1 || err "squeue not found"
+command -v nodeset  >/dev/null 2>&1 || err "nodeset not found"
+
+# Expand node expression -> list of nodes
+HOSTLIST=$(nodeset -f "$NODES_EXPR" 2>/dev/null || true)
+[[ -n "$HOSTLIST" ]] || err "No nodes matched expression: $NODES_EXPR"
+# scontrol show hostnames prints one node per line
+readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
+
+# We want to undo any custom time formats and just use the default
+# when parsing end times from squeue
+unset SLURM_TIME_FORMAT
+for node in "${NODES[@]}"; do
+    info "Processing $node ..."
+
+    endtime=$(squeue -h -w $node -O Endtime | sort | tail -1)
+
+    # This magic reservation name is used by update.sh to identify
+    # reservations that should be removed after the reboot
+    res_name="${RESERVATION_NAME_PREFIX}-${node}"
+
+    # Create reservation (per node). This lets backfill allow only
+    # jobs that finish before start.
+    info "  Creating reservation $res_name starting $endtime for node $node"
+    scontrol create reservation \
+             ReservationName="$res_name" \
+             StartTime="$endtime" \
+             Duration="$RESERVATION_DURATION" \
+             Nodes="$node" \
+             Users=root \
+             Flags=MAINT >/dev/null
+
+done
