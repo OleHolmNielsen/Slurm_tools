@@ -15,7 +15,7 @@
 # clush -bw <nodelist> rm -f update.lock
 #
 # Then reboot the nodes with:
-# scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
+# sreboot -d -r UPDATE <nodelist>
 #
 # After updating has completed, check the status of the DOWN nodes by:
 # clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
