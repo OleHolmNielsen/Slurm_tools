@@ -3,12 +3,13 @@ Slurm node scripts
 
 Some convenient scripts for working with nodes (or lists of nodes):
 
+* Show status, jobs, events, reservations for a list of nodes: ```shownode <node-list>```.
+  **Recommended** as an easy way to print all relevant information about a nodelist.
 * Drain a node-list: ```sdrain node-list "Reason"```.
 * Resume a node-list: ```sresume node-list```.
 * Reboot and resume a node-list: ```sreboot node-list```.
 * Power up/down a node-list: ```spowerup node-list``` and ```spowerdown node-list```.
   Note: This only works with nodes in Slurm power saving, NOT nodes in state DOWN, DRAIN etc.
-* Show node status: ```shownode <node-list>```.
 * Show node events in Slurm database: ```showevents < -w <node-list> | -p partition | -a | -h > [ -t time_period ]```.
 * Show node power values: ```showpower < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ] -s```.
 * Check dead nodes with a ping: ```alive``` (may be run from crontab every 10 minutes)
