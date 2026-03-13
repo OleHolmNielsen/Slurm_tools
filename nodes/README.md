@@ -6,6 +6,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Drain a node-list: ```sdrain node-list "Reason"```.
 * Resume a node-list: ```sresume node-list```.
 * Reboot and resume a node-list: ```sreboot node-list```.
+* Power up/down a node-list: ```spowerup node-list``` and ```spowerdown node-list```.
 * Show node status: ```shownode <node-list>```.
 * Show node events in Slurm database: ```showevents < -w <node-list> | -p partition | -a | -h > [ -t time_period ]```.
 * Show node power values: ```showpower < -w node-list | -p partition(s) | -a | -h > [ -S sorting-variable ] -s```.
