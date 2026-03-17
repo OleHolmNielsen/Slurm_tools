@@ -38,11 +38,11 @@ scontrol show node $nodelist
 
 # Default period of start of events is 00:00:00 of the previous day, but this can be changed with the Start= option.
 # Example event start times:
-EventStart=""
+EventStart=Start=now-1weeks
 # EventStart=Start=now-4weeks
 # EventStart=All_Time
 
-echo "NODE EVENTS:"
+echo "NODE EVENTS from $EventStart:"
 sacctmgr show event $EventStart Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
 
 # Print node reservations (if any)
