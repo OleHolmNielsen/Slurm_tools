@@ -14,6 +14,12 @@
 # Optional: Remove any update.lock files from previously failed updates:
 # clush -bw <nodelist> rm -f update.lock
 #
+# Optional: For non-exclusive nodes, add a reservation that starts
+# when the nodes become idle. This allows the nodes to run other jobs
+# until they are idle. The reservation will be deleted by the script
+# itself. E.g.:
+# reserve_on_idle <nodelist> update
+#
 # Then reboot the nodes with:
 # sreboot -d -r UPDATE <nodelist>
 #
