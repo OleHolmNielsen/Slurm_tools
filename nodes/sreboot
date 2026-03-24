@@ -49,6 +49,12 @@ then
 	exit 1
 fi
 
+if ! command -v nodeset >/dev/null 2>&1
+then
+	echo "ERROR: nodeset not found"
+	exit 1
+fi
+
 # Check the node list
 if [ "`sinfo -hN -n $NODES`" = "" ]
 then
@@ -60,20 +66,6 @@ declare -A PART_NOT_EXCLUSIVE
 declare -A NODE_NOT_EXCLUSIVE
 exclusive_nodes=()
 not_exclusive_nodes=()
-
-condense_nodelist() {
-    local nodelist="$1"
-
-    if [[ -z $nodelist ]]; then
-        return
-    fi
-
-    if command -v nodeset >/dev/null 2>&1; then
-        nodeset --fold "$nodelist"
-    else
-        scontrol show hostlistsorted "$nodelist" 2>/dev/null || echo "$nodelist"
-    fi
-}
 
 build_part_not_exclusive() {
     # Build PART_NOT_EXCLUSIVE[partition_name]=1 for partitions with ExclusiveUser=NO
@@ -126,14 +118,14 @@ done < <(scontrol show hostnames "$NODES")
 
 if [[ ${#exclusive_nodes[@]} -gt 0 ]]; then
     exclusive_nodelist=$(IFS=,; echo "${exclusive_nodes[*]}")
-    exclusive_display=$(condense_nodelist "$exclusive_nodelist")
+    exclusive_display=$(nodeset --fold "$exclusive_nodelist")
     echo "Reboot exclusive nodes $exclusive_display with asap nextstate=$action and reason=$reason"
     scontrol reboot asap nextstate=$action reason="$reason" "$exclusive_nodelist"
 fi
 
 if [[ ${#not_exclusive_nodes[@]} -gt 0 ]]; then
     not_exclusive_nodelist=$(IFS=,; echo "${not_exclusive_nodes[*]}")
-    not_exclusive_display=$(condense_nodelist "$not_exclusive_nodelist")
+    not_exclusive_display=$(nodeset --fold "$not_exclusive_nodelist")
     echo "Reboot shared nodes $not_exclusive_display with nextstate=$action and reason=$reason"
     scontrol reboot nextstate=$action reason="$reason" "$not_exclusive_nodelist"
 fi
