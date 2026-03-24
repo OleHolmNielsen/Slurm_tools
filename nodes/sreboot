@@ -4,6 +4,7 @@
 # For exclusive nodes only the ASAP option is employed.
 # NextState is "Resume" by default, use "-d" to set to Down.
 # A "Reason" variable may be specified.
+# Dependency: nodeset from ClusterShell is required.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Default values
