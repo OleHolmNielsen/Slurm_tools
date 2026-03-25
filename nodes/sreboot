@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 # Slurm: use scontrol to reboot nodes
+# For exclusive nodes only the ASAP option is employed.
 # NextState is "Resume" by default, use "-d" to set to Down.
 # A "Reason" variable may be specified.
+# Dependency: nodeset from ClusterShell is required.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
 # Default values
@@ -48,6 +50,12 @@ then
 	exit 1
 fi
 
+if ! command -v nodeset >/dev/null 2>&1
+then
+	echo "ERROR: nodeset not found"
+	exit 1
+fi
+
 # Check the node list
 if [ "`sinfo -hN -n $NODES`" = "" ]
 then
@@ -55,6 +63,72 @@ then
 	exit 1
 fi
 
-echo "Reboot nodes $NODES with nextstate=$action and reason=$reason"
-scontrol reboot asap nextstate=$action reason="$reason" $NODES 
+declare -A PART_NOT_EXCLUSIVE
+declare -A NODE_NOT_EXCLUSIVE
+exclusive_nodes=()
+not_exclusive_nodes=()
+
+build_part_not_exclusive() {
+    # Build PART_NOT_EXCLUSIVE[partition_name]=1 for partitions with ExclusiveUser=NO
+    while read -r line; do
+        part=""
+        os=""
+
+        for field in $line; do
+            case "$field" in
+                PartitionName=*)
+                    part=${field#PartitionName=}
+                    ;;
+                ExclusiveUser=NO*)
+                    os="NOT_EXCLUSIVE"
+                    ;;
+            esac
+        done
+
+        if [[ -n $part && $os == NOT_EXCLUSIVE ]]; then
+            PART_NOT_EXCLUSIVE["$part"]=1
+        fi
+    done < <(scontrol show partition -o)
+}
+
+build_node_not_exclusive() {
+    # Build NODE_NOT_EXCLUSIVE[nodename]=1 if any of its partitions has ExclusiveUser=NO
+    while read -r node part; do
+        part=${part%\*}
+
+        if [[ -n ${PART_NOT_EXCLUSIVE["$part"]} ]]; then
+            NODE_NOT_EXCLUSIVE["$node"]=1
+        fi
+    done < <(sinfo -N -h -o "%N %P")
+}
+
+# Build both associative arrays for partitions and nodes that are not
+# exclusive with only two calls to Slurm.
+build_part_not_exclusive
+build_node_not_exclusive
+
+# Go through all specified nodes sorting them into exclusive or
+# not_exclusive
+while read -r node; do
+    if [[ -n ${NODE_NOT_EXCLUSIVE["$node"]} ]]; then
+        not_exclusive_nodes+=("$node")
+    else
+        exclusive_nodes+=("$node")
+    fi
+done < <(scontrol show hostnames "$NODES")
+
+if [[ ${#exclusive_nodes[@]} -gt 0 ]]; then
+    exclusive_nodelist=$(IFS=,; echo "${exclusive_nodes[*]}")
+    exclusive_display=$(nodeset --fold "$exclusive_nodelist")
+    echo "Reboot exclusive nodes $exclusive_display with asap nextstate=$action and reason=$reason"
+    scontrol reboot asap nextstate=$action reason="$reason" "$exclusive_nodelist"
+fi
+
+if [[ ${#not_exclusive_nodes[@]} -gt 0 ]]; then
+    not_exclusive_nodelist=$(IFS=,; echo "${not_exclusive_nodes[*]}")
+    not_exclusive_display=$(nodeset --fold "$not_exclusive_nodelist")
+    echo "Reboot shared nodes $not_exclusive_display with nextstate=$action and reason=$reason"
+    scontrol reboot nextstate=$action reason="$reason" "$not_exclusive_nodelist"
+fi
+
 sinfo -N -n $NODES

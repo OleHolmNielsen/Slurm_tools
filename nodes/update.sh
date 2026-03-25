@@ -14,8 +14,14 @@
 # Optional: Remove any update.lock files from previously failed updates:
 # clush -bw <nodelist> rm -f update.lock
 #
+# Optional: For non-exclusive nodes, add a reservation that starts
+# when the nodes become idle. This allows the nodes to run other jobs
+# until they are idle. The reservation will be deleted by the script
+# itself. E.g.:
+# reserve_on_idle <nodelist> update
+#
 # Then reboot the nodes with:
-# scontrol reboot ASAP nextstate=DOWN reason=UPDATE <nodelist>
+# sreboot -d -r UPDATE <nodelist>
 #
 # After updating has completed, check the status of the DOWN nodes by:
 # clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
@@ -202,7 +208,7 @@ then
 	lenovo_update SD665V3 UEFI lnvgy_fw_uefi_qge124h-5.20_anyos_comp
 fi
 
-
+# Finished all updates
 # Now do the crontab cleanup
 crontab_cleanup
 
@@ -238,7 +244,15 @@ then
 	shortname=`hostname -s`
 	if [[ -n "`sinfo -N -hn $shortname`" ]]
 	then
-		NEXTSTATE=resume
+                # Remove this node from any possible update related
+                # reservations. The magic reservation name is set by
+                # reserve_on_idle. If the node is not in a
+                # reservation, the delete command will just print an
+                # error message and continue.
+                echo "Deleteting reservation update-$shortname if it exists"
+                scontrol delete ReservationName=update-$shortname
+
+                NEXTSTATE=resume
 		echo "Next Slurm node state is: $NEXTSTATE"
 		echo "Reboot node by Slurm scontrol reboot, setting nextstate=$NEXTSTATE"
 		scontrol reboot nextstate=$NEXTSTATE reason=Update_done $shortname
