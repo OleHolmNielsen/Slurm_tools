@@ -4,8 +4,17 @@
 # Note: This only works with nodes in Slurm power saving, NOT nodes in state DOWN, DRAIN etc.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
+# Check if Slurmpower saving has been configured
+suspendprogram=`scontrol show config | grep SuspendProgram | awk '{print $3}'`
+if [[ $suspendprogram == "(null)" ]]
+then
+	echo "ERROR: Slurm SuspendProgram is not configured"
+	exit 1
+fi
+
 NODES="$1"
 ACTION="down"
+statelist="idle"	# Only these Slum states are eligible for power saving
 
 if [[ $# -ne 1 ]]
 then
@@ -14,13 +23,13 @@ then
 fi
 
 # Check the node list
-if [[ "`sinfo -hN -n $NODES`" = "" ]]
+if [[ "`sinfo -t $statelist -hN -n $NODES`" = "" ]]
 then
-	echo "ERROR: Nodelist $NODES does not exist"
+	echo "ERROR: Nodes $NODES are not idle or do not exist"
 	exit 1
 fi
 
-echo "Action=$ACTION on nodes $NODES"
+echo "Slurm action=power $ACTION on nodes $NODES"
 # Obsolete since 24.05:
 # /usr/bin/scontrol update nodename=$NODES state=$ACTION
 /usr/bin/scontrol power $ACTION $NODES

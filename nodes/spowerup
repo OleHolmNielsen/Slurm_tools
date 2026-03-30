@@ -1,27 +1,68 @@
 #!/usr/bin/env bash
 
-# Slurm: use scontrol to manage nodes
-# Note: This only works with nodes in Slurm power saving, NOT nodes in state DOWN, DRAIN etc.
+# Slurm: Manage power up/down of nodes using Slurm power saving tools
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
 
-NODES="$1"
-ACTION="up"
-
+# Check argument list
 if [[ $# -ne 1 ]]
 then
 	echo "Usage: $0 nodename-list"
 	exit 1
 fi
 
-# Check the node list
-if [[ "`sinfo -hN -n $NODES`" = "" ]]
+# Check if Slurm power saving has been configured (required by this tool)
+resumeprogram=`scontrol show config | grep ResumeProgram | awk '{print $3}'`
+if [[ $resumeprogram == "(null)" ]]
 then
-	echo "ERROR: Nodelist $NODES does not exist"
+        echo "ERROR: Slurm ResumeProgram is not configured in slurm.conf"
 	exit 1
 fi
 
-echo "Action=$ACTION on nodes $NODES"
-# Obsolete since 24.05:
-# /usr/bin/scontrol update nodename=$NODES state=$ACTION
-/usr/bin/scontrol power $ACTION $NODES
-/usr/bin/sinfo -N -n $NODES
+NODES="$1"
+ACTION="up"
+idlestates="idle+powered_down"	# Only these IDLE Slurm states are eligible for powering up with slurmctld
+downstates="down"		# DOWN nodes must be handled outside of slurmctld
+ignorestates="~idle+~powered_down,~down"	# We ignore these states (~ means NOT, see "man sinfo")
+
+# Determine the lists of idle, down or ignored nodes
+idlenodes=`sinfo -t $idlestates -h -N -n $NODES | awk '{print $1}' | uniq | awk '{printf("%s,",$1)}'`
+downnodes=`sinfo -t $downstates -h -N -n $NODES | awk '{print $1}' | uniq | awk '{printf("%s,",$1)}'`
+ignorenodes=`sinfo -t $ignorestates -h -N -n $NODES | awk '{print $1}' | uniq | awk '{printf("%s,",$1)}'`
+
+# Idle nodes can be powered up by slurmctld if ResumeProgram is configured
+# We have to use the "echo -n" trick here because sinfo always returns a newline
+if [[ -n "`echo -n $idlenodes`" ]]
+then
+	# If the node list is in the idle Slurm state, make a slurmctld power up
+	echo "Slurm action on IDLE nodes: slurmctld power $ACTION $idlenodes"
+	# Obsolete since 24.05: /usr/bin/scontrol update nodename=$NODES state=$ACTION
+	/usr/bin/scontrol power $ACTION $idlenodes
+fi
+
+if [[ -n "`echo -n $downnodes`" ]]
+then
+	# If nodes are in the down Slurm state, make a non-Slurm power up
+	echo "Non-Slurm power up of DOWN nodes: $resumeprogram $downnodes"
+	if [[ -x $resumeprogram ]]
+	then
+		$resumeprogram $downnodes
+	else
+		echo "ERROR: The $resumeprogram cannot be executed"
+	fi
+fi
+
+# List the nodes
+if [[ -n "`echo -n $idlenodes$downnodes`" ]]
+then
+	echo
+	echo "Summary of NODES powered up:"
+	/usr/bin/sinfo -N -n $idlenodes,$downnodes
+fi
+
+# The case of nodes which we ignore due to node state
+if [[ -n "`echo -n $ignorenodes`" ]]
+then
+	echo
+	echo "Summary of NODES ignored due to node state:"
+	/usr/bin/sinfo -N -n $ignorenodes
+fi
