@@ -9,8 +9,8 @@
 
 # Dependency: The nodeset command from ClusterShell is required.
 
-# Set Bash flags:
-set -euo pipefail
+# Optional: Set Bash flags:
+# set -euo pipefail
 # -e: exit immediately if any command fails,
 # -u: treat unset variables as an error, 
 # -o pipefail: the return value of a pipeline is the status of the last command to exit with a non-zero status,
@@ -118,9 +118,14 @@ readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
 # when parsing end times from squeue
 unset SLURM_TIME_FORMAT
 for node in "${NODES[@]}"; do
-    info "Processing $node ..."
+    info "Processing node $node ..."
 
     endtime=$(squeue -h -w $node -O Endtime | sort | tail -1)
+    if [[ -z "$endtime" ]]
+    then
+        endtime="Now"
+        info "  No jobs on node $node, setting reservation Start = $endtime"
+    fi
 
     # This magic reservation name is used by update.sh to identify
     # reservations that should be removed after the reboot
@@ -128,7 +133,7 @@ for node in "${NODES[@]}"; do
 
     # Create reservation (per node). This lets backfill allow only
     # jobs that finish before start.
-    info "  Creating reservation $res_name starting $endtime for node $node"
+    info "  Creating reservationname=$res_name starting $endtime for node $node"
     scontrol create reservation \
              ReservationName="$res_name" \
              StartTime="$endtime" \
@@ -136,5 +141,4 @@ for node in "${NODES[@]}"; do
              Nodes="$node" \
              Users=root \
              Flags=MAINT >/dev/null
-
 done
