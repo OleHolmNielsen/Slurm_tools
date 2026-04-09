@@ -339,7 +339,7 @@ export nodegreswidth=`sinfo -h -N $all_partitions $partition $hostlist $statelis
 # Was: $prefix/sinfo -h -N $partition $hostlist $statelist -o "%N %P %C %O %m %e %t %Z %G" | $my_awk '
 # $prefix/sinfo -h -N $partition $hostlist $statelist -O "NodeList: ,Partition: ,CPUsState: ,CPUsLoad: ,Memory: ,FreeMem: ,StateCompact: ,Threads: ,Gres: " | $my_awk '
 # Column size(width)=30 hopefully suffices to separate columns
-$prefix/sinfo -h -N $all_partitions $partition $hostlist $statelist -O "NodeList:30,Partition:30,CPUsState:30,CPUsLoad:30,Memory:30,FreeMem:30,StateCompact:30,Threads:30,Gres:30" | $my_awk '
+$prefix/sinfo -h -N $all_partitions $partition $hostlist $statelist -O "NodeList:30,Partition:30,CPUsState:30,CPUsLoad:30,Memory:30,FreeMem:30,StateCompact:30,Threads:30,Gres:30,GresUsed:30" | $my_awk '
 BEGIN {
 	#####################################################################################
 	# Initialization
@@ -559,6 +559,7 @@ BEGIN {
 	split($3, cpulist, "/")
 	allocated_cores = cpulist[1]
 	total_cores = cpulist[4]
+	delete cpulist
 	cpuload=$4
 	memory=$5
 	freemem=$6
@@ -570,8 +571,19 @@ BEGIN {
 	gsub("@", "", state)	# Strip "@" for pending reboot nodes
 	# Use the threads per CPU core to calculate "permissible" min/max CPU load:
 	threadspercore=$8
-	# Generic resources (GRES) associated with the node
+	# Generic resources (GRES) associated and used with the node
 	nodegres=$9
+	gresused=$10
+	# Decode the number of GPUs used
+	if (gresused != "(null)") {
+		# gresused example: gpu:A100:1(IDX:3)
+		split(gresused, gu, ":")
+		split(gu[3], ng, "(")	# Ignore (IDX:?) field
+		numgpus=ng[1]
+		delete gu
+		delete ng
+	} else
+		numgpus=0
 
 	# Select only subset of nodes with certain values/states
 	listnode = printallnodes
@@ -599,15 +611,16 @@ BEGIN {
 			statecolor=NORMAL
 		}
 		# Flag unexpected CPU load average on allocated cores
-		if (threadspercore == 1) {
+		if (numgpus > 0)
+			# For GPU nodes assume that 1 (or more) CPU tasks per GPU is ideal
+			ideal_load_min = numgpus
+		else if (threadspercore == 1)
 			# Single thread per core: Ideal load equals number of physical cores.
-			ideal_load_min = allocated_cores
-			ideal_load_max = allocated_cores
-		} else {
+		       	ideal_load_min = allocated_cores
+		else
 			# Multiple threads per CPU core: Load of 1..threadspercore per physical core is OK.
 			ideal_load_min = allocated_cores / threadspercore
-			ideal_load_max = allocated_cores
-		}
+		ideal_load_max = allocated_cores
 		# Calculate if cpuload is outside ideal load bounds, plus some deltas
 		if (cpuload > ideal_load_max + cpuload_delta1 || cpuload < ideal_load_min - cpuload_delta1) {
 			loadflag="*"
@@ -676,5 +689,4 @@ BEGIN {
 		printf("%s%s%1s%s", jobcolor, jobs[node], jobflag, NORMAL)
 		printf("\n")
 	}
-	delete cpulist
 }'
