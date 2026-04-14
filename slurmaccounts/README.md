@@ -262,3 +262,18 @@ This tool ```showdeletedusers``` prints Slurm users which have been deleted from
 or have an expired account in the system shadow database.
 
 The Slurm administrator may decide to delete the deleted/expired Slurm users.
+
+showusertres tool
+-----------------------
+
+Show user GrpTRES values, optionally only if greater than some values
+
+```
+Usage: showusertres [-c num_cpus] [-g num_gpus] [-n num_nodes] | [-u username] | [-h]
+where:
+	-c: Print only if num_cpus > this value
+	-g: Print only if num_gpus > this value
+	-n: Print only if num_nodes > this value
+	-u: Print only this username (-c,-g,-n are ignored)
+	-h: Print help information
+```

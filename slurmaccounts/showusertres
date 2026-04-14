@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Show user GrpTRES values, optionally only if greater than some values
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+#
+# Command usage:
+#
+function usage()
+{
+        cat <<EOF
+Usage: $0 [-c num_cpus] [-g num_gpus] [-n num_nodes] | [-u username] | [-h]
+where:
+	-c: Print only if num_cpus > this value
+	-g: Print only if num_gpus > this value
+	-n: Print only if num_nodes > this value
+	-u: Print only this username (-c,-g,-n are ignored)
+	-h: Print help information
+EOF
+}
+
+# Default values
+num_cpus=0
+num_gpus=0
+num_nodes=0
+
+#
+# Parse command options
+#
+while getopts "c:g:n:u:h" options; do
+        case $options in
+                c ) export num_cpus=$OPTARG ;;
+                g ) export num_gpus=$OPTARG ;;
+                n ) export num_nodes=$OPTARG ;;
+                u ) export username=$OPTARG ;;
+                h|*|? ) usage
+                exit 1;;
+        esac
+done
+
+if [[ "$username" == "" ]]
+then
+	cat <<EOF
+Printing Slurm user limits for #CPUs>$num_cpus, #GPUS>$num_gpus, #Nodes>$num_nodes
+
+Username(account)	Limits on CPU,GPU,Nodes
+-------- ------- 	-----------------------
+EOF
+fi
+
+sacctmgr -snrp show associations format=User,Account,GrpTRES | awk -F"|" '
+BEGIN {
+	num_cpus = ENVIRON["num_cpus"] + 0
+	num_gpus = ENVIRON["num_gpus"] + 0
+	num_nodes = ENVIRON["num_nodes"] + 0
+	username = ENVIRON["username"]
+}
+{
+	if ($1 == "root") next	# Skip the root account
+	if ($1 == "") next	# Skip all parent accounts
+	if (username != "") { # Select only this username
+		if ($1 == username) {
+			printf("User %s in Account %s has GrpTRES=%s\n", $1,$2,$3)
+			exit
+		}
+	} else {
+		# Decode GrpTRES such as cpu=1500,gres/gpu=30,node=60
+		split($3,t,",")
+		split(t[1],val,"=")
+		cpu = val[2] + 0
+		split(t[2],val,"=")
+		gpu = val[2] + 0
+		split(t[3],val,"=")
+		node = val[2] + 0
+		delete t
+		delete val
+		if (cpu > num_cpus && gpu > num_gpus && node > num_nodes)
+			printf("%8s(%-8s)\tGrpTRES=%s\n", $1,$2,$3)
+	}
+}
+' | sort
