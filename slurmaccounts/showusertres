@@ -78,4 +78,4 @@ BEGIN {
 			printf("%8s %8s\tGrpTRES=%s\n", $1,$2,$3)
 	}
 }
-' | sort -k 2
+' 
