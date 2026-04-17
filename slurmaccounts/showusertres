@@ -43,8 +43,8 @@ then
 	cat <<EOF
 Printing Slurm user limits for #CPUs>$num_cpus, #GPUS>$num_gpus, #Nodes>$num_nodes
 
-Username  Account	 CPUs GPUs Nodes
--------- -------- 	----- ---- -----
+Username  Account      CPUs GPUs Nodes
+-------- --------     ----- ---- -----
 EOF
 fi
 
@@ -75,7 +75,7 @@ BEGIN {
 		delete t
 		delete val
 		if (cpu > num_cpus && gpu > num_gpus && node > num_nodes)
-			printf("%8s %8s\t%5d %4d %5d\n", $1,$2,cpu,gpu,node)
+			printf("%8s %8s     %5d %4d %5d\n", $1,$2,cpu,gpu,node)
 	}
 }
 ' 
