@@ -54,7 +54,7 @@ BEGIN {
 	num_gpus = ENVIRON["num_gpus"] + 0
 	num_nodes = ENVIRON["num_nodes"] + 0
 	username = ENVIRON["username"]
-	# Read the system passwd and shadow databases
+	# Read the system passwd database
 	while ("getent passwd" | getline ) {
 		split($0,b,":")	 	# Split password line into fields
 		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
