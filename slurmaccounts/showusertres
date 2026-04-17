@@ -43,8 +43,8 @@ then
 	cat <<EOF
 Printing Slurm user limits for #CPUs>$num_cpus, #GPUS>$num_gpus, #Nodes>$num_nodes
 
-Username  Account      CPUs GPUs Nodes
--------- --------     ----- ---- -----
+Username  Account      CPUs GPUs Nodes  User full name
+-------- --------     ----- ---- -----  --------------
 EOF
 fi
 
@@ -54,6 +54,12 @@ BEGIN {
 	num_gpus = ENVIRON["num_gpus"] + 0
 	num_nodes = ENVIRON["num_nodes"] + 0
 	username = ENVIRON["username"]
+	# Read the system passwd and shadow databases
+	while ("getent passwd" | getline ) {
+		split($0,b,":")	 	# Split password line into fields
+		fullname[b[1]] = b[5]	# Full name b[5] of this username (b[1])
+	}
+	close("getent passwd")
 }
 {
 	if ($1 == "root") next	# Skip the root account
@@ -75,7 +81,7 @@ BEGIN {
 		delete t
 		delete val
 		if (cpu > num_cpus && gpu > num_gpus && node > num_nodes)
-			printf("%8s %8s     %5d %4d %5d\n", $1,$2,cpu,gpu,node)
+			printf("%8s %8s     %5d %4d %5d  %s\n", $1,$2,cpu,gpu,node,fullname[$1])
 	}
 }
 ' 
