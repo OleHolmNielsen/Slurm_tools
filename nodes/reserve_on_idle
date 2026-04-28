@@ -10,7 +10,9 @@
 # one reservation is created for all requested nodes, starting when the last job
 # across all requested nodes is expected to end. This implies
 # -k/--keep-reservation because update.sh removes per-node reservations named
-# update-<node>.
+# update-<node>. Single reservations are named reservation-<folded-nodelist>,
+# with commas and brackets replaced by underscores. If that name is too long,
+# it is compacted to include the first folded segment and node count.
 
 # Usage: reserve_on_idle [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>"
 
@@ -27,6 +29,8 @@ set -uo pipefail
 DEFAULT_RESERVATION_DURATION="08:00:00"
 RESERVATION_NAME_PREFIX="update"
 KEEP_RESERVATION_NAME_PREFIX="node_reserved"
+SINGLE_RESERVATION_NAME_PREFIX="reservation"
+MAX_RESERVATION_NAME_LENGTH=64
 
 # Functions:
 err(){ echo "Error: $*" >&2; exit 1; }
@@ -38,6 +42,32 @@ Usage: $0 [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURAT
   -k, --keep-reservation  update.sh will not delete the reservation
   -d, --duration DURATION  reservation duration (e.g. 08:00:00)
 EOF
+}
+make_single_reservation_name(){
+    local folded_list="$1"
+    local node_count="$2"
+    local safe_list candidate suffix available first_part
+
+    # Keep the folded hostlist readable, but avoid commas and brackets in the
+    # reservation name because they have special meaning in Slurm and shells.
+    safe_list=${folded_list//,/_}
+    safe_list=${safe_list//[/_}
+    safe_list=${safe_list//]/_}
+    safe_list=$(printf '%s' "$safe_list" | sed 's/_\{2,\}/_/g; s/^_//; s/_$//')
+    candidate="${SINGLE_RESERVATION_NAME_PREFIX}-${safe_list}"
+    if (( ${#candidate} <= MAX_RESERVATION_NAME_LENGTH )); then
+        printf '%s\n' "$candidate"
+        return
+    fi
+
+    suffix="-n${node_count}"
+    available=$((MAX_RESERVATION_NAME_LENGTH - ${#SINGLE_RESERVATION_NAME_PREFIX} - 1 - ${#suffix}))
+    if (( available < 1 )); then
+        err "MAX_RESERVATION_NAME_LENGTH is too small for compacted reservation names"
+    fi
+
+    first_part="${safe_list%%_*}"
+    printf '%s\n' "${SINGLE_RESERVATION_NAME_PREFIX}-${first_part:0:$available}${suffix}"
 }
 
 single_reservation=false
@@ -144,9 +174,9 @@ if [[ "$single_reservation" == true ]]; then
         info "No jobs on any selected nodes, setting reservation Start = $latest_endtime"
     fi
 
-    # --single-reservation implies --keep-reservation, so this grouped
-    # reservation is not removed automatically by update.sh after reboot.
-    res_name="${RESERVATION_NAME_PREFIX}-${NODES[0]}-single"
+    # --single-reservation implies --keep-reservation, so this name does not
+    # match the per-node update-<node> names removed by update.sh after reboot.
+    res_name=$(make_single_reservation_name "$HOSTLIST" "${#NODES[@]}")
 
     # Create one reservation for the full node set. This waits for the busiest
     # selected node to become idle before reserving all requested nodes together.
