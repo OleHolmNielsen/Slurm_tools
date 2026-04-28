@@ -27,7 +27,7 @@ RPMDIR=$PACKAGEDIR/RPMS8
 #    when the nodes become idle so that the nodes may run other jobs
 #    by Slurm backfilling until they become idle.
 #    The reservation will be automatically deleted as part of the present script.
-#    $ reserve_on_idle <nodelist> update
+#    $ reserve_on_idle <nodelist>
 #
 # 5. Then reboot the nodes with:
 #    $ sreboot -d -r UPDATE <nodelist>
@@ -470,4 +470,3 @@ else
 	echo "Reboot the node immediately"
 	shutdown -r now
 fi
-

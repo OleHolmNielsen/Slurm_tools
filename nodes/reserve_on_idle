@@ -4,8 +4,15 @@
 # This is useful for e.g. updating non-exclusive nodes so the nodes are not blocked while waiting for the last job to end. 
 # The reservation is needed to allow backfill to schedule jobs that end before the reservation expires. 
 # The reservation should then be removed by update.sh after the reboot.
+#
+# By default, one reservation is created per node, each starting when that node's
+# last currently running job is expected to end. With -s/--single-reservation,
+# one reservation is created for all requested nodes, starting when the last job
+# across all requested nodes is expected to end. This implies
+# -k/--keep-reservation because update.sh removes per-node reservations named
+# update-<node>.
 
-# Usage: reserve_on_idle [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
+# Usage: reserve_on_idle [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>"
 
 # Dependency: The nodeset command from ClusterShell is required.
 
@@ -26,21 +33,27 @@ err(){ echo "Error: $*" >&2; exit 1; }
 info(){ echo "[info] $*"; }
 usage(){
     cat <<EOF
-Usage: $0 [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
+Usage: $0 [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>"
+  -s, --single-reservation  create one reservation for all nodes; implies -k
   -k, --keep-reservation  update.sh will not delete the reservation
   -d, --duration DURATION  reservation duration (e.g. 08:00:00)
 EOF
 }
 
+single_reservation=false
 keep_reservation=false
 RESERVATION_DURATION="$DEFAULT_RESERVATION_DURATION"
 
 normalized_args=()
-# support long options --keep-reservation, --help, --duration <value> and --duration=VALUE
+# support long options --single-reservation, --keep-reservation, --help,
+# --duration <value> and --duration=VALUE
 args=("$@")
 for ((i=0;i<${#args[@]};i++)); do
     arg="${args[i]}"
     case "$arg" in
+        --single-reservation)
+            normalized_args+=("-s")
+            ;;
         --keep-reservation)
             normalized_args+=("-k")
             ;;
@@ -65,8 +78,11 @@ for ((i=0;i<${#args[@]};i++)); do
 done
 set -- "${normalized_args[@]}"
 
-while getopts ":khd:" opt; do
+while getopts ":skhd:" opt; do
     case "$opt" in
+        s)
+            single_reservation=true
+            ;;
         k)
             keep_reservation=true
             ;;
@@ -90,13 +106,16 @@ done
 
 shift $((OPTIND - 1))
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 1 ]]; then
     usage
-    err "Please provide only NODES and REASON!"
+    err "Please provide only NODES!"
 fi
 
 NODES_EXPR="$1"
-REASON="$2"
+
+if [[ "$single_reservation" == true ]]; then
+    keep_reservation=true
+fi
 
 if [[ "$keep_reservation" == true ]]; then
     RESERVATION_NAME_PREFIX="$KEEP_RESERVATION_NAME_PREFIX"
@@ -116,28 +135,53 @@ readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
 # We want to undo any custom time formats and just use the default
 # when parsing end times from squeue
 unset SLURM_TIME_FORMAT
-for node in "${NODES[@]}"; do
-    info "Processing node $node ..."
 
-    endtime=$(squeue -h -w $node -O Endtime | sort | tail -1)
-    if [[ -z "$endtime" ]]
+if [[ "$single_reservation" == true ]]; then
+    latest_endtime=$(squeue -h -w "$HOSTLIST" -O Endtime | sort | tail -1)
+    if [[ -z "$latest_endtime" ]]
     then
-        endtime="Now"
-        info "  No jobs on node $node, setting reservation Start = $endtime"
+        latest_endtime="Now"
+        info "No jobs on any selected nodes, setting reservation Start = $latest_endtime"
     fi
 
-    # This magic reservation name is used by update.sh to identify
-    # reservations that should be removed after the reboot
-    res_name="${RESERVATION_NAME_PREFIX}-${node}"
+    # --single-reservation implies --keep-reservation, so this grouped
+    # reservation is not removed automatically by update.sh after reboot.
+    res_name="${RESERVATION_NAME_PREFIX}-${NODES[0]}-single"
 
-    # Create reservation (per node). This lets backfill allow only
-    # jobs that finish before start.
-    info "  Creating reservationname=$res_name starting $endtime for node $node"
+    # Create one reservation for the full node set. This waits for the busiest
+    # selected node to become idle before reserving all requested nodes together.
+    info "Creating reservationname=$res_name starting $latest_endtime for nodes $HOSTLIST"
     scontrol create reservation \
              ReservationName="$res_name" \
-             StartTime="$endtime" \
+             StartTime="$latest_endtime" \
              Duration="$RESERVATION_DURATION" \
-             Nodes="$node" \
+             Nodes="$HOSTLIST" \
              Users=root \
              Flags=MAINT >/dev/null
-done
+else
+    for node in "${NODES[@]}"; do
+        info "Processing node $node ..."
+
+        endtime=$(squeue -h -w "$node" -O Endtime | sort | tail -1)
+        if [[ -z "$endtime" ]]
+        then
+            endtime="Now"
+            info "  No jobs on node $node, setting reservation Start = $endtime"
+        fi
+
+        # This magic reservation name is used by update.sh to identify
+        # reservations that should be removed after the reboot
+        res_name="${RESERVATION_NAME_PREFIX}-${node}"
+
+        # Create reservation (per node). This lets backfill allow only
+        # jobs that finish before start.
+        info "  Creating reservationname=$res_name starting $endtime for node $node"
+        scontrol create reservation \
+                 ReservationName="$res_name" \
+                 StartTime="$endtime" \
+                 Duration="$RESERVATION_DURATION" \
+                 Nodes="$node" \
+                 Users=root \
+                 Flags=MAINT >/dev/null
+    done
+fi

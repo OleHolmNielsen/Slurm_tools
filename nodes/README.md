@@ -8,7 +8,7 @@ Some convenient scripts for working with nodes (or lists of nodes):
 * Drain a node-list: ```sdrain node-list "Reason"```.
 * Resume a node-list: ```sresume node-list```.
 * Reboot and resume a node-list: ```sreboot node-list```.
-* Reserve nodes when they become idle: ```reserve_on_idle [-k|--keep-reservation] [-d|--duration DURATION] "<node-list>" "<reason>"```.
+* Reserve nodes when they become idle: ```reserve_on_idle [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<node-list>"```.
 * Show node status: ```shownode <node-list>```.
 * Power up/down a node-list: ```spowerup node-list``` and ```spowerdown node-list```.
   Note: This only works with nodes in Slurm power saving, NOT nodes in state DOWN, DRAIN etc.
@@ -71,8 +71,9 @@ clush -bw <node-list> 'echo "@reboot root /bin/bash /root/update.sh" >> /etc/cro
 
 If nodes in the node-list are in non-exclusive partitions, run ```reserve_on_idle``` to create a reservation for each node starting when its last currently running job is expected to finish. This allows Slurm backfill to schedule new jobs only if they can finish before the reservation begins:
 ```
-reserve_on_idle <node-list> UPDATE
+reserve_on_idle <node-list>
 ```
+Use ```-s``` or ```--single-reservation``` to create one reservation for the full node-list instead. The single reservation starts when the last job across all requested nodes is expected to finish, and implies ```--keep-reservation```.
 
 Then schedule the nodes for reboot through Slurm as soon as they become idle, and set their next state to DOWN:
 ```
