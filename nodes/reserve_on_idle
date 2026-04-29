@@ -13,6 +13,10 @@
 # update-<node>. Single reservations are named reservation-<folded-nodelist>,
 # with commas and brackets replaced by underscores. If that name is too long,
 # it is compacted to include the first folded segment and node count.
+#
+# Reservations kept after the update workflow may need different reservation
+# settings. Review values such as Users=root and Flags=MAINT before using -k or
+# -s for non-update work.
 
 # Usage: reserve_on_idle [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>"
 
@@ -41,6 +45,9 @@ Usage: $0 [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURAT
   -s, --single-reservation  create one reservation for all nodes; implies -k
   -k, --keep-reservation  update.sh will not delete the reservation
   -d, --duration DURATION  reservation duration (e.g. 08:00:00)
+
+Reservations kept with -k or -s may need other settings than Users=root
+or Flags=MAINT if they are used for anything other than update.
 EOF
 }
 make_single_reservation_name(){
@@ -149,6 +156,7 @@ fi
 
 if [[ "$keep_reservation" == true ]]; then
     RESERVATION_NAME_PREFIX="$KEEP_RESERVATION_NAME_PREFIX"
+    info "This reservation will not be removed automatically by update.sh. Consider adding users, flags or other settings to the reservation."
 fi
 
 # ---------- sanity checks ----------
