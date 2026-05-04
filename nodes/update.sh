@@ -12,16 +12,16 @@ RPMDIR=$PACKAGEDIR/RPMS8
 # The updating procedure consists of the following steps:
 #
 # 1. Copy the present file to the compute nodes:
-#    $ clush -bw <nodelist> --copy update.sh --dest /root/
+#    $ clush -b -w <nodelist> --copy update.sh --dest /root/
 #
 # 2. On the compute nodes append this crontab entry:
 #      (Using "cat" avoids a possible overwrite of update.sh (up to 128 kB) while executing the script.)
-#    $ clush -bw <nodelist> 'echo "@reboot root cat /root/update.sh | bash" >> /etc/crontab'
+#    $ clush -b -w <nodelist> 'echo "@reboot root cat /root/update.sh | bash" >> /etc/crontab'
 #
 #    (Duplicate crontab lines should be avoided, but are caught using the COMPLETION_FILE below.)
 #
 # 3. Optional: Remove any dangling update.lock files from previous failed updates:
-#    $ clush -bw <nodelist> rm -f update.lock
+#    $ clush -b -w <nodelist> rm -f update.lock
 #
 # 4. Optional: For non-exclusive nodes only, add a reservation that starts
 #    when the nodes become idle so that the nodes may run other jobs
@@ -33,7 +33,7 @@ RPMDIR=$PACKAGEDIR/RPMS8
 #    $ sreboot -d -r UPDATE <nodelist>
 #
 # After updating has completed, check the status of the DOWN nodes by:
-# clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
+# clush -b -w@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
 # When the node has been updated and tested, resume nodes by:
 # scontrol update nodename=<nodelist> state=resume
 #
@@ -214,6 +214,29 @@ then
 	exit 1
 fi
 
+# Determine the OS platform
+platform=`grep PLATFORM_ID /etc/os-release`
+# Determine directory of our RPM packages
+if [[ $platform =~ "el8" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS8
+elif [[ $platform =~ "el9" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS9
+else
+	echo "OS platform $platform is not recognized"
+	exit 1
+fi
+
+if [[ -d $RPMDIR ]]
+then
+	echo "Contents of RPM directory $RPMDIR:"
+	ls -l $RPMDIR
+else
+	echo "ERROR: RPM directory $RPMDIR not found"
+	exit 1
+fi
+
 if [ ! `rpm -q dmidecode` ]
 then
 	echo "WARNING: The dmidecode package is absent: installing it."
@@ -247,6 +270,8 @@ echo "Update the freeipmi package"
 dnf -y update $RPMDIR/freeipmi-1.6*rpm
 # echo "Update the munge package"
 # dnf -y update $RPMDIR/munge*rpm
+# echo "Install Python 3.9 and 3.12"
+# dnf -y install python3.9 python3.12
 
 # OPTIONAL:
 # echo "Remove original Almalinux and RockyLinux yum repo files"
@@ -303,20 +328,20 @@ fi
 
 if [ "$product" == "PowerEdge C6420" ]
 then
-	dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_VP556_LN64_7.00.00.183_A00.BIN
-	dell_update C6420 BIOS_FPF49_LN64_2.26.0.BIN
+	dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_FWMWV_LN64_7.00.00.184_A00.BIN
+	dell_update C6420 BIOS_G7TP0_LN64_2.27.0.BIN
 	$RACADM getversion
 	$RACADM getversion -c
 elif [ "$product" == "PowerEdge R640" ]
 then
-	dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_VP556_LN64_7.00.00.183_A00.BIN
-	dell_update R640 BIOS_W23XX_LN64_2.26.1.BIN
+	dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_FWMWV_LN64_7.00.00.184_A00.BIN
+	dell_update R640 BIOS_N5C9K_LN64_2.27.0.BIN
 	$RACADM getversion
 	$RACADM getversion -c
 elif [ "$product" == "PowerEdge R650" ]
 then
-	dell_update R650 DRAC-with-Lifecycle-Controller_Firmware_924YT_LN64_7.30.10.50_A00.BIN
-	dell_update R650 BIOS_GWT21_LN64_1.20.2.BIN
+	dell_update R650 iDRAC-with-Lifecycle-Controller_Firmware_924YT_LN64_7.30.10.50_A00.BIN
+	dell_update R650 BIOS_DCFN9_LN64_1.21.1.BIN
 	$RACADM getversion
 	$RACADM getversion -c
 fi
@@ -350,8 +375,8 @@ fi
 
 # Notes about SD665 V3 left and right nodes:
 #   The clush command can perform commands with increments, for example:
-#   clush -bw e[001-023/2] echo I am a left-hand node
-#   clush -bw e[002-024/2] echo I am a right-hand node
+#   clush -b -w e[001-023/2] echo I am a left-hand node
+#   clush -b -w e[002-024/2] echo I am a right-hand node
 # Unfortunately, Slurm doesn’t recognize this syntax of node number increments.
 # Here you can use the ClusterShell_tool’s command nodeset to print Slurm compatible nodelists
 # to be used as Slurm command arguments:
@@ -368,7 +393,6 @@ then
 	# lenovo_update SD665V3 XCC lnvgy_fw_xcc_qgx394l-14.12_anyos_comp
 	# lenovo_update SD665V3 XCC lnvgy_fw_xcc_qgx3a6g-15.10_anyos_comp
 	# lenovo_update SD665V3 UEFI lnvgy_fw_uefi_qge144d-8.40_anyos_comp
-	# lenovo_mellanox_update SD665V3 mlxfwmanager_LES_24B_OFED-24.10-1_build5
 	# lenovo_mellanox_update SD665V3 mlxfwmanager_LES_25B_DOCA_3.2.0_build3
 	# At this point stop the slurmd service because we must make Virtual Reseat of the nodes.
 	# We do not want Slurm to resume the node after a reboot
@@ -450,7 +474,7 @@ then
 	if [[ -n "`sinfo -N -hn $shortname`" ]]
 	then
 		# Remove this node from any possible update related reservations.
-	       	# The magic reservation name is set by the reserve_on_idle script.
+		# The magic reservation name is set by the reserve_on_idle script.
 		# If the node is not in a # reservation, the delete command
 		# will just print a warning message and continue.
 		echo "Deleteting reservation update-$shortname if it exists"
