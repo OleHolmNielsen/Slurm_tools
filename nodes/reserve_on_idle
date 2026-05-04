@@ -4,44 +4,93 @@
 # This is useful for e.g. updating non-exclusive nodes so the nodes are not blocked while waiting for the last job to end. 
 # The reservation is needed to allow backfill to schedule jobs that end before the reservation expires. 
 # The reservation should then be removed by update.sh after the reboot.
+#
+# By default, one reservation is created per node, each starting when that node's
+# last currently running job is expected to end. With -s/--single-reservation,
+# one reservation is created for all requested nodes, starting when the last job
+# across all requested nodes is expected to end. This implies
+# -k/--keep-reservation because update.sh removes per-node reservations named
+# update-<node>. Single reservations are named reservation-<folded-nodelist>,
+# with commas and brackets replaced by underscores. If that name is too long,
+# it is compacted to include the first folded segment and node count.
+#
+# Reservations kept after the update workflow may need different reservation
+# settings. Review values such as Users=root and Flags=MAINT before using -k or
+# -s for non-update work.
 
-# Usage: reserve_on_idle [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
+# Usage: reserve_on_idle [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>"
 
 # Dependency: The nodeset command from ClusterShell is required.
 
 # Optional: Set Bash flags:
-# set -euo pipefail
-# -e: exit immediately if any command fails,
+set -uo pipefail
 # -u: treat unset variables as an error, 
 # -o pipefail: the return value of a pipeline is the status of the last command to exit with a non-zero status,
 #    or zero if no command exited with a non-zero status.
-#    This is sometimes called bash strict mode: https://ewus.de/en/hint/bash-strict-mode
+#    Parts of this is sometimes called bash strict mode: https://ewus.de/en/hint/bash-strict-mode
 
 # Configuration: 
 DEFAULT_RESERVATION_DURATION="08:00:00"
 RESERVATION_NAME_PREFIX="update"
 KEEP_RESERVATION_NAME_PREFIX="node_reserved"
+SINGLE_RESERVATION_NAME_PREFIX="reservation"
+MAX_RESERVATION_NAME_LENGTH=64
 
 # Functions:
 err(){ echo "Error: $*" >&2; exit 1; }
 info(){ echo "[info] $*"; }
 usage(){
     cat <<EOF
-Usage: $0 [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>" "<REASON>"
+Usage: $0 [-s|--single-reservation] [-k|--keep-reservation] [-d|--duration DURATION] "<NODES>"
+  -s, --single-reservation  create one reservation for all nodes; implies -k
   -k, --keep-reservation  update.sh will not delete the reservation
   -d, --duration DURATION  reservation duration (e.g. 08:00:00)
+
+Reservations kept with -k or -s may need other settings than Users=root
+or Flags=MAINT if they are used for anything other than update.
 EOF
 }
+make_single_reservation_name(){
+    local folded_list="$1"
+    local node_count="$2"
+    local safe_list candidate suffix available first_part
 
+    # Keep the folded hostlist readable, but avoid commas and brackets in the
+    # reservation name because they have special meaning in Slurm and shells.
+    safe_list=${folded_list//,/_}
+    safe_list=${safe_list//[/_}
+    safe_list=${safe_list//]/_}
+    safe_list=$(printf '%s' "$safe_list" | sed 's/_\{2,\}/_/g; s/^_//; s/_$//')
+    candidate="${SINGLE_RESERVATION_NAME_PREFIX}-${safe_list}"
+    if (( ${#candidate} <= MAX_RESERVATION_NAME_LENGTH )); then
+        printf '%s\n' "$candidate"
+        return
+    fi
+
+    suffix="-n${node_count}"
+    available=$((MAX_RESERVATION_NAME_LENGTH - ${#SINGLE_RESERVATION_NAME_PREFIX} - 1 - ${#suffix}))
+    if (( available < 1 )); then
+        err "MAX_RESERVATION_NAME_LENGTH is too small for compacted reservation names"
+    fi
+
+    first_part="${safe_list%%_*}"
+    printf '%s\n' "${SINGLE_RESERVATION_NAME_PREFIX}-${first_part:0:$available}${suffix}"
+}
+
+single_reservation=false
 keep_reservation=false
 RESERVATION_DURATION="$DEFAULT_RESERVATION_DURATION"
 
 normalized_args=()
-# support long options --keep-reservation, --help, --duration <value> and --duration=VALUE
+# support long options --single-reservation, --keep-reservation, --help,
+# --duration <value> and --duration=VALUE
 args=("$@")
 for ((i=0;i<${#args[@]};i++)); do
     arg="${args[i]}"
     case "$arg" in
+        --single-reservation)
+            normalized_args+=("-s")
+            ;;
         --keep-reservation)
             normalized_args+=("-k")
             ;;
@@ -66,8 +115,11 @@ for ((i=0;i<${#args[@]};i++)); do
 done
 set -- "${normalized_args[@]}"
 
-while getopts ":khd:" opt; do
+while getopts ":skhd:" opt; do
     case "$opt" in
+        s)
+            single_reservation=true
+            ;;
         k)
             keep_reservation=true
             ;;
@@ -91,16 +143,20 @@ done
 
 shift $((OPTIND - 1))
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -ne 1 ]]; then
     usage
-    err "Please provide only NODES and REASON!"
+    err "Please provide only NODES!"
 fi
 
 NODES_EXPR="$1"
-REASON="$2"
+
+if [[ "$single_reservation" == true ]]; then
+    keep_reservation=true
+fi
 
 if [[ "$keep_reservation" == true ]]; then
     RESERVATION_NAME_PREFIX="$KEEP_RESERVATION_NAME_PREFIX"
+    info "This reservation will not be removed automatically by update.sh. Consider adding users, flags or other settings to the reservation."
 fi
 
 # ---------- sanity checks ----------
@@ -117,28 +173,53 @@ readarray -t NODES < <(scontrol show hostnames "$HOSTLIST")
 # We want to undo any custom time formats and just use the default
 # when parsing end times from squeue
 unset SLURM_TIME_FORMAT
-for node in "${NODES[@]}"; do
-    info "Processing node $node ..."
 
-    endtime=$(squeue -h -w $node -O Endtime | sort | tail -1)
-    if [[ -z "$endtime" ]]
+if [[ "$single_reservation" == true ]]; then
+    latest_endtime=$(squeue -h -w "$HOSTLIST" -O Endtime | sort | tail -1)
+    if [[ -z "$latest_endtime" ]]
     then
-        endtime="Now"
-        info "  No jobs on node $node, setting reservation Start = $endtime"
+        latest_endtime="Now"
+        info "No jobs on any selected nodes, setting reservation Start = $latest_endtime"
     fi
 
-    # This magic reservation name is used by update.sh to identify
-    # reservations that should be removed after the reboot
-    res_name="${RESERVATION_NAME_PREFIX}-${node}"
+    # --single-reservation implies --keep-reservation, so this name does not
+    # match the per-node update-<node> names removed by update.sh after reboot.
+    res_name=$(make_single_reservation_name "$HOSTLIST" "${#NODES[@]}")
 
-    # Create reservation (per node). This lets backfill allow only
-    # jobs that finish before start.
-    info "  Creating reservationname=$res_name starting $endtime for node $node"
+    # Create one reservation for the full node set. This waits for the busiest
+    # selected node to become idle before reserving all requested nodes together.
+    info "Creating reservationname=$res_name starting $latest_endtime for nodes $HOSTLIST"
     scontrol create reservation \
              ReservationName="$res_name" \
-             StartTime="$endtime" \
+             StartTime="$latest_endtime" \
              Duration="$RESERVATION_DURATION" \
-             Nodes="$node" \
+             Nodes="$HOSTLIST" \
              Users=root \
              Flags=MAINT >/dev/null
-done
+else
+    for node in "${NODES[@]}"; do
+        info "Processing node $node ..."
+
+        endtime=$(squeue -h -w "$node" -O Endtime | sort | tail -1)
+        if [[ -z "$endtime" ]]
+        then
+            endtime="Now"
+            info "  No jobs on node $node, setting reservation Start = $endtime"
+        fi
+
+        # This magic reservation name is used by update.sh to identify
+        # reservations that should be removed after the reboot
+        res_name="${RESERVATION_NAME_PREFIX}-${node}"
+
+        # Create reservation (per node). This lets backfill allow only
+        # jobs that finish before start.
+        info "  Creating reservationname=$res_name starting $endtime for node $node"
+        scontrol create reservation \
+                 ReservationName="$res_name" \
+                 StartTime="$endtime" \
+                 Duration="$RESERVATION_DURATION" \
+                 Nodes="$node" \
+                 Users=root \
+                 Flags=MAINT >/dev/null
+    done
+fi
