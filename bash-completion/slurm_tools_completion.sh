@@ -32,6 +32,7 @@ then
 		complete -o nospace -F _squeue jobnice
 		complete -o nospace -F _squeue showuserlimits
 		complete -o nospace -F _squeue showevents
+		complete -o nospace -F _squeue showjobreasons
 		complete -o nospace -F _squeue slurmusersettings
 		complete -o nospace -F _sinfo showpartitions
 		complete -o nospace -F _sinfo slurmacct
