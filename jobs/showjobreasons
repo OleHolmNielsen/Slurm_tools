@@ -8,11 +8,11 @@
 
 # Usage: showjobreasons [squeue-options]
 
-squeue $@ -h -t pending -O "Username,Account,Partition,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c | awk '
+squeue $@ -h -t pending -O "Username,Account,Partition: ,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c | awk '
 BEGIN {
 	# Collect partition information using the "showpartitions" script from this project
 	while (("showpartitions -n" | getline) > 0) {
-		p = $1
+		p = $1	# Partition name
 		len = length(p)	 # Length of partition name string
 		if (len > plen) plen = len    # Calculate maximum string length
 		nodes[p] = $3
@@ -20,14 +20,14 @@ BEGIN {
 		cores[p] = $5
 		idlecores[p] = $6
 	}
-	fmt="%8s %8s \t%12s\t%-27s %5s %5s %5s %5s %5s %s\n"
+	fmt="%8s %8s \t%12.12s\t%-27.27s %5s %5s %5s %5s %5s %s\n"
 	printf(fmt, "User", "Account", "Partition", "Reason", "#Jobs", "Nodes", "Idle", "Cpus", "Idle", "Full-name")
 }
 {
 	jobcount=$1	# The jobcount comes from "uniq -c"
 	username=$2
 	account=$3
-	p=$4		# Partition name
+	p=$4
 	numcpus=$5
 	numnodes=$6
 	reason=$7
