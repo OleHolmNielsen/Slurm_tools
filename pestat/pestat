@@ -608,16 +608,18 @@ BEGIN {
 			statecolor=NORMAL
 		}
 		# Flag unexpected CPU load average on allocated cores
-		if (usedgpus > 0)
+		ideal_load_max = allocated_cores
+		if (usedgpus > 0) {
 			# For GPU nodes assume that 1 (or more) CPU tasks per GPU is ideal
 			ideal_load_min = usedgpus
-		else if (threadspercore == 1)
+			# Max CPU load should be the fraction of GPUs used times total number of cores
+			ideal_load_max = (total_cores * usedgpus) / availgpus
+		} else if (threadspercore == 1)
 			# Single thread per core: Ideal load equals number of physical cores.
 		       	ideal_load_min = allocated_cores
 		else
 			# Multiple threads per CPU core: Load of 1..threadspercore per physical core is OK.
 			ideal_load_min = allocated_cores / threadspercore
-		ideal_load_max = allocated_cores
 		# Calculate if cpuload is outside ideal load bounds, plus some deltas
 		if (cpuload > ideal_load_max + cpuload_delta1 || cpuload < ideal_load_min - cpuload_delta1) {
 			loadflag="*"
