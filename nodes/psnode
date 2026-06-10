@@ -40,6 +40,8 @@ fi
 nodelist=$*
 # Enable these variables if the gpustat command has been installed on nodes with GPUs
 enable_gpustat=1
+# NVIDIA GPUs may freeze and become non-responding so we must kill gpustat after a timeout
+gpustat_timeout=20
 GPUNAME_WIDTH="--gpuname-width 24"
 # color="--color"
 color=""
@@ -96,7 +98,7 @@ do
 			echo
 			echo "Running GPU tasks on node $node:"
 			echo "GPU GPU-type                 | Temp   GPU% |   Mem / Tot      | user:process/PID(Mem)"
-			$SSH $node gpustat -upc $GPUNAME_WIDTH $color --no-header
+			$SSH $node timeout $gpustat_timeout gpustat -upc $GPUNAME_WIDTH $color --no-header
 		fi
 	else
 		echo "'*** WARNING ***' Cannot ping host ${node} !"

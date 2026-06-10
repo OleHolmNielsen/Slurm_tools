@@ -14,6 +14,8 @@ export usage="$0 [-c columns | -h] jobid"
 export columns=100
 # Enable this if the gpustat command has been installed on nodes with GPUs
 enable_gpustat=1
+# NVIDIA GPUs may freeze and become non-responding so we must kill gpustat after a timeout
+gpustat_timeout=20
 
 # Parse command options
 while getopts "c:h" options; do
@@ -127,7 +129,7 @@ then
 	color=""
 	# The "/bin/true" catches the case of grep returning an error code
 	# Sort output on nodenames using "sort -k 1"
-	$CLUSH -w $NODELIST "gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk '{if (int(\$1)>0) {print \"-e \" \$1}else{print \"-e \" \$2}}') || /bin/true" | sort -k 1
+	$CLUSH -w $NODELIST "timeout $gpustat_timeout gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk '{if (int(\$1)>0) {print \"-e \" \$1}else{print \"-e \" \$2}}') || /bin/true" | sort -k 1
 fi
 
 # If using JobContainerType=job_container/tmpfs then print also disk space usage
