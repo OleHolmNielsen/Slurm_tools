@@ -8,7 +8,7 @@
 
 # Usage: showjobreasons [squeue-options]
 
-squeue $@ -h -t pending -O "Username,Account,Partition: ,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c | awk '
+squeue $@ -h -t pending -O "Username,Account,Partition: ,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c -w 20 | awk '
 BEGIN {
 	# Collect partition information using the "showpartitions" script from this project
 	while (("showpartitions -n" | getline) > 0) {
