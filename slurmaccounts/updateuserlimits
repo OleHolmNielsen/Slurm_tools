@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+# Update user limits temporarily, for example increasing limits during weekends.
+# Currently we only multiply CPU limits by 1.5
+# Requires these commands from the present project: showjobreasons showuserlimits slurmusersettings
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+
+PATH=$PATH:/usr/local/bin
+limitlist="AssocGrpCpuLimit"	# At this time we only consider the AssocGrpCpuLimit limit
+percentage=50			# Percentage increase in limits
+userlimitslog=$HOME/userlimits.log	# Record the modified users in a logfile
+
+# Command usage:
+function usage()
+{
+        cat <<EOF
+Usage: $0 [-r | -h] [list of usernames separated by spaces]
+where:
+        -r Reset the limits to defaults
+        -h Print help information
+EOF
+}
+
+reset=0
+while getopts "rh" options; do
+	case $options in
+		r ) reset=1
+		;;
+		h|*|? ) usage
+		exit 1;;
+	esac
+done
+shift $((OPTIND-1))
+
+# Arguments is a list of usernames separated by spaces
+if [[ $# -gt 0 ]]
+then
+	userlist=$@
+fi
+
+if [[ $reset -eq 0 ]]
+then
+	# Identify users whose jobs are affected by Slurm limits
+	if [[ -z "$userlist" ]]
+	then
+		userlist=`showjobreasons | grep $limitlist | awk '{print $1}' | sort | uniq`
+	fi
+	if [[ -z "$userlist" ]]
+	then
+		# When the scheduler is running, a Reason=None may be shown intermittently (wait and try again)
+		# See ticket https://support.schedmd.com/show_bug.cgi?id=21409
+		echo "NOTICE: No users with $limitlist reasons"
+		echo "Job reasons are:"
+		showjobreasons
+		echo "Sleep 10 seconds and try again"
+		sleep 10
+		userlist=`showjobreasons | grep $limitlist | awk '{print $1}' | sort | uniq`
+	fi
+	for u in $userlist
+	do
+		# Extract the user CPU limit (ignore any Parent account limits by "tail -1")
+		cpulimit=`showuserlimits -u $u -l GrpTRES -s cpu | grep cpu: | awk '{print $4}' | sed /,/s/// | tail -1`
+		if [[ -z "$cpulimit" ]]
+		then
+			echo
+			echo "ERROR: No cpulimit for user $u"
+			continue
+		fi
+		newlimit=$((cpulimit * (100 + $percentage) / 100))	# Multiply current limit (could add a number in stead)
+		echo
+		echo "User $u has CPU limit $cpulimit, new limit is $newlimit"
+		sacctmgr -i modify user where name=$u set GrpTRES=cpu=$newlimit
+		echo $u >> $userlimitslog
+	done
+else
+	# Reset user limits to defaults
+	if [[ -s $userlimitslog ]]
+	then
+		if [[ -z "$userlist" ]]
+		then
+			userlist=`sort $userlimitslog | uniq`
+		fi
+		for u in $userlist
+		do
+			echo
+			echo "Resetting limits for user $u"
+			slurmusersettings -c -u $u | bash
+			sed -i "/^$u$/d" $userlimitslog	# Delete $u lines from logfile
+		done
+	else
+		echo "NOTICE: Logfile $userlimitslog contains no users"
+		ls -l $userlimitslog
+		exit 1
+	fi
+fi
