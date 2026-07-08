@@ -8,7 +8,23 @@
 
 # Usage: showjobreasons [squeue-options]
 
-squeue $@ -h -t pending -O "Username,Account,Partition: ,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c -w 20 | awk '
+# Print output to a file, then look for "None":
+# This state indicates that the job has not been considered yet in the current backfill cycle.
+# A job that previously had a reason may temporarily revert to 'None' until it is reprocessed.
+# This may occur if the scheduler has not yet evaluated the job in the latest backfill cycle.
+# See https://slurm.schedmd.com/job_reason_codes.html
+tempfile=`mktemp`
+squeue $@ -h -t pending -O "Username,Account,Partition: ,MaxCPUs,MaxNodes,Reason: " | sort | uniq -c -w 20 > $tempfile
+if [[ -n "`grep None $tempfile`" ]]
+then
+	echo "Notice: Reasons of None means that the scheduler is evaluating jobs."
+	echo "Sleep 10 seconds and then repeat..."
+	rm -f $tempfile
+	sleep 10
+	exec $0 $@
+fi
+
+cat $tempfile | awk '
 BEGIN {
 	# Collect partition information using the "showpartitions" script from this project
 	while (("showpartitions -n" | getline) > 0) {
@@ -41,3 +57,5 @@ BEGIN {
 			numnodes*jobcount, idlenodes[p], numcpus*jobcount, idlecores[p], b[5])
 	}
 }'
+
+rm -f $tempfile
