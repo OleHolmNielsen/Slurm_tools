@@ -285,7 +285,7 @@ Update user limits temporarily, for example increasing limits during weekends.
 Currently we only multiply CPU limits by 1.5.
 
 ```
-Usage: $0 [-r | -h] [list of usernames separated by spaces]
+Usage: updateuserlimits [-r | -h] [list of usernames separated by spaces]
 where:
         -r Reset the limits to defaults
         -h Print help information
