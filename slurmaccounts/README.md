@@ -283,7 +283,7 @@ updateuserlimits tool
 
 Update user limits temporarily, for example increasing limits during weekends.
 Currently we only multiply CPU limits by 1.5.
-Requires these commands from the present project: showjobreasons showuserlimits slurmusersettings
+Requires these commands from the present project: ```showjobreasons showuserlimits slurmusersettings```.
 
 Use the option ```-r``` to reset limits to the user defaults.
 
