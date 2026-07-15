@@ -149,6 +149,12 @@ echo
 #
 for jobid in $JOBLIST
 do
+	if [[ $jobid -le 0 ]]
+	then
+		echo "ERROR: The parameter JobID=$jobid is not an integer"
+		echo
+		exit 1
+	fi
 
 #
 # Define strings to be used in the report
