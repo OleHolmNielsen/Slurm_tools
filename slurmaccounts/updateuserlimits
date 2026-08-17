@@ -14,16 +14,20 @@ userlimitslog=$HOME/userlimits.log	# Record the modified users in a logfile
 function usage()
 {
         cat <<EOF
-Usage: $0 [-r | -h] [list of usernames separated by spaces]
+Usage: $0 [-d] [-r | -h] [list of usernames separated by spaces]
 where:
+        -d Dry run only without any changes
         -r Reset the limits to defaults
         -h Print help information
 EOF
 }
 
+dryrun=0
 reset=0
-while getopts "rh" options; do
+while getopts "drh" options; do
 	case $options in
+		d ) dryrun=1
+		;;
 		r ) reset=1
 		;;
 		h|*|? ) usage
@@ -69,8 +73,13 @@ then
 		newlimit=$((cpulimit * (100 + $percentage) / 100))	# Multiply current limit (could add a number in stead)
 		echo
 		echo "User $u has CPU limit $cpulimit, new limit is $newlimit"
-		sacctmgr -i modify user where name=$u set GrpTRES=cpu=$newlimit
-		echo $u >> $userlimitslog
+		if [[ $dryrun -eq 0 ]]
+		then
+			sacctmgr -i modify user where name=$u set GrpTRES=cpu=$newlimit
+			echo $u >> $userlimitslog
+		else
+			echo "	DRY RUN: sacctmgr -i modify user where name=$u set GrpTRES=cpu=$newlimit"
+		fi
 	done
 else
 	# Reset user limits to defaults
@@ -84,8 +93,14 @@ else
 		do
 			echo
 			echo "Resetting limits for user $u"
-			slurmusersettings -c -u $u | bash
-			sed -i "/^$u$/d" $userlimitslog	# Delete $u lines from logfile
+			if [[ $dryrun -eq 0 ]]
+			then
+				slurmusersettings -c -u $u | bash
+				sed -i "/^$u$/d" $userlimitslog	# Delete $u lines from logfile
+			else
+				echo -n "	DRY RUN: "
+				slurmusersettings -c -u $u
+			fi
 		done
 	else
 		echo "NOTICE: Logfile $userlimitslog contains no users"
