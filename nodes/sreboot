@@ -79,7 +79,7 @@ build_part_not_exclusive() {
                 PartitionName=*)
                     part=${field#PartitionName=}
                     ;;
-                ExclusiveUser=NO*)
+                Exclusive=NO*)
                     os="NOT_EXCLUSIVE"
                     ;;
             esac
