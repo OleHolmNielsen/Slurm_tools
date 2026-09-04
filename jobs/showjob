@@ -97,7 +97,7 @@ function print_job_accounting()
 	if [[ -n "`scontrol show config | grep AccountingStoreFlags | grep job_script`" ]]
 	then
 		echo
-		sacct -j $jobid -B
+		sacct -j $jobid --batch-script
 	fi
 
 	echo
@@ -255,10 +255,11 @@ then
 		cat $TMPFILE
 	fi
 fi
-rm -f $TMPFILE
 
 # Print accounting information only when the job is in the Running state
-if [[ "$jobstate" = "Running" ]]
+if [ "$jobstate" = "RUNNING" ]
 then
 	print_job_accounting
 fi
+
+rm -f $TMPFILE
