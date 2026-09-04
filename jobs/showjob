@@ -38,7 +38,7 @@ function format_sacct()
 {
 	# echo Called format_sacct with $@
 	# Add -P flag for parseable output with fields separated by "|"
-	sacct -P $@ | awk -F "|" '
+	sacct --allocations --parsable2 $@ | awk -F "|" '
 {
 	for (i=1; i<= NF; i++) {
 		column[i][NR] = $i
