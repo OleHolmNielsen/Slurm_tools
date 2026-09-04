@@ -98,6 +98,7 @@ function print_job_accounting()
 	then
 		echo
 		sacct -j $jobid --batch-script
+		echo
 	fi
 
 	echo
