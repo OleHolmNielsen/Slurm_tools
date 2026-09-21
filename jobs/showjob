@@ -242,7 +242,7 @@ then
 		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
 	elif [[ "$reason" = "Dependency" ]]
 	then
-		echo "Dependency information: $dependency"
+		echo "   Dependency information: $dependency"
 	fi
 	echo
 fi
