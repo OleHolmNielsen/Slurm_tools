@@ -25,10 +25,12 @@
 #    The "-r" flag sets the Reason
 
 ##########################################################################
-# CONFIGURE:
-# The cluster software folders as seen from the compute nodes:
-PACKAGEDIR="/home/que"
-SCRIPTDIR="$PACKAGEDIR/RSYNC"
+#
+# CONFIGURE these lines:
+#
+# The cluster software and script folders as seen from the compute nodes:
+PACKAGEDIR="/home/server"
+SCRIPTDIR="$PACKAGEDIR/script-directory"
 # The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
 update_software=update_software.sh
 update_firmware=update_firmware.sh
