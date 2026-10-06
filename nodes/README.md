@@ -58,11 +58,11 @@ in order to avoid having inconsistent node states in the partitions when new job
 
 The approach used in the present procedure is:
 
-1. Execute a crontab job on compute nodes at *any* reboot time.
-   The script will do nothing, unless the node has Slurm ```State=down```.
+1. Execute a crontab job script on compute nodes at *every* reboot.
+   This script will do nothing, unless the node has a Slurm ```State=down```.
 
-2. Reboot the compute nodes using ```scontrol reboot asap nextstate=down <node-list>```.
-   Here we use ```State=down``` as a trigger telling the update script to actually perform updates.
+2. You can choose to reboot compute node lists using the command ```scontrol reboot asap nextstate=down <node-list>```.
+   In this procedure we use ```State=down``` as a **trigger** telling the update script to actually perform updates.
 
 This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell)
 and the 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
