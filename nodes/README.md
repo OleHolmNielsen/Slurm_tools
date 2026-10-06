@@ -91,7 +91,7 @@ On the compute nodes append this entry to root's crontab (how you do this depend
 ```
 Now you may reboot and update nodes using ```scontrol reboot asap nextstate=down <node-list>```.
 
-Optional:
+### Optional:
 
 If nodes in the node-list are in non-exclusive partitions, run ```reserve_on_idle``` to create a reservation for each node starting when its last currently running job is expected to finish. This allows Slurm backfill to schedule new jobs only if they can finish before the reservation begins:
 ```
