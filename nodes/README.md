@@ -52,21 +52,41 @@ Total: 8 processes and 20 threads
 Compute node OS and firmware updates
 ------------------------------------
 
-This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell).
-
 Assume that you want to update OS and firmware on a specific set of nodes defined as ```<node-list>```.
 It is recommended to update entire partitions, or the entire cluster, at a time in order to avoid having inconsistent node states in the partitions.
 
-First configure the ```update.sh``` script so that it will perform the required OS and firmware updates for your specific partitions.
+The approach used in the present procedure is:
 
-Then copy the ```update.sh``` file to the compute nodes:
-```
-clush -bw <node-list> --copy update.sh --dest /root/
-```
+1. Execute a crontab job on compute nodes at reboot time.
+   The script will do nothing, unless the node has Slurm ```State=down```.
 
-On the compute nodes append this crontab entry:
+2. Reboot the compute nodes using ```scontrol reboot asap nextstate=down <nodelist>```.
+   Here we use ```State=down``` as a trigger telling the update script to perform updates.
+
+This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell)
+and the 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
+and [update_firmware.sh](update_firmware.sh) from this project.
+
+You first have to:
+
+1. Review the CONFIGURE section of the [update_down_node.sh](update_down_node.sh) script and configure for your environment.
+
+2. Review the [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh) scripts and configure for your environment
+   as regards what packages to update and which firmwares to install.
+   You could omit the firmware update file if you do not want to use this method.
+
+3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
+   to the shared network location specified in [update_down_node.sh](update_down_node.sh).
+   They will be copied to the compute node and sourced by the [update_down_node.sh](update_down_node.sh) script.
+   In this way we will be sure to use the up-to-date scripts. 
+
+Now copy (only) the [update_down_node.sh](update_down_node.sh) file to the compute nodes:
 ```
-clush -bw <node-list> 'echo "@reboot root /bin/bash /root/update.sh" >> /etc/crontab'
+clush -bw <node-list> --copy update_down_node.sh --dest /root/
+```
+On the compute nodes append this entry to root's crontab:
+```
+@reboot /root/update_down_node.sh
 ```
 
 If nodes in the node-list are in non-exclusive partitions, run ```reserve_on_idle``` to create a reservation for each node starting when its last currently running job is expected to finish. This allows Slurm backfill to schedule new jobs only if they can finish before the reservation begins:
@@ -75,29 +95,14 @@ reserve_on_idle <node-list>
 ```
 Use ```-s``` or ```--single-reservation``` to create one reservation for the full node-list instead. The single reservation starts when the last job across all requested nodes is expected to finish, and implies ```--keep-reservation```.
 
-Then schedule the nodes for reboot through Slurm as soon as they become idle, and set their next state to DOWN:
+Then schedule the nodes for reboot through Slurm as soon as they become idle, and set their next state to DOWN
+using the ```-d``` option:
 ```
 sreboot -d -r UPDATE <node-list>
 ```
-
 You can now check nodes regularly (a few times per day) as the rolling updates proceed.
-List the DOWN nodes with ```sinfo -lR```.
 
-Check the status of the DOWN nodes.
-For example, you may check the running kernel and the BMC version,
-and use [NHC](https://wiki.fysik.dtu.dk/niflheim/Slurm_configuration#node-health-check):
-```
-clush -bw@slurmstate:down 'uname -r; nhc; dmidecode -s bios-version'
-```
-
-When some nodes have been updated and tested successfully, you could resume these nodes by:
-```
-scontrol update nodename=<nodes that have completed updating> state=resume
-```
-Resuming the node is actually accomplished at the end of the ```update.sh``` script by these lines:
-```
-scontrol reboot nextstate=resume `hostname -s`
-```
+NOTE: The previously documented script ```update.sh``` has been superceded by the current method for updating.
 
 GPU monitoring
 --------------
