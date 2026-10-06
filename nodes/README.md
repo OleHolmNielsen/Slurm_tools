@@ -85,7 +85,7 @@ Now copy (only) the [update_down_node.sh](update_down_node.sh) file to the compu
 ```
 clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
-On the compute nodes append this entry to root's crontab:
+On the compute nodes append this entry to root's crontab (how you do this depends on local procedures):
 ```
 @reboot /root/update_down_node.sh
 ```
