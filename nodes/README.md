@@ -89,7 +89,11 @@ On the compute nodes append this entry to root's crontab (how you do this depend
 ```
 @reboot /root/update_down_node.sh
 ```
-Now you may reboot and update nodes using ```scontrol reboot asap nextstate=down <node-list>```.
+Now you may reboot and update nodes with::
+
+  scontrol reboot asap nextstate=down <node-list>
+
+The nodes will be resumed after the updates.
 
 ### Optional:
 
