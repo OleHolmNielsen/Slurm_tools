@@ -62,6 +62,7 @@ The approach used in the present procedure is:
    This script will do nothing, unless the node has a Slurm ```State=down```.
 
 2. You can choose to reboot compute node lists using the command ```scontrol reboot asap nextstate=down <node-list>```.
+
    In this procedure we use ```State=down``` as a **trigger** telling the update script to actually perform updates.
 
 This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell)
@@ -70,16 +71,16 @@ and [update_firmware.sh](update_firmware.sh).
 
 You first have to:
 
-1. Review the CONFIGURE section of the [update_down_node.sh](update_down_node.sh) script and configure for your environment.
+1. Review the CONFIGURE section of the [update_down_node.sh](update_down_node.sh) script and configure it for your environment.
 
 2. Review the [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh) scripts and configure for your environment
-   as regards what packages to update and which firmwares to install.
+   regarding what OS packages to update, and which firmwares to install.
    You could omit the firmware update file if you do not want to use this method.
 
 3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
-   to the shared network location specified in [update_down_node.sh](update_down_node.sh).
+   to the shared network location ```$SCRIPTDIR```specified in [update_down_node.sh](update_down_node.sh).
    They will be copied to the compute node and sourced by the [update_down_node.sh](update_down_node.sh) script.
-   In this way we will be sure to use the up-to-date scripts. 
+   In this way we will be sure to use only up-to-date scripts. 
 
 Now copy (only) the [update_down_node.sh](update_down_node.sh) file to the compute nodes:
 ```
