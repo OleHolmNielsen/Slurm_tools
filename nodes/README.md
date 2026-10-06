@@ -62,7 +62,7 @@ The approach used in the present procedure is:
    The script will do nothing, unless the node has Slurm ```State=down```.
 
 2. Reboot the compute nodes using ```scontrol reboot asap nextstate=down <node-list>```.
-   Here we use ```State=down``` as a trigger telling the update script to perform updates.
+   Here we use ```State=down``` as a trigger telling the update script to actually perform updates.
 
 This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell)
 and the 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
@@ -89,6 +89,9 @@ On the compute nodes append this entry to root's crontab:
 ```
 @reboot /root/update_down_node.sh
 ```
+Now you may reboot and update nodes using ```scontrol reboot asap nextstate=down <node-list>```.
+
+Optional:
 
 If nodes in the node-list are in non-exclusive partitions, run ```reserve_on_idle``` to create a reservation for each node starting when its last currently running job is expected to finish. This allows Slurm backfill to schedule new jobs only if they can finish before the reservation begins:
 ```
@@ -103,7 +106,7 @@ sreboot -d -r UPDATE <node-list>
 ```
 You can now check nodes regularly (a few times per day) as the rolling updates proceed.
 
-NOTE: The previously documented script ```update.sh``` has been superceded by the current method for updating.
+NOTE: The previously documented script [update.sh](update.sh) has been superceded by the current method for updating.
 
 GPU monitoring
 --------------
