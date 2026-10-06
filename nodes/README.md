@@ -53,19 +53,20 @@ Compute node OS and firmware updates
 ------------------------------------
 
 Assume that you want to update OS and firmware on a specific set of nodes defined as ```<node-list>```.
-It is recommended to update entire partitions, or the entire cluster, at a time in order to avoid having inconsistent node states in the partitions.
+It is recommended to update entire partitions, or the entire cluster, at a time
+in order to avoid having inconsistent node states in the partitions when new jobs are started.
 
 The approach used in the present procedure is:
 
-1. Execute a crontab job on compute nodes at reboot time.
+1. Execute a crontab job on compute nodes at *any* reboot time.
    The script will do nothing, unless the node has Slurm ```State=down```.
 
-2. Reboot the compute nodes using ```scontrol reboot asap nextstate=down <nodelist>```.
+2. Reboot the compute nodes using ```scontrol reboot asap nextstate=down <node-list>```.
    Here we use ```State=down``` as a trigger telling the update script to perform updates.
 
 This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell)
 and the 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
-and [update_firmware.sh](update_firmware.sh) from this project.
+and [update_firmware.sh](update_firmware.sh).
 
 You first have to:
 
