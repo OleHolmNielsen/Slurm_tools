@@ -55,12 +55,7 @@ Compute node OS and firmware updates
 Assume that you want to update OS and firmware on a specific set of nodes defined as ```<node-list>```.
 It is recommended to update entire partitions (or the entire cluster) at a time
 in order to avoid having inconsistent node states in the partitions when new jobs are started.
-
-For an overview of your partitions and their node-lists you may use the
-[showpartitions](../partitions/showpartitions) tool:
-```
-showpartitions -Na
-```
+For an overview of your partitions and their node-lists you may use the command ```sinfo -s```.
 
 The approach used in the present procedure is:
 
