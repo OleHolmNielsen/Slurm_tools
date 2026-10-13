@@ -70,7 +70,6 @@ The design used in the present approach is:
 
 The procedure consists of 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
 and [update_firmware.sh](update_firmware.sh).
-In addition, we may use [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) for distribution of files.
 
 First make some configurations specifically for your environment:
 
@@ -90,7 +89,8 @@ First make some configurations specifically for your environment:
 
 Setting up the automated updating system now consists of:
 
-1. Copy the [update_down_node.sh](update_down_node.sh) file (only) to some or all of the compute nodes:
+1. Copy the [update_down_node.sh](update_down_node.sh) file (only) to some or all of the compute nodes
+using [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) (or some other method):
 ```
 clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
