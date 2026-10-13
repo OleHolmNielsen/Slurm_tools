@@ -105,11 +105,6 @@ scontrol reboot asap nextstate=down <node-list>
 ```
 The nodes will be rebooted as soon as they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
 
-Note:
-* If the [reserve_on_idle](reserve_on_idle) script is used for handling *mixed-state* nodes (see below),
-  the "magic" Slurm ```ReservationName=update-<nodename>``` 
-  will be deleted at the end of the [update_down_node.sh](update_down_node.sh) script.
-
 ### Optional:
 
 If nodes in the node-list are in non-exclusive (*mixed* state) partitions,
@@ -119,7 +114,13 @@ This allows Slurm backfill to schedule new jobs only if they can finish before t
 ```
 reserve_on_idle <node-list>
 ```
-Use ```-s``` or ```--single-reservation``` to create one reservation for the full node-list instead. The single reservation starts when the last job across all requested nodes is expected to finish, and implies ```--keep-reservation```.
+
+NOTE: The "magic" Slurm ```ReservationName=update-<nodename>``` created by [reserve_on_idle](reserve_on_idle)
+will be deleted at the end of the [update_down_node.sh](update_down_node.sh) script.
+
+Use ```-s``` or ```--single-reservation``` to create one reservation for the full node-list instead.
+The single reservation starts when the last job across all requested nodes is expected to finish,
+and implies ```--keep-reservation```.
 
 Then schedule the nodes for reboot through Slurm as soon as they become idle, and set their next state to DOWN
 using the ```-d``` option:
