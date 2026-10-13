@@ -59,7 +59,7 @@ in order to avoid having inconsistent node states in the partitions when new job
 For an overview of your partitions and their node-lists you may use the
 [showpartitions](../partitions/showpartitions) tool:
 ```
-shorpartitions -Na
+showpartitions -Na
 ```
 
 The approach used in the present procedure is:
@@ -69,41 +69,40 @@ The approach used in the present procedure is:
    in which case it will perform updates.
 
 2. You can choose to reboot compute node lists using the command ```scontrol reboot asap nextstate=down <node-list>```.
-
    In this procedure we use ```State=down``` as a **trigger** telling the update script to actually perform updates.
 
-This procedure requires [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell)
+This procedure uses [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) for distribution of files,
 and the 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
 and [update_firmware.sh](update_firmware.sh).
+Make some configurations for your environment:
 
-You first have to:
+1. Review the CONFIGURE section of the [update_down_node.sh](update_down_node.sh) script and configure it.
 
-1. Review the CONFIGURE section of the [update_down_node.sh](update_down_node.sh) script and configure it for your environment.
-
-2. Review the [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh) scripts and configure for your environment
+2. Review the [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh) scripts and configure them
    regarding what OS packages to update, and which firmwares to install.
-   You could omit the firmware update file if you do not want to use this method.
+   You may omit the firmware update file if you do not want to use this method.
 
 3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
    to the shared network location ```$SCRIPTDIR```specified in [update_down_node.sh](update_down_node.sh).
-   They will be copied to the compute node and sourced by the [update_down_node.sh](update_down_node.sh) script,
-   ensuring the use of up-to-date scripts from the central server. 
+   The files will be copied to each compute node and sourced by the [update_down_node.sh](update_down_node.sh) script,
+   ensuring the use of up-to-date scripts distributed from the central server. 
 
-Setting up the system consists of:
+Setting up the automated updating system consists of:
 
 1. Copy the [update_down_node.sh](update_down_node.sh) file (only) to the compute nodes:
 ```
 clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
-2. On the compute nodes append this entry to root's crontab file ``/var/spool/cron/root`` (how you do this depends on local procedures):
+2. On the compute nodes append this entry to root's crontab file
+(``/var/spool/cron/root``, how you do this depends on local procedures):
 ```
 @reboot /root/update_down_node.sh
 ```
-3. Now you may reboot and update nodes with
+3. Now you may reboot and update a node-list with:
 ```
 scontrol reboot asap nextstate=down <node-list>
 ```
-The nodes will be rebooted and resumed after the updates, requiring no further actions.
+The nodes will be rebooted and resumed in Slurm following the updates, requiring no further user actions.
 
 ### Optional:
 
