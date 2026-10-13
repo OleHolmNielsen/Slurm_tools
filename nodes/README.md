@@ -95,7 +95,7 @@ using [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) (or 
 clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
 2. On the compute nodes append a new entry to root's crontab file
-(``/var/spool/cron/root``, how you update this depends on local procedures):
+(``/var/spool/cron/root``, how you update this depends on your local management procedures):
 ```
 @reboot /root/update_down_node.sh
 ```
