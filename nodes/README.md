@@ -56,10 +56,17 @@ Assume that you want to update OS and firmware on a specific set of nodes define
 It is recommended to update entire partitions, or the entire cluster, at a time
 in order to avoid having inconsistent node states in the partitions when new jobs are started.
 
+For an overview of your partitions and their node-lists you may use the
+[showpartitions](../partitions/showpartitions) tool:
+```
+shorpartitions -Na
+```
+
 The approach used in the present procedure is:
 
-1. Execute a crontab job script on compute nodes at *every* reboot.
-   This script will do nothing, unless the node has a Slurm ```State=down```.
+1. Configure all compute nodes to execute a crontab job script at *every* reboot.
+   This script will usually do nothing, unless the node has a Slurm ```State=down```
+   in which case it will perform updates.
 
 2. You can choose to reboot compute node lists using the command ```scontrol reboot asap nextstate=down <node-list>```.
 
@@ -79,22 +86,24 @@ You first have to:
 
 3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
    to the shared network location ```$SCRIPTDIR```specified in [update_down_node.sh](update_down_node.sh).
-   They will be copied to the compute node and sourced by the [update_down_node.sh](update_down_node.sh) script.
-   In this way we will be sure to use only up-to-date scripts. 
+   They will be copied to the compute node and sourced by the [update_down_node.sh](update_down_node.sh) script,
+   ensuring the use of up-to-date scripts from the central server. 
 
-Now copy (only) the [update_down_node.sh](update_down_node.sh) file to the compute nodes:
+Setting up the system consists of:
+
+1. Copy the [update_down_node.sh](update_down_node.sh) file (only) to the compute nodes:
 ```
 clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
-On the compute nodes append this entry to root's crontab (how you do this depends on local procedures):
+2. On the compute nodes append this entry to root's crontab file ``/var/spool/cron/root`` (how you do this depends on local procedures):
 ```
 @reboot /root/update_down_node.sh
 ```
-Now you may reboot and update nodes with
+3. Now you may reboot and update nodes with
 ```
 scontrol reboot asap nextstate=down <node-list>
 ```
-The nodes will be resumed after the updates.
+The nodes will be rebooted and resumed after the updates, requiring no further actions.
 
 ### Optional:
 
