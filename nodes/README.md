@@ -115,8 +115,10 @@ This allows Slurm backfill to schedule new jobs only if they can finish before t
 reserve_on_idle <node-list>
 ```
 
-NOTE: The "magic" Slurm ```ReservationName=update-<nodename>``` created by [reserve_on_idle](reserve_on_idle)
-will be deleted at the end of the [update_down_node.sh](update_down_node.sh) script.
+NOTE:
+The [reserve_on_idle](reserve_on_idle) script creates a
+"magic" Slurm ```ReservationName=update-<nodename>``` for the nodes,
+but these will be deleted at the end of the [update_down_node.sh](update_down_node.sh) script.
 
 Use ```-s``` or ```--single-reservation``` to create one reservation for the full node-list instead.
 The single reservation starts when the last job across all requested nodes is expected to finish,
