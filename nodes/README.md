@@ -63,14 +63,16 @@ The design used in the present approach is:
    This script will usually do nothing, except in case the node has a Slurm ```State=down```
    where it will perform all configured updates.
 
-2. Making updates now consists of rebooting compute node lists with the command ```scontrol reboot asap nextstate=down <node-list>```.
-   Here we have used ```State=down``` as a **trigger** telling the update script to perform some actions.
+2. Making updates simply consists of rebooting compute node lists with the command ```scontrol reboot asap nextstate=down <node-list>```.
+   Here we have employed the Slurm ```State=down``` as a **trigger** telling the update script to perform some actions.
+
+### Configuration
 
 The procedure consists of 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
 and [update_firmware.sh](update_firmware.sh).
-In addition we may use [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) for distribution of files.
+In addition, we may use [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) for distribution of files.
 
-First make some configurations for your environment:
+First make some configurations specifically for your environment:
 
 1. Configure variables in the ``CONFIGURE`` section of the [update_down_node.sh](update_down_node.sh) script.
 
@@ -83,6 +85,8 @@ First make some configurations for your environment:
    to the shared network location ```$SCRIPTDIR```specified in [update_down_node.sh](update_down_node.sh).
    The files will be copied to each compute node and sourced by the [update_down_node.sh](update_down_node.sh) script,
    ensuring the use of only up-to-date scripts distributed from the central server. 
+
+### Making automatic updates
 
 Setting up the automated updating system now consists of:
 
