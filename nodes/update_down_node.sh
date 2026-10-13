@@ -4,8 +4,8 @@
 # purposefully by "scontrol reboot ASAP nextstate=down <nodelist>".
 # This provides a very simple way to trigger automatic updating of compute nodes.
 # 
-# The helper script $update_* scripts are sourced to perform any necessary updates.
-# For convenience we use two helper scripts from this project: sreboot and reserve_on_idle
+# The helper script $update_*.sh scripts are sourced to perform any necessary updates.
+# For convenience we recommend to use two helper scripts from this project: sreboot and reserve_on_idle
 #
 # Installation: Execute this script at reboot time from root's crontab, for example:
 # @reboot /root/update_down_node.sh
@@ -23,14 +23,14 @@
 #    The sreboot command lets shared nodes accept new jobs, whereas exclusive nodes are rebooted ASAP.
 #    The "-d" flag sets NextState to Down.
 #    The "-r" flag sets the Reason
+#    Alternatively simply do: scontrol reboot ASAP nextstate=down <nodelist>
 
 ##########################################################################
-#
-# CONFIGURE these lines:
-#
-# The cluster software and script folders as seen from the compute nodes:
+# CONFIGURE:
+# The cluster software folders as seen from the compute nodes:
 PACKAGEDIR="/home/server"
 SCRIPTDIR="$PACKAGEDIR/script-directory"
+# Note: The local RPM package directory $RPMDIR is defined below.
 # The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
 update_software=update_software.sh
 update_firmware=update_firmware.sh
@@ -41,7 +41,7 @@ export PATH=/usr/sbin:$PATH
 
 # Log files are written to the compute node local folder:
 LOG_FILE="/root/update.log"
-LOG_FILE0="/root/update0.log"
+LOG_FILE0="/root/update_down_node.log"
 # Record the timestamp of script execution
 echo "============================" >> $LOG_FILE0
 date >> $LOG_FILE0
@@ -62,6 +62,25 @@ done
 
 # Get the Slurm node's short name (first field in DNS name)
 shortname="`hostname -s`"
+
+# Detect the OS version (see man os-release)
+source /etc/os-release
+osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
+echo "OS version is: $osversion" >> $LOG_FILE0
+# Determine the OS platform of this node
+platform=`grep PLATFORM_ID /etc/os-release`
+
+# Determine the directory RPMDIR where we store platform-specific packages for the nodes
+if [[ $platform =~ "el8" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS8
+elif [[ $platform =~ "el9" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS9
+else
+	echo "OS platform $platform is not recognized" >> $LOG_FILE0
+	exit 1
+fi
 
 ######################################################
 #
@@ -90,6 +109,9 @@ if [[ "$state" =~ "down" ]]
 then
 	echo "All checks passed: This script $0 will now perform updates" >> $LOG_FILE0
 	echo "The logfile is $LOG_FILE" >> $LOG_FILE0
+
+##### Debugging:
+
 elif [[ "$state" == "mixed" ]]
 then
 	# Debugging:
@@ -101,7 +123,7 @@ else
 	exit 0
 fi
 
-echo "Check availability of NFS-mounted PACKAGEDIR=$PACKAGEDIR"
+echo "Check availability of NFS-mounted PACKAGEDIR=$PACKAGEDIR" >> $LOG_FILE0
 if [[ ! -d $PACKAGEDIR ]]
 then
 	echo "WARNING: PACKAGEDIR=$PACKAGEDIR is not mounted"  >> $LOG_FILE0
@@ -116,7 +138,7 @@ then
 	exit 0
 fi
 
-echo "Copy the $update_software script from the remote server"
+echo "Copy the $update_software script from the remote server" >> $LOG_FILE0
 if [ -s $SCRIPTDIR/$update_software ]
 then
 	cp $SCRIPTDIR/$update_software /root/
@@ -124,7 +146,7 @@ else
 	echo "ERROR: Update script $SCRIPTDIR/$update_software not found" >> $LOG_FILE0
 	exit 0
 fi
-echo "Copy the $update_firmware script from the remote server"
+echo "Copy the $update_firmware script from the remote server" >> $LOG_FILE0
 if [ -s $SCRIPTDIR/$update_firmware ]
 then
 	cp $SCRIPTDIR/$update_firmware /root/
