@@ -99,11 +99,11 @@ clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
 @reboot /root/update_down_node.sh
 ```
-3. Now you may reboot and update a node-list simply with:
+3. Now you may **reboot and update** a node-list simply with this command:
 ```
 scontrol reboot asap nextstate=down <node-list>
 ```
-The nodes will be rebooted and resumed in Slurm following the updates, and requiring no further user actions.
+The nodes will be rebooted when they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
 
 ### Optional:
 
