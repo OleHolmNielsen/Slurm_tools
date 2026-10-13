@@ -77,7 +77,7 @@ First make some configurations specifically for your environment:
 
 2. Review the [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh) scripts and configure them
    regarding what OS packages to update, and which firmwares to install.
-   The firmware update file contains specific functions for updating Dell and Lenovo servers,
+   The firmware update script contains specific functions for updating Dell and Lenovo servers using vendor tools,
    and more functions could be added, or you may omit this file entirely.
 
 3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
@@ -103,7 +103,7 @@ clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
 scontrol reboot asap nextstate=down <node-list>
 ```
-The nodes will be rebooted when they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
+The nodes will be rebooted as soon as they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
 
 ### Optional:
 
