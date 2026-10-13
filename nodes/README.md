@@ -52,6 +52,11 @@ Total: 8 processes and 20 threads
 Compute node OS and firmware updates
 ------------------------------------
 
+Keeping your Slurm compute nodes up-to-date with security updates is an important task,
+and since updates are now released with a high frequency,
+it is desirable to make the updating process as simple and automatic as possible.
+The tools documented here offer one possible solution.
+
 Assume that you want to update OS and firmware on a specific set of nodes defined as ```<node-list>```.
 It is recommended to update entire partitions (or the entire cluster) at a time
 in order to avoid having inconsistent node states in the partitions when new jobs are started.
