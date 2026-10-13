@@ -105,9 +105,18 @@ scontrol reboot asap nextstate=down <node-list>
 ```
 The nodes will be rebooted as soon as they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
 
+Note:
+
+* If the [reserve_on_idle](reserve_on_idle) script is used for *mixed-state* nodes (see below),
+  the "magic" Slurm ```ReservationName=update-<nodename>``` 
+  will be deleted at the end of the [update_down_node.sh](update_down_node.sh) script.
+
 ### Optional:
 
-If nodes in the node-list are in non-exclusive partitions, run ```reserve_on_idle``` to create a reservation for each node starting when its last currently running job is expected to finish. This allows Slurm backfill to schedule new jobs only if they can finish before the reservation begins:
+If nodes in the node-list are in non-exclusive (*mixed* state) partitions,
+run [reserve_on_idle](reserve_on_idle) to create a reservation for each node
+with a *StartTime* when its last currently running job is expected to finish.
+This allows Slurm backfill to schedule new jobs only if they can finish before the reservation begins:
 ```
 reserve_on_idle <node-list>
 ```
@@ -120,7 +129,7 @@ sreboot -d -r UPDATE <node-list>
 ```
 You can now check nodes regularly (a few times per day) as the rolling updates proceed.
 
-NOTE: The previously documented script [update.sh](update.sh) has been superceded by the current method for updating.
+NOTE: The previously published script [update.sh](update.sh) has been superceded by the current method for updating.
 
 GPU monitoring
 --------------
