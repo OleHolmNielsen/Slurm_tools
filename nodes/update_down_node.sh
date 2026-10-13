@@ -109,15 +109,6 @@ if [[ "$state" =~ "down" ]]
 then
 	echo "All checks passed: This script $0 will now perform updates" >> $LOG_FILE0
 	echo "The logfile is $LOG_FILE" >> $LOG_FILE0
-
-##### Debugging:
-
-elif [[ "$state" == "mixed" ]]
-then
-	# Debugging:
-	scontrol show node $shortname >> $LOG_FILE0
-	echo "Slurm bug on node state mixed: This script $0 will now perform updates" >> $LOG_FILE0
-	echo "The logfile is $LOG_FILE" >> $LOG_FILE0
 else
 	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
 	exit 0
