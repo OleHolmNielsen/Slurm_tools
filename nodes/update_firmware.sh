@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # This script is used for updating system firmwares on a Slurm compute node.
 #
 # It is intended that this script is sourced by the script update_down_node.sh
@@ -108,10 +106,6 @@ function lenovo_mellanox_update()
 }
 
 ##########################################################################
-
-echo "Running $0 script at `date`"
-
-##########################################################################
 #
 # BIOS/UEFI/BMC and other system firmware updates (these are system product specific)
 #
@@ -151,15 +145,15 @@ fi
 # Please remember to comment out any firmware updates that have already been completed
 if [ "$product" == "PowerEdge C6420" ]
 then
-	# dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
-	# dell_update C6420 BIOS_YF09V_LN64_2.28.1.BIN
+	dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
+	dell_update C6420 BIOS_F5W0G_LN64_2.29.2.BIN
 	# dell_update C6420 Network_Firmware_PJDHV_LN_25.0.4_A00.BIN
 	$RACADM getversion
 	$RACADM getversion -c
 elif [ "$product" == "PowerEdge R640" ]
 then
-	# dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
-	# dell_update R640 BIOS_188CW_LN64_2.28.1.BIN
+	dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
+	dell_update R640 BIOS_JJ09G_LN64_2.29.2.BIN
 	# dell_update R640 Network_Firmware_WKRW3_LN64_23.71.1.BIN
 	$RACADM getversion
 	$RACADM getversion -c
@@ -239,6 +233,3 @@ then
 	# lenovo_update SD650N-V3 UEFI 
 	# lenovo_update SD650N-V3 LXPM 
 fi
-
-echo
-echo "Finished $0 script at `date`"
