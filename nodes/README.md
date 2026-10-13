@@ -57,18 +57,18 @@ It is recommended to update entire partitions (or the entire cluster) at a time
 in order to avoid having inconsistent node states in the partitions when new jobs are started.
 For an overview of your partitions and their node-lists you may use the command ```sinfo -s```.
 
-The approach used in the present procedure is:
+The design used in the present approach is:
 
 1. Configure all compute nodes to execute a crontab job script at *every* reboot.
-   This script will usually do nothing, unless the node has a Slurm ```State=down```,
-   in which case it will perform updates before allowing any new Slurm jobs.
+   This script will usually do nothing, except in case the node has a Slurm ```State=down```
+   where it will perform all configured updates.
 
-2. You reboot compute node lists using the command ```scontrol reboot asap nextstate=down <node-list>```.
-   In this procedure we use ```State=down``` as a **trigger** telling the update script to actually perform updates.
+2. Making updates now consists of rebooting compute node lists with the command ```scontrol reboot asap nextstate=down <node-list>```.
+   Here we have used ```State=down``` as a **trigger** telling the update script to perform some actions.
 
-The procedure uses 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
+The procedure consists of 3 scripts [update_down_node.sh](update_down_node.sh), [update_software.sh](update_software.sh)
 and [update_firmware.sh](update_firmware.sh).
-We may use [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) for distribution of files.
+In addition we may use [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) for distribution of files.
 
 First make some configurations for your environment:
 
