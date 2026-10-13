@@ -110,7 +110,7 @@ scontrol reboot asap nextstate=down <node-list>
 ```
 The nodes will be rebooted as soon as they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
 
-### Optional:
+### Optional for mixed state nodes
 
 If nodes in the node-list are in non-exclusive (*mixed* state) partitions,
 run [reserve_on_idle](reserve_on_idle) to create a reservation for each node
