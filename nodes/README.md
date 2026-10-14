@@ -86,8 +86,8 @@ First make some configurations specifically for your environment:
    Optional:
    The firmware update script [update_firmware.sh](update_firmware.sh)
    contains specific functions for updating Dell and Lenovo servers using vendor tools.
-   You probably need to configure this script where more functions could be added,
-   or you may omit (comment out) this script entirely.
+   To disable it just comment out this line in the script: ```source /root/$update_firmware```.
+   You may need to configure this script where additional functions could be added for your products.
 
 3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
    to the shared network location ```$SCRIPTDIR```specified in [update_down_node.sh](update_down_node.sh).
