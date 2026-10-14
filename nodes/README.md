@@ -94,25 +94,27 @@ First make some configurations specifically for your environment:
    The files will be copied to each compute node and sourced by the [update_down_node.sh](update_down_node.sh) script,
    ensuring the use of only up-to-date scripts distributed from the central server. 
 
-### Making automatic updates
+Then add configuration to all compute nodes:
 
-Setting up the automated updating system now consists of:
-
-1. Copy the [update_down_node.sh](update_down_node.sh) file (only) to some or all of the compute nodes
-using [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) (or some other method):
+4. Copy the [update_down_node.sh](update_down_node.sh) file (only) to some or all of the compute nodes
+using [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) (or any other method):
 ```
 clush -bw <node-list> --copy update_down_node.sh --dest /root/
 ```
-2. On the compute nodes append a new entry to root's crontab file
+5. On the compute nodes append a new entry to root's crontab file
 (``/var/spool/cron/root``, how you update this depends on your local management procedures):
 ```
 @reboot /root/update_down_node.sh
 ```
-3. Now you may **reboot and update** a node-list simply with this command:
+
+### Making automatic updates
+
+Now you may **reboot and update** a node-list simply with this command:
 ```
 scontrol reboot asap nextstate=down <node-list>
 ```
-The nodes will be rebooted as soon as they become idle, and will be resumed in Slurm following the updates, requiring no further user actions.
+The nodes will be rebooted as soon as they become idle,
+and will be resumed in Slurm following the updates, requiring no further user actions.
 
 ### Optional for mixed state nodes
 
