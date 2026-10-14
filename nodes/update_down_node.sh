@@ -154,6 +154,8 @@ exec 2>&1
 
 # Source the update scripts which performs the actual updating
 source /root/$update_software
+
+# If you do not want to update any firmwares, simply comment out this line:
 source /root/$update_firmware
 
 ##########################################################################
