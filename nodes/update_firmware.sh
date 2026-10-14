@@ -125,7 +125,9 @@ EOF
 ##########################################################################
 #
 # Dell Poweredge server updates for C6420, R640, R650
-# Dell downloads: https://linux.dell.com/repo/hardware/dsu/os_independent/x86_64/
+# Download firmware and tools from https://www.dell.com/support/home/en-us
+# The "Dell iDRAC Tools for Linux" is found for every product.
+# Dell Linux downloads: https://linux.dell.com/repo/hardware/dsu/os_independent/x86_64/
 
 if [ "$family" == "PowerEdge" ]
 then
@@ -169,6 +171,8 @@ fi
 #
 # Lenovo ThinkSystem servers: SD665 V3, SR850 V3, SD650-N V2 and V3
 # If applicable, Lenovo firmware zip-files must be unpacked to dedicated folders in $PACKAGEDIR/Lenovo/$1/$2
+# Download firmware files from the Data Center Support page https://datacentersupport.lenovo.com/us/en
+# The OneCLI tool is part of the Lenovo XClarity Essentials (LXCE) which is found for every product.
 
 if [ "$family" == "ThinkSystem" ]
 then
@@ -194,7 +198,7 @@ fi
 if [ "$product" == "ThinkSystem SD665 V3" ]
 then
 	echo "Firmware updates for $manufacturer $product"
-	# lenovo_update SD665V3 XCC lnvgy_fw_xcc_qgx3c2o-15.50_anyos_comp
+	lenovo_update SD665V3 XCC lnvgy_fw_xcc_qgx3c2q-15.51_anyos_comp
 	# lenovo_update SD665V3 UEFI lnvgy_fw_uefi_qge146k-8.52_anyos_comp
 	# lenovo_mellanox_update SD665V3 mlxfwmanager_LES_26A_DOCA_3.3.0_build1
 	# At this point stop the slurmd service because we must make Virtual Reseat of the nodes.
