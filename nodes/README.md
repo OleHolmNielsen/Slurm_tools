@@ -80,10 +80,14 @@ First make some configurations specifically for your environment:
 
 1. Configure variables in the ``CONFIGURE`` section of the [update_down_node.sh](update_down_node.sh) script.
 
-2. Review the [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh) scripts and configure them
-   regarding what OS packages to update, and which firmwares to install.
-   The firmware update script contains specific functions for updating Dell and Lenovo servers using vendor tools,
-   and more functions could be added, or you may omit this file entirely.
+2. Review the [update_software.sh](update_software.sh) script and configure it
+   regarding what OS packages to update.
+
+   Optional:
+   The firmware update script [update_firmware.sh](update_firmware.sh)
+   contains specific functions for updating Dell and Lenovo servers using vendor tools.
+   You probably need to configure this script where more functions could be added,
+   or you may omit (comment out) this script entirely.
 
 3. Copy the files [update_software.sh](update_software.sh) and [update_firmware.sh](update_firmware.sh)
    to the shared network location ```$SCRIPTDIR```specified in [update_down_node.sh](update_down_node.sh).
