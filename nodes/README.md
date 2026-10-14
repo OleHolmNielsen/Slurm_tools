@@ -116,6 +116,10 @@ scontrol reboot asap nextstate=down <node-list>
 The nodes will be rebooted as soon as they become idle,
 and will be resumed in Slurm following the updates, requiring no further user actions.
 
+Log files of the updates are kept in each node's ```/root``` folder,
+namely ```update_down_node.log``` from the crontab job,
+and ```update.log``` from the software and firmware updates.
+
 ### Optional for mixed state nodes
 
 If nodes in the node-list are in non-exclusive (*mixed* state) partitions,
