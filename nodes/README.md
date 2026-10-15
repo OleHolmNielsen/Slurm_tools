@@ -107,9 +107,9 @@ clush -bw <node-list> --copy update_down_node.sh --dest /root/
 @reboot /root/update_down_node.sh
 ```
 
-### Making automatic updates
+### Making semi-automatic updates
 
-Now you may **reboot and update** a node-list simply with this command:
+It is now very easy and simple to **reboot and update** a node-list with this command:
 ```
 scontrol reboot asap nextstate=down <node-list>
 ```
@@ -121,7 +121,7 @@ namely ```update_down_node.log``` from the crontab job,
 and ```update.log``` from the software and firmware updates.
 
 Note: Nodes that have ```State=down``` with a ```Reason=Node unexpectedly rebooted``` are assumed 
-to be unrelated to the present automatic updates and will therefore be skipped.
+to be unrelated to the present update system and will therefore be skipped.
 
 ### Optional for mixed state nodes
 
