@@ -100,6 +100,15 @@ else
 	exit 0
 fi
 
+# Get the Slurm node Reason and skip nodes that unexpectedly rebooted
+reason="`scontrol show node $shortname | grep "^   Reason="`"
+if [[ "$reason" =~ "Node unexpectedly rebooted" ]]
+then
+	echo "WARNING: Slurm Reason for this node: $reason" >> $LOG_FILE0
+	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
+	exit 0
+fi
+
 # Get the Slurm node state and act on State=down nodes only
 state="`scontrol show node $shortname | grep "^   State=" | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
 # We could alternatively use: sinfo -h -O StateLong -n $shortname | awk '{print $1}'
