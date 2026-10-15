@@ -154,12 +154,12 @@ NOTE: The previously published script [update.sh](update.sh) has been superceded
 GPU monitoring
 --------------
 
-The ```psnode``` script can also monitor the job's GPU usage using the ```gpustat``` tool from https://github.com/wookayin/gpustat.
+The [psnode](psnode) script can also monitor the job's GPU usage using the [gpustat](https://github.com/wookayin/gpustat) tool.
 If the the job uses ```gres/gpu``` on nodes with GPUs, the ```gpustat``` tool is used to display GPU usage.
-If ```gpustat``` isn't installed, set the variable ```enable_gpustat=0``` in the ```psnode``` script.
+If ```gpustat``` isn't installed, set the variable ```enable_gpustat=0``` in the [psnode](psnode) script.
 
 All GPU nodes should have this tool installed.
-On EL8 systems:
+On EL8 and EL9 systems:
 ```
 dnf install gcc python3 python3-pip python3-devel
 python3 -m pip install setuptools-scm
