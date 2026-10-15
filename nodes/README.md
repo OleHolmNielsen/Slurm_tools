@@ -120,6 +120,9 @@ Log files of the updates are kept in each node's ```/root``` folder,
 namely ```update_down_node.log``` from the crontab job,
 and ```update.log``` from the software and firmware updates.
 
+Note: Nodes that are Down with a ```Reason=Node unexpectedly rebooted``` are assumed 
+to have reasons unrelated to the automatic updates and will be skipped.
+
 ### Optional for mixed state nodes
 
 If nodes in the node-list are in non-exclusive (*mixed* state) partitions,
