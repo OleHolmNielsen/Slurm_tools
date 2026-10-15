@@ -66,7 +66,7 @@ The design used in the present approach is:
 
 1. Configure all compute nodes to execute a crontab job script at *every* reboot.
    This script will usually do nothing, except in case the node has a Slurm ```State=down```
-   where it will perform all configured updates.
+   where it will perform the configured updates.
 
 2. Making updates simply consists of rebooting compute node lists with the command ```scontrol reboot asap nextstate=down <node-list>```.
    Here we have employed the Slurm ```State=down``` as a **trigger** telling the update script to perform some actions.
@@ -94,7 +94,7 @@ First make some configurations specifically for your environment:
    The files will be copied to each compute node and sourced by the [update_down_node.sh](update_down_node.sh) script,
    ensuring the use of only up-to-date scripts distributed from the central server. 
 
-Then add configuration to all compute nodes:
+Then add two configurations to all compute nodes:
 
 4. Copy the [update_down_node.sh](update_down_node.sh) file (only) to some or all of the compute nodes
 using [ClusterShell](https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell) (or any other method):
