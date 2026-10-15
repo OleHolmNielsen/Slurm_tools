@@ -104,7 +104,7 @@ fi
 reason="`scontrol show node $shortname | grep "^   Reason="`"
 if [[ "$reason" =~ "Node unexpectedly rebooted" ]]
 then
-	echo "WARNING: Slurm Reason for this node: $reason" >> $LOG_FILE0
+	echo "WARNING: This node has $reason" >> $LOG_FILE0
 	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
 	exit 0
 fi
