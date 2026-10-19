@@ -38,7 +38,7 @@ function format_sacct()
 {
 	# echo Called format_sacct with $@
 	# Add -P flag for parseable output with fields separated by "|"
-	sacct --allocations --parsable2 $@ | awk -F "|" '
+	sacct --parsable2 $@ | awk -F "|" '
 {
 	for (i=1; i<= NF; i++) {
 		column[i][NR] = $i
@@ -82,32 +82,44 @@ function print_job_accounting()
 	echo
 	echo "Job parameters for jobid $jobid:"
 	export jobvars="jobid,jobname,user,account,partition,Timelimit"
-	format_sacct -j $jobid -o $jobvars
+	format_sacct --allocations -j $jobid -o $jobvars
 
 	echo
 	echo "Job details information for jobid $jobid:"
-	export jobvars="jobid,Submit,Eligible,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist,State,ConsumedEnergyRaw,AllocTRES"
-	format_sacct -j $jobid -o $jobvars
+	export jobvars="jobid,Submit,Eligible,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist,State,ConsumedEnergyRaw"
+	format_sacct --allocations -j $jobid -o $jobvars
+
+	# Detect if any GPU resources were allocated
+	if [[ -n "`sacct --noheader --parsable2 -o AllocTRES --allocations -j $jobid | grep gres/gpu`" ]]
+	then
+		echo
+		echo "GPU usage details information for jobid $jobid:"
+		echo "-------------------------------------------------"
+		echo -n "Avg GPU utilization%: "
+		sacct --noheader --parsable2 -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpuutil"
+		echo -n "Max GPU memory (MB):  "
+		sacct --noheader --parsable2 -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpumem"
+	fi
 
 	echo
 	export jobvars="SubmitLine"
-	format_sacct -j $jobid -o $jobvars
+	format_sacct --allocations -j $jobid -o $jobvars
 
 	# Print job script if AccountingStoreFlags=job_script was enabled in slurm.conf
 	if [[ -n "`scontrol show config | grep AccountingStoreFlags | grep job_script`" ]]
 	then
 		echo
-		sacct -j $jobid --batch-script
+		sacct --allocations -j $jobid --batch-script
 		echo
 	fi
 
 	echo
 	export jobvars="WorkDir"
-	format_sacct -j $jobid -o $jobvars
+	format_sacct --allocations -j $jobid -o $jobvars
 
 	# Get user fairshare information
 	echo
-	export jobuser=`sacct -nP -j $jobid -o user`
+	export jobuser=`sacct -nP --allocations -j $jobid -o user`
 	echo "User fairshare information from the sshare command:"
 	sshare -lUm -u $jobuser
 }
