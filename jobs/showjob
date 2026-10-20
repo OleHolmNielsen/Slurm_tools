@@ -95,13 +95,12 @@ function print_job_accounting()
 		echo
 		echo "GPU usage details information for jobid $jobid:"
 		echo "-------------------------------------------------"
-		echo -n "Avg GPU utilization%: "
-		sacct --noheader --parsable2 -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpuutil"
-		echo -n "Max GPU memory (MB):  "
-		sacct --noheader --parsable2 -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpumem"
+		gpuutil=`sacct --noheader --parsable2 -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpuutil"`
+		echo "Avg GPU utilization: $gpuutil %"
+		gpumem=`sacct --noheader --parsable2 -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpumem"`
+		echo "Max GPU memory:      $gpumem (MB)"
 	fi
 
-	echo
 	export jobvars="SubmitLine"
 	format_sacct --allocations -j $jobid -o $jobvars
 
