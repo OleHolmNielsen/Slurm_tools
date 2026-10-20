@@ -74,7 +74,15 @@ function print_job_accounting()
 	if [[ -z "`sacct -nP -o JobID -j $jobid`" ]]
 	then
 		echo
-		echo ERROR: Invalid JobID: $jobid is not found in the Slurm database
+		echo "ERROR: Invalid JobID: $jobid is not found in the Slurm database"
+		exit 1
+	fi
+	# Check the the current user is either root or the job owner
+	jobuser="`sacct -nP -o User --allocations -j $jobid`"
+	currentuser="`id -nu`"
+	if [[ "$currentuser" != "root" && "$currentuser" != "$jobuser" ]]
+	then
+		echo "ERROR: JobID $jobid may only be inquired by its owner: $jobuser"
 		exit 1
 	fi
 	echo
@@ -90,27 +98,45 @@ function print_job_accounting()
 	format_sacct --allocations -j $jobid -o $jobvars
 
 	# Detect if any GPU resources were allocated
-	alloctres="`sacct --noheader --parsable2 -o AllocTRES --allocations -j $jobid`"
+	alloctres="`sacct -nP -o AllocTRES --allocations -j $jobid`"
 	if [[ -n "`echo $alloctres | grep gres/gpu`" ]]
 	then
 		echo
 		echo "GPU usage details information for jobid $jobid:"
 		echo "-------------------------------------------------"
+		state="`sacct -nP -o State -j $jobid.batch`"
+		echo "Job state is: $state"
 		echo "AllocTRES: $alloctres"
-		gpuutil=`sacct --noheader --parsable2 -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpuutil"`
-		if [[ -n "$gpuutil" ]]
+		gresgpu="`echo $alloctres | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpu='`"
+		# Use sstat for running jobs, sacct for completed jobs
+		if [[ "$state" =~ "RUNNING" ]]
 		then
-			echo "Avg GPU utilization: $gpuutil %"
+			gpuutil="`sstat -nP -j $jobid.batch -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpuutil'`"
+			gpumem="`sstat -nP -j $jobid.batch -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpumem'`"
+		else
+			gpuutil="`sacct -nP -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpuutil'`"
+			gpumem="`sacct -nP -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpumem'`"
 		fi
-		gpumem=`sacct --noheader --parsable2 -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpumem"`
-		if [[ -n "$gpumem" ]]
-		then
-			echo "Max GPU memory:      $gpumem (MB)"
-		fi
+		echo "Avg GPU utilization: $gpuutil% ($gresgpu)"
+		echo "Max GPU memory:      $gpumem (MB) ($gresgpu)"
 	fi
 
-	export jobvars="SubmitLine"
-	format_sacct --allocations -j $jobid -o $jobvars
+	echo
+	echo "SubmitLine:"
+	echo "-----------"
+	sacct -nP --allocations -j $jobid -o "SubmitLine"
+
+	echo
+	echo "WorkDir:"
+	echo "--------"
+	sacct -nP --allocations -j $jobid -o "WorkDir"
+
+	# Get user fairshare information
+	echo
+	echo "User fairshare information:"
+	echo "---------------------------"
+	jobuser="`sacct -nP --allocations -j $jobid -o user`"
+	sshare -lUm -u $jobuser
 
 	# Print job script if AccountingStoreFlags=job_script was enabled in slurm.conf
 	if [[ -n "`scontrol show config | grep AccountingStoreFlags | grep job_script`" ]]
@@ -119,16 +145,6 @@ function print_job_accounting()
 		sacct --allocations -j $jobid --batch-script
 		echo
 	fi
-
-	echo
-	export jobvars="WorkDir"
-	format_sacct --allocations -j $jobid -o $jobvars
-
-	# Get user fairshare information
-	echo
-	export jobuser=`sacct -nP --allocations -j $jobid -o user`
-	echo "User fairshare information from the sshare command:"
-	sshare -lUm -u $jobuser
 }
 
 ###########################################################################
@@ -143,7 +159,7 @@ then
 	echo
 	echo Job $jobid is not in the current Slurm queue
 	print_job_accounting
-	exit 1
+	exit 0
 fi
 
 # Check if this jobid can be inquired successfully.
