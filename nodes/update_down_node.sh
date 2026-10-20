@@ -25,23 +25,42 @@
 #    The "-r" flag sets the Reason
 #    Alternatively simply do: scontrol reboot ASAP nextstate=down <nodelist>
 
-##########################################################################
-# CONFIGURE:
-# The cluster software folders as seen from the compute nodes:
-PACKAGEDIR="/home/server"
-SCRIPTDIR="$PACKAGEDIR/script-directory"
-# Note: The local RPM package directory $RPMDIR is defined below.
-# The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
-update_software=update_software.sh
-update_firmware=update_firmware.sh
-##########################################################################
-
 # We need commands from /usr/sbin
 export PATH=/usr/sbin:$PATH
 
 # Log files are written to the compute node local folder:
 LOG_FILE="/root/update.log"
 LOG_FILE0="/root/update_down_node.log"
+
+# Detect the OS version (see man os-release) 
+source /etc/os-release
+osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
+echo "OS version is: $osversion" >> $LOG_FILE0
+# Determine the OS platform of this node
+platform=`grep PLATFORM_ID /etc/os-release`
+
+##########################################################################
+# CONFIGURE:
+# The cluster software folders as seen from the compute nodes:
+PACKAGEDIR="/home/server"
+SCRIPTDIR="$PACKAGEDIR/script-dir"
+# The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
+update_software=update_software.sh
+update_firmware=update_firmware.sh
+# Determine the directory $RPMDIR where we store platform-specific packages for the nodes.
+# For example, we use directories "RPMS8" and "RPMS9" for EL8 and EL9, respectively.
+if [[ "X+$platform" =~ "el8" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS8
+elif [[ "X+$platform" =~ "el9" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS9
+else
+	echo "OS platform $platform is not configured" >> $LOG_FILE0
+	exit 1
+fi
+##########################################################################
+
 # Record the timestamp of script execution
 echo "============================" >> $LOG_FILE0
 date >> $LOG_FILE0
@@ -51,7 +70,7 @@ date >> $LOG_FILE0
 echo "Ask NetworkManager whether the network startup is complete" >> $LOG_FILE0
 nm-online --wait-for-startup >> $LOG_FILE0
 
-# Make sure we have installed these packages:
+# Make sure we have installed these prerequisite packages:
 for p in hostname dmidecode
 do
 	if ! rpm -q $p > /dev/null
@@ -59,69 +78,61 @@ do
 		dnf -y install $p >> $LOG_FILE0
 	fi
 done
-
 # Get the Slurm node's short name (first field in DNS name)
 shortname="`hostname -s`"
 
-# Detect the OS version (see man os-release)
-source /etc/os-release
-osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
-echo "OS version is: $osversion" >> $LOG_FILE0
-# Determine the OS platform of this node
-platform=`grep PLATFORM_ID /etc/os-release`
-
-# Determine the directory RPMDIR where we store platform-specific packages for the nodes
-if [[ $platform =~ "el8" ]]
-then
-	RPMDIR=$PACKAGEDIR/RPMS8
-elif [[ $platform =~ "el9" ]]
-then
-	RPMDIR=$PACKAGEDIR/RPMS9
-else
-	echo "OS platform $platform is not recognized" >> $LOG_FILE0
-	exit 1
-fi
-
 ######################################################
 #
-# Checking whether the Slurm node has "State=down".
+# Checking whether slurmd has been fully started and the Slurm node has "State=down".
 #
-# We must sleep some seconds to allow:
-# 1) slurmd to be started at reboot, and
-# 2) to allow slurmctld to set node state=down in stead of reboot/mixed etc.
-sleep 30
+# Loop until slurmd has been started AND is responding
+echo "Checking whether slurmd has been fully started" >> $LOG_FILE0
+# See https://slurm.schedmd.com/scontrol.html#OPT_slurmd
+until scontrol show slurmd > /dev/null 2>&1
+do
+	date >> $LOG_FILE0
+	sleep 5
+done
+date >> $LOG_FILE0
+echo "OK: slurmd is now fully started" >> $LOG_FILE0
 
-# Check if the slurmd process is running:
-if pgrep --full --list-full -u root slurmd > /dev/null
-then
-	echo "Check OK: the slurmd process is running" >> $LOG_FILE0
-else
-	echo "ERROR: no slurmd process is running" >> $LOG_FILE0
-	exit 0
-fi
-
+# Cache the output from scontrol
+tempfile=`mktemp`
+scontrol show node $shortname > $tempfile
+# Get the Slurm node state and act on State=down nodes only
+state="`cat $tempfile | grep '^   State=' | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
+# Get the NextState (may be down or resume, or empty if not set)
+nextstate="`cat $tempfile | grep '^   NextState=' | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
 # Get the Slurm node Reason and skip nodes that unexpectedly rebooted
-reason="`scontrol show node $shortname | grep "^   Reason="`"
-if [[ "$reason" =~ "Node unexpectedly rebooted" ]]
+reason="`cat $tempfile | grep '^   Reason='`"
+echo "INFO: Node $shortname has State=$state, NextState=$nextstate, and Reason=$reason" >> $LOG_FILE0
+rm -f $tempfile
+
+if [[ "X+$reason" =~ "Node unexpectedly rebooted" ]]
 then
 	echo "WARNING: This node has $reason" >> $LOG_FILE0
 	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
 	exit 0
 fi
 
-# Get the Slurm node state and act on State=down nodes only
-state="`scontrol show node $shortname | grep "^   State=" | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
-# We could alternatively use: sinfo -h -O StateLong -n $shortname | awk '{print $1}'
-echo "INFO: This node $shortname has Slurm state=$state" >> $LOG_FILE0
-# Using =~ "down" allows for down+reserved or similar states:
-if [[ "$state" =~ "down" ]]
+if [[ "X+$nextstate" =~ "resume" ]]
 then
+	date >> $LOG_FILE0
+	echo "NOTICE: No updates will be performed on this node because nextstate=$nextstate" >> $LOG_FILE0
+	exit 0
+elif [[ "$state" =~ "down" ]]
+then
+	# Using =~ "down" allows for down+reserved or similar states:
 	echo "All checks passed: This script $0 will now perform updates" >> $LOG_FILE0
 	echo "The logfile is $LOG_FILE" >> $LOG_FILE0
 else
 	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
 	exit 0
 fi
+
+######################################################
+#
+# Check fileserver directories and copy scripts
 
 echo "Check availability of NFS-mounted PACKAGEDIR=$PACKAGEDIR" >> $LOG_FILE0
 if [[ ! -d $PACKAGEDIR ]]
@@ -156,6 +167,8 @@ else
 fi
 
 ##########################################################################
+#
+# Now do software and firmware updates
 
 # Redirect stdout and stderr to $LOG_FILE in stead of the crontab output (mail)
 exec 1>$LOG_FILE
