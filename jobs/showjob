@@ -90,15 +90,23 @@ function print_job_accounting()
 	format_sacct --allocations -j $jobid -o $jobvars
 
 	# Detect if any GPU resources were allocated
-	if [[ -n "`sacct --noheader --parsable2 -o AllocTRES --allocations -j $jobid | grep gres/gpu`" ]]
+	alloctres="`sacct --noheader --parsable2 -o AllocTRES --allocations -j $jobid`"
+	if [[ -n "`echo $alloctres | grep gres/gpu`" ]]
 	then
 		echo
 		echo "GPU usage details information for jobid $jobid:"
 		echo "-------------------------------------------------"
+		echo "AllocTRES: $alloctres"
 		gpuutil=`sacct --noheader --parsable2 -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpuutil"`
-		echo "Avg GPU utilization: $gpuutil %"
+		if [[ -n "$gpuutil" ]]
+		then
+			echo "Avg GPU utilization: $gpuutil %"
+		fi
 		gpumem=`sacct --noheader --parsable2 -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep "gres/gpumem"`
-		echo "Max GPU memory:      $gpumem (MB)"
+		if [[ -n "$gpumem" ]]
+		then
+			echo "Max GPU memory:      $gpumem (MB)"
+		fi
 	fi
 
 	export jobvars="SubmitLine"
