@@ -71,7 +71,7 @@ echo "Ask NetworkManager whether the network startup is complete" >> $LOG_FILE0
 nm-online --wait-for-startup >> $LOG_FILE0
 
 # Make sure we have installed these prerequisite packages:
-for p in hostname dmidecode
+for p in dmidecode
 do
 	if ! rpm -q $p > /dev/null
 	then
@@ -79,7 +79,9 @@ do
 	fi
 done
 # Get the Slurm node's short name (first field in DNS name)
-shortname="`hostname -s`"
+# shortname="`hostname -s`"
+# Ask slurmd about this node's hostname
+shortname="`scontrol show slurmd | grep Hostname | awk '{print $3}'`"
 
 ######################################################
 #
@@ -87,11 +89,20 @@ shortname="`hostname -s`"
 #
 # Loop until slurmd has been started AND is responding
 echo "Checking whether slurmd has been fully started" >> $LOG_FILE0
+# A timer
+t0="`date +%s`"
 # See https://slurm.schedmd.com/scontrol.html#OPT_slurmd
 until scontrol show slurmd > /dev/null 2>&1
 do
 	date >> $LOG_FILE0
 	sleep 5
+	tdelta=$((`date +%s` - t0))
+	# Allow max 600 seconds
+	if [ "$tdelta" -gt "600" ]
+	then
+		echo "ERROR: slurmd did not start within $tdelta seconds" >> $LOG_FILE0
+		exit 0
+	fi
 done
 date >> $LOG_FILE0
 echo "OK: slurmd is now fully started" >> $LOG_FILE0
@@ -105,7 +116,7 @@ state="`cat $tempfile | grep '^   State=' | awk '{print $1}' | awk -F= '{print t
 nextstate="`cat $tempfile | grep '^   NextState=' | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
 # Get the Slurm node Reason and skip nodes that unexpectedly rebooted
 reason="`cat $tempfile | grep '^   Reason='`"
-echo "INFO: Node $shortname has State=$state, NextState=$nextstate, and Reason=$reason" >> $LOG_FILE0
+echo "INFO: Node $shortname has State=$state, NextState=$nextstate, and $reason" >> $LOG_FILE0
 rm -f $tempfile
 
 if [[ "X+$reason" =~ "Node unexpectedly rebooted" ]]
