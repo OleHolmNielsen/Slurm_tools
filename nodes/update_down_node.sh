@@ -78,8 +78,6 @@ do
 		dnf -y install $p >> $LOG_FILE0
 	fi
 done
-# Get the Slurm node's short name (first field in DNS name)
-# shortname="`hostname -s`"
 # Ask slurmd about this node's hostname
 shortname="`scontrol show slurmd | grep Hostname | awk '{print $3}'`"
 
