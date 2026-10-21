@@ -78,8 +78,6 @@ do
 		dnf -y install $p >> $LOG_FILE0
 	fi
 done
-# Ask slurmd about this node's hostname
-shortname="`scontrol show slurmd | grep Hostname | awk '{print $3}'`"
 
 ######################################################
 #
@@ -104,6 +102,8 @@ do
 done
 date >> $LOG_FILE0
 echo "OK: slurmd is now fully started" >> $LOG_FILE0
+# Ask slurmd about this node's hostname
+shortname="`scontrol show slurmd | grep Hostname | awk '{print $3}'`"
 
 # Cache the output from scontrol
 tempfile=`mktemp`
