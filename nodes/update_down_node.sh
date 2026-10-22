@@ -83,6 +83,12 @@ done
 #
 # Checking whether slurmd has been fully started and the Slurm node has "State=down".
 #
+if ! rpm -q slurm > /dev/null
+then
+	echo "ERROR: The required slurm RPM package is not installed" >> $LOG_FILE0
+	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
+	exit 0
+fi
 # Loop until slurmd has been started AND is responding
 echo "Checking whether slurmd has been fully started" >> $LOG_FILE0
 # A timer
@@ -198,10 +204,10 @@ echo "Script $0: Reboot this node $shortname at `date`"
 
 # NOTICE: It is required that slurmd is running for "scontrol reboot" to work!
 echo
-echo "Check if the slurmd process is running:"
+echo "Check if the slurmd process is still running:"
 if pgrep --full --list-full -u root slurmd
 then
-	echo "Check OK: the slurmd process is running"
+	echo "OK: the slurmd process is running"
 else
 	echo "ERROR: no slurmd process is running"
 	echo "Reboot the node immediately"
