@@ -83,7 +83,8 @@ done
 #
 # Checking whether slurmd has been fully started and the Slurm node has "State=down".
 #
-if ! rpm -q slurm > /dev/null
+# First make sure that slurmd has been installed
+if ! rpm -q slurm-slurmd > /dev/null
 then
 	echo "ERROR: The required slurm RPM package is not installed" >> $LOG_FILE0
 	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
