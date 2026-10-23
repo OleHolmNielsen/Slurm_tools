@@ -3,9 +3,12 @@
 # This script is used for updating a Slurm node where the node has been rebooted
 # purposefully by "scontrol reboot ASAP nextstate=down <nodelist>".
 # This provides a very simple way to trigger automatic updating of compute nodes.
+# NOTE: If you want to update any nodes that are in State=powered_down 
+# you must do "scontrol power up <nodelist>" followed by "scontrol reboot ...".
 # 
 # The helper script $update_*.sh scripts are sourced to perform any necessary updates.
 # For convenience we recommend to use two helper scripts from this project: sreboot and reserve_on_idle
+# The present script has been written for RPM-based Linux systems, but the logic should be generally applicable.
 #
 # Installation: Execute this script at reboot time from root's crontab, for example:
 # @reboot /root/update_down_node.sh
@@ -32,6 +35,37 @@ export PATH=/usr/sbin:$PATH
 LOG_FILE="/root/update.log"
 LOG_FILE0="/root/update_down_node.log"
 
+##########################################################################
+# This function verifies that slurmd is installed, up, and running on the node.
+function check_slurmd()
+{
+	# First ensure that the slurmd RPM package has been installed:
+	if ! rpm -q slurm-slurmd > /dev/null
+	then
+		echo "ERROR: The required slurm RPM package is not installed" 
+		echo "NOTICE: No updates will be performed on this node" 
+		return 1
+	fi
+	# Initialize a timer for checking slurmd
+	t0="`date +%s`"
+	# Allow 600 seconds max
+	tmax=600
+	# For "scontrol show slurmd" see https://slurm.schedmd.com/scontrol.html#OPT_slurmd
+	until scontrol show slurmd > /dev/null 2>&1
+	do
+		date 
+		sleep 5
+		tdelta=$((`date +%s` - t0))
+		if [ "$tdelta" -gt "$tmax" ]
+		then
+			echo "ERROR: slurmd did not start within $tdelta seconds" 
+			return 1
+		fi
+	done
+	return 0
+}
+
+##########################################################################
 # Detect the OS version (see man os-release) 
 source /etc/os-release
 osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
@@ -70,45 +104,14 @@ date >> $LOG_FILE0
 echo "Ask NetworkManager whether the network startup is complete" >> $LOG_FILE0
 nm-online --wait-for-startup >> $LOG_FILE0
 
-# Make sure we have installed these prerequisite packages:
-for p in dmidecode
-do
-	if ! rpm -q $p > /dev/null
-	then
-		dnf -y install $p >> $LOG_FILE0
-	fi
-done
-
-######################################################
-#
-# Checking whether slurmd has been fully started and the Slurm node has "State=down".
-#
-# First make sure that slurmd has been installed
-if ! rpm -q slurm-slurmd > /dev/null
+echo "Checking whether slurmd has been fully started" >> $LOG_FILE0
+date >> $LOG_FILE0
+if check_slurmd >> $LOG_FILE0
 then
-	echo "ERROR: The required slurm RPM package is not installed" >> $LOG_FILE0
-	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
+	echo "OK: slurmd is now fully started" >> $LOG_FILE0
+else
 	exit 0
 fi
-# Loop until slurmd has been started AND is responding
-echo "Checking whether slurmd has been fully started" >> $LOG_FILE0
-# A timer
-t0="`date +%s`"
-# See https://slurm.schedmd.com/scontrol.html#OPT_slurmd
-until scontrol show slurmd > /dev/null 2>&1
-do
-	date >> $LOG_FILE0
-	sleep 5
-	tdelta=$((`date +%s` - t0))
-	# Allow max 600 seconds
-	if [ "$tdelta" -gt "600" ]
-	then
-		echo "ERROR: slurmd did not start within $tdelta seconds" >> $LOG_FILE0
-		exit 0
-	fi
-done
-date >> $LOG_FILE0
-echo "OK: slurmd is now fully started" >> $LOG_FILE0
 # Ask slurmd about this node's hostname
 shortname="`scontrol show slurmd | grep Hostname | awk '{print $3}'`"
 
@@ -206,12 +209,11 @@ echo "Script $0: Reboot this node $shortname at `date`"
 # NOTICE: It is required that slurmd is running for "scontrol reboot" to work!
 echo
 echo "Check if the slurmd process is still running:"
-if pgrep --full --list-full -u root slurmd
+if check_slurmd >> $LOG_FILE0
 then
-	echo "OK: the slurmd process is running"
+	echo "OK: slurmd is now fully started" >> $LOG_FILE0
 else
-	echo "ERROR: no slurmd process is running"
-	echo "Reboot the node immediately"
+	echo "NOTICE: Reboot the node immediately"
 	shutdown -r now
 fi
 
