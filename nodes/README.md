@@ -126,7 +126,8 @@ to be unrelated to the present update system and will therefore be skipped.
 ### Power saving: Updating nodes in powered_down state
 
 If you have configured [Slurm power saving](https://slurm.schedmd.com/power_save.html)
-there may be powered-off nodes with ```State=powered_down``` which need to be updated.
+there may be powered-off nodes with ```State=powered_down``` which need to be updated,
+identify such nodes with ```sinfo -t powered_down```.
 However, the ```scontrol reboot``` command will skip such nodes.
 The solution is to request Slurm to power up the nodes:
 ```
