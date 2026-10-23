@@ -14,7 +14,7 @@
 #
 # Installation: Execute this script at reboot time from root's crontab, for example:
 # @reboot cat /root/update_down_node.sh | bash
-# Note: Using "cat" protects against a possible overwrite of the script (up to 128 kB) while it is executing
+# Note: Using "cat" protects against a possible overwrite of the script (up to 128 kB) while it is executing.
 
 # The updating procedure now consists of the following steps:
 #
@@ -39,14 +39,13 @@ LOG_FILE="/root/update.log"
 LOG_FILE0="/root/update_down_node.log"
 
 ##########################################################################
-# This function verifies that slurmd is installed, up, and running on the node.
+# This function verifies that slurmd is installed, up, and started on the node.
 function check_slurmd()
 {
 	# First ensure that the slurmd RPM package has been installed:
 	if ! rpm -q slurm-slurmd > /dev/null
 	then
 		echo "ERROR: The required slurm RPM package is not installed" 
-		echo "NOTICE: No updates will be performed on this node" 
 		return 1
 	fi
 	# Initialize a timer for checking slurmd
@@ -113,6 +112,7 @@ if check_slurmd >> $LOG_FILE0
 then
 	echo "OK: slurmd is now fully started" >> $LOG_FILE0
 else
+	echo "NOTICE: No updates will be performed on this node" 
 	exit 0
 fi
 # Ask slurmd about this node's hostname
@@ -217,14 +217,15 @@ then
 	echo "OK: slurmd is running" 
 else
 	echo "NOTICE: Reboot the node immediately"
-	shutdown -r now
+	shutdown -r now "No slurmd process is running"
+	exit 0
 fi
 
 # Remove this node from any possible update related reservations update-$shortname
 # The magic reservation name is set by the "reserve_on_idle" script.
 # If the node is not in a reservation, the delete command will just print a warning message.
 echo
-echo "Notice: Delete reservation update-$shortname if it exists"
+echo "Notice: Delete reservation update-$shortname (if it exists)"
 scontrol delete ReservationName=update-$shortname
 
 # Reboot the node with Slurm
