@@ -5,7 +5,13 @@
 #
 # NOTE: Any system-specific firmware update commands must be edited suitably for 
 # each individual node hardware as indicated by our examples below.
-# Prerequisite RPM packages: dmidecode hostname
+
+# Make sure we have installed the dmidecode RPM package
+if ! rpm -q dmidecode > /dev/null
+then
+	dnf -y install dmidecode 
+fi
+
 
 ##########################################################################
 #
@@ -134,7 +140,7 @@ then
 	# Update Dell DSU and racadm packages from the $RPMDIR folder
 	dnf -y install $RPMDIR/srvadmin-*rpm $RPMDIR/dell-system-update*rpm
 	# If RPM packages are unavailable, try to run this
-	dell_update DSU Systems-Management_Application_VHT96_LN64_2.3.0.1_A00.BIN
+	# dell_update DSU Systems-Management_Application_VHT96_LN64_2.3.0.1_A00.BIN
 	# Enable running of Dell System Update (DSU), the default is disabled
 	# run_dsu=1
 	run_dsu=0
@@ -147,15 +153,15 @@ fi
 # Please remember to comment out any firmware updates that have already been completed
 if [ "$product" == "PowerEdge C6420" ]
 then
-	dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
-	dell_update C6420 BIOS_F5W0G_LN64_2.29.2.BIN
+	# dell_update C6420 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
+	# dell_update C6420 BIOS_F5W0G_LN64_2.29.2.BIN
 	# dell_update C6420 Network_Firmware_PJDHV_LN_25.0.4_A00.BIN
 	$RACADM getversion
 	$RACADM getversion -c
 elif [ "$product" == "PowerEdge R640" ]
 then
-	dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
-	dell_update R640 BIOS_JJ09G_LN64_2.29.2.BIN
+	# dell_update R640 iDRAC-with-Lifecycle-Controller_Firmware_K7H6Y_LN64_7.00.00.185_A00.BIN
+	# dell_update R640 BIOS_JJ09G_LN64_2.29.2.BIN
 	# dell_update R640 Network_Firmware_WKRW3_LN64_23.71.1.BIN
 	$RACADM getversion
 	$RACADM getversion -c
