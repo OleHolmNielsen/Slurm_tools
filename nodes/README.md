@@ -132,7 +132,7 @@ The solution is to request Slurm to power up the nodes:
 ```
 scontrol power up <node-list>
 ```
-and then make the above ```scontrol reboot``` command,
+followed by the above ```scontrol reboot``` command,
 causing the nodes to power up and then reboot immediately.
 
 ### Optional for mixed state nodes
