@@ -209,9 +209,9 @@ echo "Script $0: Reboot this node $shortname at `date`"
 # NOTICE: It is required that slurmd is running for "scontrol reboot" to work!
 echo
 echo "Check if the slurmd process is still running:"
-if check_slurmd >> $LOG_FILE0
+if check_slurmd
 then
-	echo "OK: slurmd is now fully started" >> $LOG_FILE0
+	echo "OK: slurmd is now fully started" 
 else
 	echo "NOTICE: Reboot the node immediately"
 	shutdown -r now
