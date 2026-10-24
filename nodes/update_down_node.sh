@@ -39,6 +39,35 @@ LOG_FILE="/root/update.log"
 LOG_FILE0="/root/update_down_node.log"
 
 ##########################################################################
+# Detect the OS version (see man os-release) 
+source /etc/os-release
+osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
+echo "OS version is: $osversion" >> $LOG_FILE0
+# Determine the OS platform of this node
+platform=`grep PLATFORM_ID /etc/os-release`
+
+##########################################################################
+# CONFIGURE:
+# The cluster software folders as seen from the compute nodes:
+PACKAGEDIR="/home/que"
+SCRIPTDIR="$PACKAGEDIR/RSYNC"
+# The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
+update_software=update_software.sh
+update_firmware=update_firmware.sh
+# Determine the directory $RPMDIR where we store platform-specific packages for the nodes.
+# For example, we use directories "RPMS8" and "RPMS9" for EL8 and EL9, respectively.
+if [[ "X+$platform" =~ "el8" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS8
+elif [[ "X+$platform" =~ "el9" ]]
+then
+	RPMDIR=$PACKAGEDIR/RPMS9
+else
+	echo "OS platform $platform is not configured" >> $LOG_FILE0
+	exit 1
+fi
+
+##########################################################################
 # This function verifies that slurmd is installed, up, and started on the node.
 function check_slurmd()
 {
@@ -68,33 +97,29 @@ function check_slurmd()
 }
 
 ##########################################################################
-# Detect the OS version (see man os-release) 
-source /etc/os-release
-osversion=`echo $CPE_NAME | awk -F: '{print int($5)}'`
-echo "OS version is: $osversion" >> $LOG_FILE0
-# Determine the OS platform of this node
-platform=`grep PLATFORM_ID /etc/os-release`
-
-##########################################################################
-# CONFIGURE:
-# The cluster software folders as seen from the compute nodes:
-PACKAGEDIR="/home/server"
-SCRIPTDIR="$PACKAGEDIR/script-dir"
-# The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
-update_software=update_software.sh
-update_firmware=update_firmware.sh
-# Determine the directory $RPMDIR where we store platform-specific packages for the nodes.
-# For example, we use directories "RPMS8" and "RPMS9" for EL8 and EL9, respectively.
-if [[ "X+$platform" =~ "el8" ]]
-then
-	RPMDIR=$PACKAGEDIR/RPMS8
-elif [[ "X+$platform" =~ "el9" ]]
-then
-	RPMDIR=$PACKAGEDIR/RPMS9
-else
-	echo "OS platform $platform is not configured" >> $LOG_FILE0
-	exit 1
-fi
+# Check fileserver remote mounted directories 
+function check_fileserver()
+{
+	echo "Check availability of NFS-mounted PACKAGEDIR=$PACKAGEDIR"
+	# Initialize a timer for checking slurmd
+	t0="`date +%s`"
+	# Allow 600 seconds max
+	tmax=600
+	until [[ -d $PACKAGEDIR ]]
+	do
+		date 
+		echo "WARNING: PACKAGEDIR=$PACKAGEDIR is not mounted, sleep and retry" 
+		sleep 10
+		tdelta=$((`date +%s` - t0))
+		if [ "$tdelta" -gt "$tmax" ]
+		then
+			echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted" 
+			# echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted" | mail -s "Script $0" root
+			return 1
+		fi
+	done
+	return 0
+}
 ##########################################################################
 
 # Record the timestamp of script execution
@@ -152,25 +177,16 @@ else
 	exit 0
 fi
 
-######################################################
-#
-# Check fileserver directories and copy scripts
-
-echo "Check availability of NFS-mounted PACKAGEDIR=$PACKAGEDIR" >> $LOG_FILE0
-if [[ ! -d $PACKAGEDIR ]]
+##########################################################################
+# Check if fileserver $SCRIPTDIR directory is mounted
+if check_fileserver >> $LOG_FILE0
 then
-	echo "WARNING: PACKAGEDIR=$PACKAGEDIR is not mounted"  >> $LOG_FILE0
-	echo "Sleep and retry filesystem mount..."  >> $LOG_FILE0
-	sleep 90
-	if [[ ! -d $PACKAGEDIR ]]
-	then
-		echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted"  >> $LOG_FILE0
-		echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted" | mail -s "Script $0" root
-	fi
-	ls -l $PACKAGEDIR  >> $LOG_FILE0
+	echo "OK: Fileserver $SCRIPTDIR directory is mounted" >> $LOG_FILE0
+else
+	echo "NOTICE: No updates will be performed on this node" 
 	exit 0
 fi
-
+# Copy script files
 echo "Copy the $update_software script from the remote server" >> $LOG_FILE0
 if [ -s $SCRIPTDIR/$update_software ]
 then
