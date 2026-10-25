@@ -1,20 +1,29 @@
 #!/bin/bash
 
-# This script is used for updating a Slurm node where the node has been rebooted
-# purposefully by "scontrol reboot ASAP nextstate=down <nodelist>".
+# PURPOSE:
+# This script is used for updating a Slurm nodelist where the nodes have been rebooted
+# purposefully using the command "scontrol reboot ASAP nextstate=down <nodelist>".
 # This provides a very simple way to trigger automatic updating of compute nodes.
 #
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/blob/master/nodes/update_down_node.sh
+# Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
+#
 # NOTES:
-# 1. If you want to update any nodes that are in State=powered_down 
-#    you must do "scontrol power up <nodelist>" followed by "scontrol reboot ...".
+# 1. If you want to update any nodes that are in Slurm State=powered_down 
+#    you must do "scontrol power up <nodelist>" followed by the "scontrol reboot ...".
 # 
-# 2. The helper script $update_*.sh scripts are sourced to perform any necessary updates.
-#    For convenience we recommend to use two helper scripts from this project: sreboot and reserve_on_idle
+# 2. The helper scripts $update_*.sh are sourced to perform any necessary updates.
 #    The present script has been written for RPM-based Linux systems, but the logic should be generally applicable.
 #
-# Installation: Execute this script at reboot time from root's crontab, for example:
+# 3. For convenience we also provide two helper scripts from this project: sreboot and reserve_on_idle
+#
+# INSTALLATION:
+# Execute this script on all compute nodes at reboot time from root's crontab, for example:
 # @reboot cat /root/update_down_node.sh | bash
 # Note: Using "cat" protects against a possible overwrite of the script (up to 128 kB) while it is executing.
+#
+# CONFIGURATION:
+# See the CONFIGURE section below.
 
 # The updating procedure now consists of the following steps:
 #
