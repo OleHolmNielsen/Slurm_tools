@@ -68,7 +68,9 @@ else
 fi
 
 ##########################################################################
+#
 # This function verifies that slurmd is installed, up, and started on the node.
+#
 function check_slurmd()
 {
 	# First ensure that the slurmd RPM package has been installed:
@@ -97,7 +99,9 @@ function check_slurmd()
 }
 
 ##########################################################################
-# Check fileserver remote mounted directories 
+#
+# This function checks the fileserver remote mounted directory 
+#
 function check_fileserver()
 {
 	echo "Check availability of NFS-mounted PACKAGEDIR=$PACKAGEDIR"
@@ -127,10 +131,14 @@ echo "============================" >> $LOG_FILE0
 date >> $LOG_FILE0
 
 ##########################################################################
+#
+# The real action of this script starts here: Wait for a full startup of slurmd
+#
 # Wait for network startup at reboot since this can take a number of seconds
 echo "Ask NetworkManager whether the network startup is complete" >> $LOG_FILE0
 nm-online --wait-for-startup >> $LOG_FILE0
 
+# Startup of slurmd can potentially take 1-2 minutes on GPU nodes
 echo "Checking whether slurmd has been fully started" >> $LOG_FILE0
 date >> $LOG_FILE0
 if check_slurmd >> $LOG_FILE0
@@ -140,29 +148,33 @@ else
 	echo "NOTICE: No updates will be performed on this node" 
 	exit 0
 fi
+
 # Ask slurmd about this node's hostname
 shortname="`scontrol show slurmd | grep Hostname | awk '{print $3}'`"
 
-# Cache the output from scontrol
+# Cache the output from "scontrol show node" and get state and reason information
 tempfile=`mktemp`
 scontrol show node $shortname > $tempfile
-# Get the Slurm node state and act on State=down nodes only
+# Get the Slurm node state 
 state="`cat $tempfile | grep '^   State=' | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
 # Get the NextState (may be down or resume, or empty if not set)
 nextstate="`cat $tempfile | grep '^   NextState=' | awk '{print $1}' | awk -F= '{print tolower($2)}'`"
-# Get the Slurm node Reason and skip nodes that unexpectedly rebooted
+# Get the Slurm node Reason (may be empty)
 reason="`cat $tempfile | grep '^   Reason='`"
-echo "INFO: Node $shortname has State=$state, NextState=$nextstate, and $reason" >> $LOG_FILE0
 rm -f $tempfile
 
+echo "INFO: Node $shortname has State=$state, NextState=$nextstate, $reason" >> $LOG_FILE0
+
+##########################################################################
+#
+# Act on various state and reason information
+#
 if [[ "X+$reason" =~ "Node unexpectedly rebooted" ]]
 then
 	echo "WARNING: This node has $reason" >> $LOG_FILE0
 	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
 	exit 0
-fi
-
-if [[ "X+$nextstate" =~ "resume" ]]
+elif [[ "X+$nextstate" =~ "resume" ]]
 then
 	date >> $LOG_FILE0
 	echo "NOTICE: No updates will be performed on this node because nextstate=$nextstate" >> $LOG_FILE0
@@ -178,7 +190,9 @@ else
 fi
 
 ##########################################################################
-# Check if fileserver $SCRIPTDIR directory is mounted
+#
+# Check if the fileserver $SCRIPTDIR directory is mounted
+#
 if check_fileserver >> $LOG_FILE0
 then
 	echo "OK: Fileserver $SCRIPTDIR directory is mounted" >> $LOG_FILE0
@@ -207,6 +221,7 @@ fi
 ##########################################################################
 #
 # Now do software and firmware updates
+#
 
 # Redirect stdout and stderr to $LOG_FILE in stead of the crontab output (mail)
 exec 1>$LOG_FILE
@@ -219,8 +234,9 @@ source /root/$update_software
 source /root/$update_firmware
 
 ##########################################################################
-
+#
 # Updates have been completed.  Update and resume the node
+#
 
 echo
 echo "Script $0: Reboot this node $shortname at `date`"
@@ -238,7 +254,7 @@ else
 fi
 
 # Remove this node from any possible update related reservations update-$shortname
-# The magic reservation name is set by the "reserve_on_idle" script.
+# The magic reservation name (if used) is set by the "reserve_on_idle" script.
 # If the node is not in a reservation, the delete command will just print a warning message.
 echo
 echo "Notice: Delete reservation update-$shortname (if it exists)"
