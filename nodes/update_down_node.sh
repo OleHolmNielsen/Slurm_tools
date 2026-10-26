@@ -5,7 +5,7 @@
 # purposefully using the command "scontrol reboot ASAP nextstate=down <nodelist>".
 # This provides a very simple way to trigger automatic updating of compute nodes.
 #
-# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/blob/master/nodes/update_down_node.sh
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/nodes#compute-node-os-and-firmware-updates
 # Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
 #
 # NOTES:
@@ -27,18 +27,21 @@
 
 # The updating procedure now consists of the following steps:
 #
-# 1. Optional: For shared (mixed,non-exclusive) nodes only, add a Slurm reservation
+# 1. Simply do:
+#    $ scontrol reboot ASAP nextstate=down <nodelist>
+#    No more actions need to be taken.
+#
+# 2. Optional: For shared (mixed,non-exclusive) nodes only, add a Slurm reservation
 #    that starts when the nodes become idle so that the nodes may run other jobs
 #    by Slurm backfilling until they become idle:
 #    $ reserve_on_idle <nodelist> update
 #    The reservation will be automatically deleted as part of the script.
 #
-# 2. Schedule automated reboots and updates of the compute nodes:
+# 3. Schedule automated reboots and updates of the compute nodes:
 #    $ sreboot -d -r UPDATE <nodelist>
 #    The sreboot command lets shared nodes accept new jobs, whereas exclusive nodes are rebooted ASAP.
 #    The "-d" flag sets NextState to Down.
 #    The "-r" flag sets the Reason
-#    Alternatively simply do: scontrol reboot ASAP nextstate=down <nodelist>
 
 # We need commands from /usr/sbin
 export PATH=/usr/sbin:$PATH
@@ -56,13 +59,16 @@ echo "OS version is: $osversion" >> $LOG_FILE0
 platform=`grep PLATFORM_ID /etc/os-release`
 
 ##########################################################################
+#
 # CONFIGURE:
+#
 # The cluster software folders as seen from the compute nodes:
-PACKAGEDIR="/home/que"
-SCRIPTDIR="$PACKAGEDIR/RSYNC"
-# The $update_* scripts live in the remote $SCRIPTDIR and will be copied to the local /root
-update_software=update_software.sh
-update_firmware=update_firmware.sh
+PACKAGEDIR="/home/server"
+SCRIPTDIR="$PACKAGEDIR/scripts-dir"
+# The $update_scripts live in the remote $SCRIPTDIR and will be copied to the local /root
+# If you do not want to update any firmwares, simply remove update_firmware.sh from this list
+update_scripts="update_software.sh update_firmware.sh"
+
 # Determine the directory $RPMDIR where we store platform-specific packages for the nodes.
 # For example, we use directories "RPMS8" and "RPMS9" for EL8 and EL9, respectively.
 if [[ "X+$platform" =~ "el8" ]]
@@ -126,7 +132,8 @@ function check_fileserver()
 		tdelta=$((`date +%s` - t0))
 		if [ "$tdelta" -gt "$tmax" ]
 		then
-			echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted" 
+			echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted after $tdelta seconds" 
+			# Optional alert:
 			# echo "ERROR: PACKAGEDIR=$PACKAGEDIR is not mounted" | mail -s "Script $0" root
 			return 1
 		fi
@@ -141,7 +148,7 @@ date >> $LOG_FILE0
 
 ##########################################################################
 #
-# The real action of this script starts here: Wait for a full startup of slurmd
+# The real action of this script starts here: Wait for a full startup of the network and slurmd
 #
 # Wait for network startup at reboot since this can take a number of seconds
 echo "Ask NetworkManager whether the network startup is complete" >> $LOG_FILE0
@@ -206,24 +213,7 @@ if check_fileserver >> $LOG_FILE0
 then
 	echo "OK: Fileserver $SCRIPTDIR directory is mounted" >> $LOG_FILE0
 else
-	echo "NOTICE: No updates will be performed on this node" 
-	exit 0
-fi
-# Copy script files
-echo "Copy the $update_software script from the remote server" >> $LOG_FILE0
-if [ -s $SCRIPTDIR/$update_software ]
-then
-	cp $SCRIPTDIR/$update_software /root/
-else
-	echo "ERROR: Update script $SCRIPTDIR/$update_software not found" >> $LOG_FILE0
-	exit 0
-fi
-echo "Copy the $update_firmware script from the remote server" >> $LOG_FILE0
-if [ -s $SCRIPTDIR/$update_firmware ]
-then
-	cp $SCRIPTDIR/$update_firmware /root/
-else
-	echo "ERROR: Update script $SCRIPTDIR/$update_firmware not found" >> $LOG_FILE0
+	echo "NOTICE: No updates will be performed on this node"  >> $LOG_FILE0
 	exit 0
 fi
 
@@ -236,11 +226,24 @@ fi
 exec 1>$LOG_FILE
 exec 2>&1
 
-# Source the update scripts which performs the actual updating
-source /root/$update_software
+# Copy up-to-date $update_scripts files from the fileserver to local disk
+for scr in $update_scripts
+do
+	echo "Copy the $scr script from the remote server $SCRIPTDIR" >> $LOG_FILE0
+	if [ -s $SCRIPTDIR/$scr ]
+	then
+		cp $SCRIPTDIR/$scr /root/
+	else
+		echo "ERROR: Update script $SCRIPTDIR/$scr not found" >> $LOG_FILE0
+		exit 0
+	fi
+done
 
-# If you do not want to update any firmwares, simply comment out this line:
-source /root/$update_firmware
+# Source the $update_scripts in /root which performs the actual updating
+for scr in $update_scripts
+do
+	source /root/$scr
+done
 
 ##########################################################################
 #
