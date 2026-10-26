@@ -136,12 +136,11 @@ If you have configured [Slurm power saving](https://slurm.schedmd.com/power_save
 there may be powered-off nodes with ```State=powered_down``` which need to be updated,
 identify such nodes with ```sinfo -t powered_down```.
 However, the ```scontrol reboot``` command will skip such nodes.
-The solution is to request Slurm to power up the nodes:
+The solution is to request Slurm to power up the nodes followed immediately by a reboot:
 ```
 scontrol power up <node-list>
+scontrol reboot asap nextstate=down <node-list>
 ```
-followed by the above ```scontrol reboot``` command,
-causing the nodes to power up and then reboot immediately.
 
 ### Optional for mixed state nodes
 
