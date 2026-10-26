@@ -148,8 +148,9 @@ date >> $LOG_FILE0
 
 ##########################################################################
 #
-# The real action of this script starts here: Wait for a full startup of the network and slurmd
+# The real action of this script starts here:
 #
+
 # Wait for network startup at reboot since this can take a number of seconds
 echo "Ask NetworkManager whether the network startup is complete" >> $LOG_FILE0
 nm-online --wait-for-startup >> $LOG_FILE0
@@ -161,7 +162,7 @@ if check_slurmd >> $LOG_FILE0
 then
 	echo "OK: slurmd is now fully started" >> $LOG_FILE0
 else
-	echo "NOTICE: No updates will be performed on this node" 
+	echo "NOTICE: No updates will be performed on this node" >> $LOG_FILE0
 	exit 0
 fi
 
@@ -183,7 +184,7 @@ echo "INFO: Node $shortname has State=$state, NextState=$nextstate, $reason" >> 
 
 ##########################################################################
 #
-# Act on various state and reason information
+# Act on various Slurm state and reason information
 #
 if [[ "X+$reason" =~ "Node unexpectedly rebooted" ]]
 then
@@ -247,7 +248,7 @@ done
 
 ##########################################################################
 #
-# Updates have been completed.  Update and resume the node
+# Updates have been completed, now reboot and resume the node
 #
 
 echo
