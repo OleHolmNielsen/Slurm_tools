@@ -9,13 +9,12 @@
 # Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
 #
 # NOTES:
-# 1. If you want to update any nodes that are in Slurm State=powered_down 
+# 1. The present script has been written for RPM-based Linux systems, but the logic should be generally applicable.
+#
+# 2. If you want to update any nodes that are in Slurm State=powered_down 
 #    you must do "scontrol power up <nodelist>" followed by the "scontrol reboot ...".
 # 
-# 2. The helper scripts $update_*.sh are sourced to perform any necessary updates.
-#    The present script has been written for RPM-based Linux systems, but the logic should be generally applicable.
-#
-# 3. For convenience we also provide two helper scripts from this project: sreboot and reserve_on_idle
+# 3. The helper scripts $update_{software,firmware}.sh are sourced to perform any necessary updates.
 #
 # INSTALLATION:
 # Execute this script on all compute nodes at reboot time from root's crontab, for example:
@@ -31,13 +30,13 @@
 #    $ scontrol reboot ASAP nextstate=down <nodelist>
 #    No more actions need to be taken.
 #
-# 2. Optional: For shared (mixed,non-exclusive) nodes only, add a Slurm reservation
-#    that starts when the nodes become idle so that the nodes may run other jobs
-#    by Slurm backfilling until they become idle:
+# 2. Optional for shared (mixed,non-exclusive) nodes only:
+#    Add a Slurm reservation that starts when the nodes become idle
+#    so that the nodes may run other jobs by Slurm backfilling:
 #    $ reserve_on_idle <nodelist> update
 #    The reservation will be automatically deleted as part of the script.
 #
-# 3. Schedule automated reboots and updates of the compute nodes:
+# 3. Optional for shared nodes: You can schedule reboots with this command:
 #    $ sreboot -d -r UPDATE <nodelist>
 #    The sreboot command lets shared nodes accept new jobs, whereas exclusive nodes are rebooted ASAP.
 #    The "-d" flag sets NextState to Down.
@@ -240,7 +239,7 @@ do
 	fi
 done
 
-# Source the $update_scripts in /root which performs the actual updating
+# Source the $update_scripts in /root which perform the actual updating
 for scr in $update_scripts
 do
 	source /root/$scr
