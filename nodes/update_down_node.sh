@@ -133,8 +133,6 @@ function node_field()
 #
 # Main program
 #
-##########################################################################
-#
 # Phase 1 (decide whether to update) appends to $LOG_FILE0.
 exec >> "$LOG_FILE0" 2>&1
 
@@ -191,15 +189,6 @@ esac
 check_fileserver || skip_updates "PACKAGEDIR=$PACKAGEDIR is not mounted"
 echo "OK: Fileserver directory $SCRIPTDIR is mounted"
 
-echo "All checks passed: $SCRIPTNAME will now perform updates, see $LOG_FILE"
-
-##########################################################################
-#
-# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
-
-# Redirect stdout and stderr to $LOG_FILE (overwrite) instead of the crontab output to mail
-exec > "$LOG_FILE" 2>&1
-
 # Copy up-to-date $update_scripts files from the fileserver to local disk
 for scr in $update_scripts
 do
@@ -211,6 +200,15 @@ do
 		skip_updates "Update script $SCRIPTDIR/$scr not found"
 	fi
 done
+
+echo "All checks passed: $SCRIPTNAME will now perform updates, see $LOG_FILE"
+
+##########################################################################
+#
+# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
+
+# Redirect stdout and stderr to $LOG_FILE (overwrite) instead of the crontab output to mail
+exec > "$LOG_FILE" 2>&1
 
 # Source the $update_scripts in /root which perform the actual updating
 for scr in $update_scripts
@@ -249,6 +247,5 @@ scontrol delete ReservationName="update-$shortname"
 echo
 echo "Rebooting the node with Slurm, setting NextState=resume"
 scontrol reboot nextstate=resume reason=Update_done "$shortname"
-
 
 exit 0
