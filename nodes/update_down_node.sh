@@ -11,9 +11,9 @@
 # NOTES:
 # 1. The present script has been written for RPM-based Linux systems, but the logic should be generally applicable.
 #
-# 2. If you want to update any nodes that are in Slurm State=powered_down 
+# 2. If you want to update any nodes that are in Slurm State=powered_down
 #    you must do "scontrol power up <nodelist>" followed by the "scontrol reboot ...".
-# 
+#
 # 3. The helper scripts $update_{software,firmware}.sh are sourced to perform any necessary updates.
 #
 # INSTALLATION:
@@ -113,7 +113,7 @@ function check_slurmd()
 	wait_for 5 "slurmd to start" scontrol show slurmd
 }
 
-# This function checks the fileserver remote mounted directory 
+# This function checks the fileserver remote mounted directory
 #
 function check_fileserver()
 {
@@ -130,11 +130,9 @@ function node_field()
 }
 
 ##########################################################################
+#
 # Main program
 #
-# Phase 1 (decide whether to update) writes to $LOG_FILE0.
-# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
-
 ##########################################################################
 #
 # Phase 1 (decide whether to update) appends to $LOG_FILE0.
@@ -162,7 +160,7 @@ node_info=$(scontrol show node "$shortname")
 state=$(node_field State)            # e.g. down, down+reserved, idle
 nextstate=$(node_field NextState)    # down, resume, or empty if not set
 reason=$(grep -m1 '^ *Reason=' <<< "$node_info" | sed 's/^ *//')   # may be empty
-echo "INFO: Node $shortname has State=$state, NextState=$nextstate, $reason" 
+echo "INFO: Node $shortname has State=$state, NextState=$nextstate, $reason"
 
 ##########################################################################
 #
@@ -180,18 +178,18 @@ then
 	skip_updates "State=$state is not down"
 fi
 
-# Check if the fileserver $SCRIPTDIR directory is mounted
-check_fileserver || skip_updates "PACKAGEDIR=$PACKAGEDIR is not mounted"
-echo "OK: Fileserver directory $SCRIPTDIR is mounted"
-
 # Find the $RPMDIR for our OS platform
 source /etc/os-release
 case "$PLATFORM_ID" in
-	*el8*) RPMDIR=$RPMDIR_EL8 ;;
-	*el9*) RPMDIR=$RPMDIR_EL9 ;;
-	*) echo "ERROR: OS platform PLATFORM_ID=$PLATFORM_ID is not configured"
-		 exit 1 ;;
+	*el8*)	RPMDIR=$RPMDIR_EL8 ;;
+	*el9*)	RPMDIR=$RPMDIR_EL9 ;;
+	*)	echo "ERROR: OS platform PLATFORM_ID=$PLATFORM_ID is not configured"
+		exit 1 ;;
 esac
+
+# Check if the fileserver $SCRIPTDIR directory is mounted
+check_fileserver || skip_updates "PACKAGEDIR=$PACKAGEDIR is not mounted"
+echo "OK: Fileserver directory $SCRIPTDIR is mounted"
 
 echo "All checks passed: $SCRIPTNAME will now perform updates, see $LOG_FILE"
 
@@ -205,12 +203,12 @@ exec > "$LOG_FILE" 2>&1
 # Copy up-to-date $update_scripts files from the fileserver to local disk
 for scr in $update_scripts
 do
-	echo "Copy the $scr script from the remote server $SCRIPTDIR" 
-	if [ -s "$SCRIPTDIR/$scr" ]
+	echo "Copy the $scr script from the remote server $SCRIPTDIR"
+	if [[ -s "$SCRIPTDIR/$scr" ]]
 	then
 		cp "$SCRIPTDIR/$scr" /root/
 	else
-		skip_updates "Update script $SCRIPTDIR/$scr not found" 
+		skip_updates "Update script $SCRIPTDIR/$scr not found"
 	fi
 done
 
