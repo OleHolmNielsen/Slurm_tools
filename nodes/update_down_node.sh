@@ -42,14 +42,10 @@
 #    The "-d" flag sets NextState to Down.
 #    The "-r" flag sets the Reason
 
-##########################################################################
-# Main program
-#
-# Phase 1 (decide whether to update) writes to $LOG_FILE0.
-# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
-
 # We need commands from /usr/sbin
 export PATH=/usr/sbin:$PATH
+# Name of the present script
+SCRIPTNAME="update_down_node.sh"
 
 # Log files are written to the compute node local folder:
 LOG_FILE="/root/update.log"
@@ -134,21 +130,27 @@ function node_field()
 }
 
 ##########################################################################
+# Main program
+#
+# Phase 1 (decide whether to update) writes to $LOG_FILE0.
+# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
+
+##########################################################################
 #
 # Phase 1 (decide whether to update) appends to $LOG_FILE0.
 exec >> "$LOG_FILE0" 2>&1
 
-echo "============================" 
+echo "============================"
 # Record the timestamp of script execution
-date 
+date
 
 # Wait for network startup at reboot since this can take a number of seconds
-echo "Ask NetworkManager whether the network startup is complete" 
-nm-online --wait-for-startup 
+echo "Ask NetworkManager whether the network startup is complete"
+nm-online --wait-for-startup
 
 # Startup of slurmd can potentially take 1-2 minutes on GPU nodes
-echo "Checking the slurmd service" 
-date 
+echo "Checking the slurmd service"
+date
 check_slurmd || skip_updates "slurmd is not running"
 echo "OK: slurmd is now fully started"
 
@@ -177,14 +179,10 @@ then
 	# Matching *down* also covers combined states such as down+reserved
 	skip_updates "State=$state is not down"
 fi
-echo "All checks passed: $SCRIPT_NAME will now perform updates, see $LOG_FILE"
 
-##########################################################################
-#
-# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
-
-# Redirect stdout and stderr to $LOG_FILE (overwrite) in stead of the crontab output to mail
-exec >$LOG_FILE 2>&1
+# Check if the fileserver $SCRIPTDIR directory is mounted
+check_fileserver || skip_updates "PACKAGEDIR=$PACKAGEDIR is not mounted"
+echo "OK: Fileserver directory $SCRIPTDIR is mounted"
 
 # Find the $RPMDIR for our OS platform
 source /etc/os-release
@@ -195,9 +193,14 @@ case "$PLATFORM_ID" in
 		 exit 1 ;;
 esac
 
-# Check if the fileserver $SCRIPTDIR directory is mounted
-check_fileserver || skip_updates "PACKAGEDIR=$PACKAGEDIR is not mounted"
-echo "OK: Fileserver directory $SCRIPTDIR is mounted"
+echo "All checks passed: $SCRIPTNAME will now perform updates, see $LOG_FILE"
+
+##########################################################################
+#
+# Phase 2 (do the updates and reboot) writes to $LOG_FILE.
+
+# Redirect stdout and stderr to $LOG_FILE (overwrite) instead of the crontab output to mail
+exec > "$LOG_FILE" 2>&1
 
 # Copy up-to-date $update_scripts files from the fileserver to local disk
 for scr in $update_scripts
@@ -207,8 +210,7 @@ do
 	then
 		cp "$SCRIPTDIR/$scr" /root/
 	else
-		echo "ERROR: Update script $SCRIPTDIR/$scr not found" 
-		exit 0
+		skip_updates "Update script $SCRIPTDIR/$scr not found" 
 	fi
 done
 
@@ -224,7 +226,7 @@ done
 #
 
 echo
-echo "Script update_down_node.sh: Reboot this node $shortname at $(date)"
+echo "Script $SCRIPTNAME: Reboot this node $shortname at $(date)"
 
 # NOTICE: It is required that slurmd is running for "scontrol reboot" to work!
 echo
