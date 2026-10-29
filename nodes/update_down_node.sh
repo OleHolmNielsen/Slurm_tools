@@ -2,7 +2,7 @@
 
 # PURPOSE:
 # This script is used for updating OS software and system firmware on a list of Slurm nodes,
-# where the nodes have been rebooted # purposefully using the command:
+# where the nodes have been rebooted purposefully using the command:
 # $ scontrol reboot ASAP nextstate=down <nodelist>
 # This provides a very simple way to trigger automatic updating of cluster compute nodes.
 #
