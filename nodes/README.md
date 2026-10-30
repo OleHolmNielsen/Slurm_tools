@@ -22,6 +22,8 @@ Some convenient scripts for working with (lists of) nodes:
 * Check consistency of /etc/slurm/topology.conf with node-list in /etc/slurm/slurm.conf: [checktopology](checktopology).
 * Compute node OS and firmware updates [update_down_node.sh](update_down_node.sh).
 
+The scripts contain documentation of their usage. 
+
 Usage
 -----
 
