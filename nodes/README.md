@@ -6,20 +6,35 @@ Some convenient scripts for working with (lists of) nodes:
 * Show status, jobs, events, reservations for a list of nodes: [shownode](shownode).
 
   **Recommended** as an easy way to print all relevant information about a node-list.
+
 * Show node ```BootTime, State```, etc.: [shownodetimes](shownodetimes).
+
 * Drain a node-list: [sdrain](sdrain).
+
 * Resume a node-list: [sresume](sresume).
+
 * Reboot and resume a node-list: [sreboot](sreboot).
+
 * Reserve nodes when they become idle: [reserve_on_idle](reserve_on_idle).
+
 * Power up/down a node-list: [spowerup](spowerup) and [spowerdown](spowerdown).
+
 * Show node events in the Slurm database: [showevents](showevents).
+
 * Show node power values: [showpower](showpower).
+
 * Check dead nodes with a ping: [alive](alive) (may be run from crontab every 10 minutes)
+
 * Check node BMCs with a ping: [alive_bmc](alive_bmc) (may be run from crontab regularly)
+
 * Show Nvidia GPU power values: [showpower_nvidia](showpower_nvidia).
+
 * Do a ```ps``` (process status) on a node-list, but exclude system processes: [psnode](psnode).
+
 * Print Slurm version on a node-list: [sversion](sversion).
-* Check consistency of /etc/slurm/topology.conf with node-list in /etc/slurm/slurm.conf: [checktopology](checktopology).
+
+* Check consistency of ```/etc/slurm/topology.conf``` with node-list in ```/etc/slurm/slurm.conf```: [checktopology](checktopology).
+
 * Compute node OS and firmware updates [update_down_node.sh](update_down_node.sh).
 
 The scripts contain documentation of their usage. 
