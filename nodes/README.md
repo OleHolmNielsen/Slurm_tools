@@ -4,6 +4,7 @@ Slurm node scripts
 Some convenient scripts for working with (lists of) nodes:
 
 * Show status, jobs, events, reservations for a list of nodes: [shownode](shownode).
+
   **Recommended** as an easy way to print all relevant information about a node-list.
 * Show node ```BootTime, State```, etc.: [shownodetimes](shownodetimes).
 * Drain a node-list: [sdrain](sdrain).
@@ -24,8 +25,8 @@ Some convenient scripts for working with (lists of) nodes:
 Usage
 -----
 
-Copy these scripts to /usr/local/bin/.
-If necessary configure the variables in the script.
+Copy these scripts to ```/usr/local/bin/```.
+If necessary configure any recommended variables in the script.
 
 Example output from ```psnode```:
 
