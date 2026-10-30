@@ -147,8 +147,8 @@ nm-online --wait-for-startup
 
 # Startup of slurmd can potentially take 1-2 minutes on GPU nodes
 echo "Checking the slurmd service"
-date
 check_slurmd || skip_updates "slurmd is not running"
+date
 echo "OK: slurmd is now fully started"
 
 # Ask slurmd about this node's hostname
