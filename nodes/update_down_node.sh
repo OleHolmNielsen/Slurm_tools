@@ -187,7 +187,7 @@ esac
 
 # Check if the fileserver $SCRIPTDIR directory is mounted
 check_fileserver || skip_updates "PACKAGEDIR=$PACKAGEDIR is not mounted"
-echo "OK: Fileserver directory $SCRIPTDIR is mounted"
+echo "$(date): OK: Fileserver directory $SCRIPTDIR is mounted"
 
 # Copy up-to-date $update_scripts files from the fileserver to local disk
 for scr in $update_scripts
@@ -229,7 +229,7 @@ echo
 echo "Check if the slurmd service is still running:"
 if check_slurmd
 then
-	echo "OK: slurmd is running"
+	echo "$(date): OK: slurmd is running"
 else
 	echo "NOTICE: Reboot the node immediately"
 	shutdown -r now "No slurmd process is running"
