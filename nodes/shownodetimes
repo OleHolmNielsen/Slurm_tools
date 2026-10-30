@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# Print various Slurm Time and State fields for a node list
+# ALL nodes are printed if no argument is given.
+# Nodes with BootTime=None are omitted.
+#
+# Usage: shownodetimes [nodelist]
+#
+# Example: You may sort the output on increasing BootTime (column 2) by:
+# shownodetimes [nodelist] | sort -k 2 -r
+
+# Use default Slurm time format:
+unset SLURM_TIME_FORMAT
+
+# Heading
+echo "Nodename BootTime            SlurmdStartTime     LastBusyTime        State"
+# Show nodes in the nodelist
+scontrol --oneliner show node "$@" | awk '
+{
+	split($1,a,"=")
+	if (a[1] == "NodeName")
+		name=a[2]	# Get the NodeName
+	else
+		next		# Error output from scontrol
+	for (i=2; i<=NF; i++) {
+		if ($i ~ "Time" || $i ~ "State") {
+			split($i,a,"=")
+			node[a[1]]=a[2]
+		}
+	}
+	if (node["BootTime"] != "None")
+		printf("%-8s %19s %19s %19s %-30s\n", name,
+			node["BootTime"], node["SlurmdStartTime"], node["LastBusyTime"],
+			node["State"])
+}'
