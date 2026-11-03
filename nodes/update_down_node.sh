@@ -173,7 +173,7 @@ then
 elif [[ $state != *down* ]]
 then
 	# Matching *down* also covers combined states such as down+reserved
-	skip_updates "State=$state is not down"
+	skip_updates "State=$state is different from State=down"
 fi
 
 # Find the $RPMDIR for our OS platform
