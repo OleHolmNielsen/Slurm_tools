@@ -86,7 +86,7 @@ to provide E-mail notifications to users about job efficiency.
 However, no GPU usage statistics is reported by [seff](https://docs.hpc.shef.ac.uk/en/latest/referenceinfo/scheduler/SLURM/Common-commands/seff.html).
 We offer here a script [seffgpu](seffgpu) which prints GPU usage of a job (completed or running).
 This can be integrated with a slightly modified local [smail](smail) script to combine reports from ``seff`` and ``seffgpu``
-and configuring ``slurm.conf``::
+and configuring ``slurm.conf``:
 ```
 MailProg=/usr/local/bin/smail
 ```
