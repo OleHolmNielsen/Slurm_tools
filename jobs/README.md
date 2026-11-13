@@ -3,30 +3,30 @@ Slurm job scripts
 
 Some convenient scripts for managing Slurm jobs:
 
-* ```psjob```: Do a ```ps``` process status on a job's node-list, but exclude system processes: ```psjob [-c columns | -h] <jobid>```.
+* [psjob](psjob) ```ps``` process status on a job's node-list, but exclude system processes: ```psjob [-c columns | -h] <jobid>```.
   Requires [ClusterShell](https://clustershell.readthedocs.io/en/latest/intro.html).
   The scratch disk usage with Slurm *job_container/tmpfs* (if configured) is printed.
   GPU usage may also be printed.
 
-* ```showjob```: Show status of Slurm job(s). Both queue information and accounting information is printed.
+* [showjob](showjob) Show status of Slurm job(s). Both queue information and accounting information is printed.
 
-* ```showjobreasons```: Show list of non-resource reasons for pending jobs, such as AssocGrpCpuLimit and AssocGrpNodeLimit
+* [showjobreasons](showjobreasons) Show list of non-resource reasons for pending jobs, such as AssocGrpCpuLimit and AssocGrpNodeLimit
 
-* ```jobqos```: Set Quality of Service (QOS) of jobs, or list jobs with the given QOS.
+* [jobqos](jobqos) Set Quality of Service (QOS) of jobs, or list jobs with the given QOS.
 
-* ```jobnice```: Add nice level to jobs, or list jobs with non-zero nice level.
+* [jobnice](jobnice) Add nice level to jobs, or list jobs with non-zero nice level.
 
-* ```jobtimelimit```: Update timelimit of job(s).
+* [jobtimelimit](jobtimelimit) Update timelimit of job(s).
 
-* ```sbadjob```: Print a warning about bad jobs hanging indefinitely in the queue.
+* [sbadjob](sbadjob) Print a warning about bad jobs hanging indefinitely in the queue.
 
-* ```notifybadjob```: Notify about or Kill a badly behaving job and send information mail to the user.
+* [notifybadjob](notifybadjob) Notify about or Kill a badly behaving job and send information mail to the user.
 
-* ```joblist```: Handy utility for converting jobids to a comma-separated list when the input may be separated by spaces or in a multi-line file.
+* [joblist](joblist) Handy utility for converting jobids to a comma-separated list when the input may be separated by spaces or in a multi-line file.
 
-* ```warn_maxjobs```: Issue warnings about the number of Slurm jobs approaching MaxJobCount
+* [warn_maxjobs](warn_maxjobs) Issue warnings about the number of Slurm jobs approaching MaxJobCount
 
-* ```schedjobs```: Stop or start job scheduling in ALL Slurm partitions
+* [schedjobs](schedjobs) Stop or start job scheduling in ALL Slurm partitions
 
 GPU monitoring
 --------------
@@ -74,3 +74,22 @@ d064
 Total: 3 processes and 9 threads
 Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 ```
+
+GPU accounting
+--------------
+
+The [seff](https://docs.hpc.shef.ac.uk/en/latest/referenceinfo/scheduler/SLURM/Common-commands/seff.html) script
+from the ``slurm-contribs`` RPM package can be used together with the
+[smail](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#e-mail-notification-setup) script
+to provide E-mail notifications to users about job efficiency.
+
+However, no GPU usage statistics is reported by ``seff``.
+We offer here a script [seffgpu](seffgpu) which prints GPU usage of a job (completed or running).
+This can be integrated with the [smail](smail) script to combine reports from ``seff`` and ``seffgpu``.
+
+In order for the Slurm database to record GPU usage information,
+it is required that Slurm has been built with the NVIDIA 
+[NVML](https://developer.nvidia.com/management-library-nvml) library.
+The details of configuring Slurm with [NVML](https://developer.nvidia.com/management-library-nvml) 
+are discussed in the Wiki page
+[NVIDIA NVML library and GPU GRES](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#nvidia-nvml-library-and-gpu-gres).

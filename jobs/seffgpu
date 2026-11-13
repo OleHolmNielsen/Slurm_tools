@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Show GPU accounting statistics of a Slurm job
+# Usage: seffgpu <jobid>
+
+# Check number of arguments
+if [[ $# -ne 1 ]]
+then
+        echo "Usage: seffgpu <jobid>"
+        exit 0
+fi
+# Check that jobid is a number (possibly with _ separating job array_task_id)
+if ! [[ ${1} =~ ^[0-9_]+$ ]]
+then
+	echo "ERROR (seffgpu): <jobid> must be a number or jobid_arraytaskid"
+        exit 0
+fi
+# Jobid:
+jobid=$1
+
+# Detect if any GPU resources were allocated
+alloctres="`sacct -nP -o AllocTRES --allocations -j $jobid`"
+if [[ -n "`echo $alloctres | grep gres/gpu`" ]]
+then
+	state="`sacct -nP -o State -j $jobid.batch`"
+	gresgpu="`echo $alloctres | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpu='`"
+	# Use sstat for running jobs, sacct for completed jobs
+	if [[ "$state" = *"RUNNING"* ]]
+	then
+		gpuutil="`sstat -nP -j $jobid.batch -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpuutil'`"
+		gpumem="`sstat -nP -j $jobid.batch -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpumem'`"
+	else
+		gpuutil="`sacct -nP -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpuutil'`"
+		gpumem="`sacct -nP -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpumem'`"
+	fi
+	echo "$state job GPU AllocTRES: $alloctres"
+	echo "Avg GPU utilization: $gpuutil% ($gresgpu)"
+	echo "Max GPU memory:      $gpumem (MB) ($gresgpu)"
+fi
