@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Send a Slurm notification email, and for jobs that have ended,
-# and add a job efficiency report (CPU, memory and GPU) in the mail body.
+# and add a job efficiency report (CPU, memory, and GPU) in the mail body.
 #
 # This script is called by slurmctld as:  MailProg -s "<subject>" <recipient>
 # with the MailProg parameter configured in slurm.conf.
@@ -19,18 +19,14 @@ JOB_COMPLETION_TIME=5
 ### Helpers
 
 # Print the values of KEY in TRES strings ("cpu=4,mem=40000M,node=1") read from stdin.
-tres() {
-    grep -oE "(^|,)$1=[^,]*" | cut -d= -f2-
-}
+tres() { grep -oE "(^|,)$1=[^,]*" | cut -d= -f2- }
 
 # Lowest and highest of a list of sizes such as 1500, 900M, 2G (n/a if empty).
 lowest()  { sort -h | head -1 | grep . || echo n/a; }
 highest() { sort -h | tail -1 | grep . || echo n/a; }
 
 # Evaluate a floating point expression: calc FORMAT EXPRESSION
-calc() {
-    awk "BEGIN { printf \"$1\", $2 }"
-}
+calc() { awk "BEGIN { printf \"$1\", $2 }" }
 
 # Convert a memory size such as 40000M (or plain bytes) to bytes.
 to_bytes() {
@@ -73,9 +69,9 @@ time2str() {
 
 ### Efficiency report
 
-# Print the efficiency report of a finished job: seff_report JOBID
+# Print the efficiency report of a finished job: 
 # Problems are printed too, so that they end up in the mail body.
-seff_report() {
+jobreport() {
     local jobid=$1
 
     # The job line is the first one without a ".step" suffix. (Not using sacct -X,
@@ -174,7 +170,7 @@ IFS=, read -r _ _ end_state _ <<< "$2"
 if [ -n "${end_state// /}" ] && [[ $2 =~ Job_id=([0-9]+(_[0-9]+)?) ]]; then
     # "Job_id=123_4" -> 123_4 (an array task); "Job_id=123_*" -> 123 (the whole array)
     sleep $JOB_COMPLETION_TIME
-    seff_report "${BASH_REMATCH[1]}" | $MAIL -s "$subject" "$recipient"
+    jobreport "${BASH_REMATCH[1]}" | $MAIL -s "$subject" "$recipient"
 else
     $MAIL -s "$subject" "$recipient"
 fi
