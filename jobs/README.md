@@ -78,14 +78,14 @@ Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 Job CPU and GPU accounting
 ------------------------------
 
-The script [jobmail](jobmail) can be used to provide E-mail notifications to users about job efficiency
-upon job completion.
-The script [jobeff](jobeff) prints job efficiency information of a completed or running job.
+* The [jobmail](jobmail) script provides E-mail notifications to users about job efficiency upon job completion.
+* The [jobeff](jobeff) script prints job efficiency information of a completed or running job.
+
 These tools are alternatives to the ``smail`` and ``seff`` scripts from the ``slurm-contribs`` package,
-and furthermore provide GPU accounting statistics.
+and they furthermore provide GPU accounting statistics.
 
 Installation: 
-Copy this script to `/usr/local/bin/` and configure it in ``slurm.conf``:
+Copy the [jobmail](jobmail) script to `/usr/local/bin/` and configure it in ``slurm.conf``:
 ```
 MailProg=/usr/local/bin/jobmail
 ```
