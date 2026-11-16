@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Show the CPU, memory and GPU efficiency of a finished Slurm job.
-# This script uses Bash and the Slurm "sacct" tool to provide
+# Show the CPU, memory and GPU efficiency of a running or finished Slurm job.
+# This script uses Bash and the Slurm "sacct" and "sstat" tools to provide
 # output similar to the "seff" tool from the slurm-contribs RPM package.
-# Exit codes: 0 OK, 1 usage/version, 2 job not found, 4 job has not ended.
+# For a running job, the steps still running are read with "sstat".
+# Exit codes: 0 OK, 1 usage/version, 2 job not found, 4 job is not running or ended.
 
 usage() {
     echo "Usage: seff [Options] <Jobid>"
@@ -95,17 +96,27 @@ fi
 IFS='|' read -r id raw_id user group state cluster ncpus nnodes alloc totalcpu walltime exitcode <<< "$job"
 state=${state%% *}              # "CANCELLED by 123" -> "CANCELLED"
 
-# Statistics are only complete once the job has ended.
+# Statistics are available for running jobs (so far) and for jobs that have ended.
+running=0
 case $state in
+    RUNNING) running=1 ;;
     COMPLETED|FAILED|CANCELLED|TIMEOUT|OUT_OF_MEMORY|NODE_FAIL|BOOT_FAIL|DEADLINE|PREEMPTED) ;;
-    *)  echo "Job $jobid is in state $state: efficiency statistics are only available after the job has ended." >&2
+    *)  echo "Job $jobid is in state $state: efficiency statistics are only available once the job is running." >&2
         exit 4 ;;
 esac
 [ "${ncpus:-0}" -eq 0 ] && ncpus=1
 [ "${nnodes:-0}" -eq 0 ] && nnodes=1
 
+# Usage data of the job steps: step_usage [--noconvert] -o FIELDS
+# sacct has the data of steps that have ended. For a running job, sstat adds the
+# steps still running (sstat lists them by the raw job ID, also for array jobs).
+step_usage() {
+    sacct -P -n -j "$jobid" "$@" 2>/dev/null
+    [ $running -eq 1 ] && sstat -P -n -a -j "$raw_id" "$@" 2>/dev/null
+}
+
 step_fields=JobID,TRESUsageInTot,TRESUsageInMax,TRESUsageInAve
-steps=$(sacct -P -n --noconvert -j "$jobid" -o $step_fields 2>/dev/null)
+steps=$(step_usage --noconvert -o $step_fields)
 
 if [ $debug -eq 1 ]; then
     echo "Slurm data ($job_fields):"
@@ -121,7 +132,11 @@ echo "Job ID: $raw_id"
 [[ $id == *_* ]] && echo "Array Job ID: $id"
 echo "Cluster: $cluster"
 echo "User/Group: $user/$group"
-echo "State: $state (exit code ${exitcode%%:*})"     # ExitCode is "exit:signal"
+if [ $running -eq 1 ]; then
+    echo "State: $state (statistics so far)"
+else
+    echo "State: $state (exit code ${exitcode%%:*})"     # ExitCode is "exit:signal"
+fi
 if [ $ncpus -eq 1 ]; then
     echo "Cores: 1"
 else
@@ -129,8 +144,14 @@ else
     echo "Cores per node: $((ncpus / nnodes))"
 fi
 
-# CPU: TotalCPU of the job is the sum over all its steps.
+# CPU: TotalCPU of the job is the sum over all its steps that have ended.
+# Add the CPU time of the steps still running, from sstat (the cpu entry of TRESUsageInTot).
 cputime=$(time2sec "${totalcpu:-0}")
+if [ $running -eq 1 ]; then
+    for t in $(sstat -P -n -a -j "$raw_id" -o TRESUsageInTot 2>/dev/null | tres cpu); do
+        cputime=$((cputime + $(time2sec "$t")))
+    done
+fi
 corewalltime=$((walltime * ncpus))
 echo "CPU Utilized: $(time2str $cputime)"
 echo "CPU Efficiency: $(calc %.2f "$corewalltime ? $cputime / $corewalltime * 100 : 0")% of $(time2str $corewalltime) core-walltime"
@@ -141,7 +162,7 @@ echo "Job Wall-clock time: $(time2str $walltime)"
 used=0 task_max=0 task_ave=0
 while IFS='|' read -r step tot max ave; do
     tot=$(tres mem <<< "$tot")
-    if [[ $step == "$id".* ]] && (( ${tot:-0} > used )); then
+    if [[ $step == "$id".* || $step == "$raw_id".* ]] && (( ${tot:-0} > used )); then
         used=$tot
         task_max=$(tres mem <<< "$max")
         task_ave=$(tres mem <<< "$ave")
@@ -166,10 +187,10 @@ fi
 # GPUs, if any were allocated. Over all steps: the lowest task minimum,
 # the highest task maximum, and the highest step average.
 if [[ $alloc == *gres/gpu* ]]; then
-    usage=$(sacct -P -n -j "$jobid" -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
+    usage=$(step_usage -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
     min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
     gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
-    echo "$state job GPU AllocTRES: $alloc"
+    echo "GPU AllocTRES: $alloc"
     echo "GPU utilization: min $(tres gres/gpuutil <<< "$min" | lowest)%," \
          "max $(tres gres/gpuutil <<< "$max" | highest)%," \
          "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
