@@ -20,17 +20,17 @@ JOB_COMPLETION_TIME=5
 ### Helpers
 
 # Print the values of KEY in TRES strings ("cpu=4,mem=40000M,node=1") read from stdin.
-tres() { grep -oE "(^|,)$1=[^,]*" | cut -d= -f2-; }
+function tres() { grep -oE "(^|,)$1=[^,]*" | cut -d= -f2-; }
 
 # Lowest and highest of a list of sizes such as 1500, 900M, 2G (n/a if empty).
-lowest()  { sort -h | head -1 | grep . || echo n/a; }
-highest() { sort -h | tail -1 | grep . || echo n/a; }
+function lowest()  { sort -h | head -1 | grep . || echo n/a; }
+function highest() { sort -h | tail -1 | grep . || echo n/a; }
 
 # Evaluate a floating point expression: calc FORMAT EXPRESSION
-calc() { awk "BEGIN { printf \"$1\", $2 }"; }
+function calc() { awk "BEGIN { printf \"$1\", $2 }"; }
 
 # Convert a memory size such as 40000M (or plain bytes) to bytes.
-to_bytes() {
+function to_bytes() {
     local value=${1:-0}
     case $value in
         *K) echo $(( ${value%K} * 1024 )) ;;
@@ -42,7 +42,7 @@ to_bytes() {
 }
 
 # Format bytes as e.g. "361.20 MB".
-bytes2str() {
+function bytes2str() {
     awk -v b="$1" 'BEGIN {
         if (b <= 0) { print "0.00 MB"; exit }
         split("B KB MB GB TB PB", unit, " ")
@@ -52,7 +52,7 @@ bytes2str() {
 }
 
 # Convert a sacct time ([D-][HH:]MM:SS[.mmm]) to whole seconds, rounded.
-time2sec() {
+function time2sec() {
     awk -v t="$1" 'BEGIN {
         if (split(t, a, "-") == 2) { days = a[1]; t = a[2] }
         n = split(t, p, ":")
@@ -62,7 +62,7 @@ time2sec() {
 }
 
 # Format seconds as [D-]HH:MM:SS.
-time2str() {
+function time2str() {
     local t=$1 days=$(($1 / 86400))
     [ $days -ge 1 ] && printf "%d-" $days
     printf "%02d:%02d:%02d" $((t % 86400 / 3600)) $((t % 3600 / 60)) $((t % 60))
@@ -153,7 +153,7 @@ function jobreport() {
         local usage=$(sacct -P -n -j "$jobid" -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
         local min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
         local gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
-        echo "$state job GPU AllocTRES: $alloc"
+        echo "GPU AllocTRES: $alloc"
         echo "GPU utilization: min $(tres gres/gpuutil <<< "$min" | lowest)%," \
              "max $(tres gres/gpuutil <<< "$max" | highest)%," \
              "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
