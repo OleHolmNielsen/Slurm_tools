@@ -18,6 +18,10 @@ Some convenient scripts for managing Slurm jobs:
 
 * [jobtimelimit](jobtimelimit) Update timelimit of job(s).
 
+* [jobeff](jobeff) prints job efficiency information of a completed or running job.
+
+* [jobmail](jobmail) provides E-mail notifications from ``slurmctld`` to users about job efficiency upon job completion.
+
 * [sbadjob](sbadjob) Print a warning about bad jobs hanging indefinitely in the queue.
 
 * [notifybadjob](notifybadjob) Notify about or Kill a badly behaving job and send information mail to the user.
@@ -78,7 +82,7 @@ Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 Job CPU and GPU accounting
 ------------------------------
 
-* The [jobmail](jobmail) script provides E-mail notifications to users about job efficiency upon job completion.
+* The [jobmail](jobmail) script provides E-mail notifications from ``slurmctld`` to users about job efficiency upon job completion.
 * The [jobeff](jobeff) script prints job efficiency information of a completed or running job.
 
 These tools are alternatives to the ``smail`` and ``seff`` scripts from the ``slurm-contribs`` package,
