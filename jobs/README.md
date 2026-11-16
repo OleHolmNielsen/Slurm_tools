@@ -75,23 +75,22 @@ Total: 3 processes and 9 threads
 Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 ```
 
-GPU accounting
---------------
+Job CPU and GPU accounting
+------------------------------
 
-The [seff](https://docs.hpc.shef.ac.uk/en/latest/referenceinfo/scheduler/SLURM/Common-commands/seff.html) script
-from the ``slurm-contribs`` RPM package can be used together with the
-[smail](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#e-mail-notification-setup) script
-to provide E-mail notifications to users about job efficiency.
+The script [jobmail](jobmail) can be used to provide E-mail notifications to users about job efficiency
+upon job completion.
+The script [jobeff](jobeff) prints job efficiency information of a completed or running job.
+These tools are alternatives to the ``smail`` and ``seff`` scripts from the ``slurm-contribs`` package,
+and furthermore provide GPU accounting statistics.
 
-However, no GPU usage statistics is reported by [seff](https://docs.hpc.shef.ac.uk/en/latest/referenceinfo/scheduler/SLURM/Common-commands/seff.html).
-We offer here a script [seffgpu](seffgpu) which prints GPU usage of a job (completed or running).
-This can be integrated with a slightly modified local [smail](smail) script to combine reports from ``seff`` and ``seffgpu``
-and configuring ``slurm.conf``:
+Installation: 
+Copy this script to `/usr/local/bin/` and configure it in ``slurm.conf``:
 ```
-MailProg=/usr/local/bin/smail
+MailProg=/usr/local/bin/jobmail
 ```
 
-In order for the Slurm database to record GPU usage information,
+NOTE: In order for the Slurm database to record GPU usage information,
 it is required that Slurm has been built with the NVIDIA 
 [NVML](https://developer.nvidia.com/management-library-nvml) library.
 The details of configuring Slurm with [NVML](https://developer.nvidia.com/management-library-nvml) 
