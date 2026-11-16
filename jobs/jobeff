@@ -4,22 +4,20 @@
 # This script uses Bash and the Slurm "sacct" and "sstat" tools to provide
 # output similar to the "seff" tool from the slurm-contribs RPM package.
 # For a running job, the steps still running are read with "sstat".
-# Exit codes: 0 OK, 1 usage/version, 2 job not found, 4 job is not running or ended.
+# Exit codes: 0 OK, 1 usage, 2 job not found, 4 job is not running or ended.
 
 usage() {
     echo "Usage: seff [Options] <Jobid>"
     echo "       Options:"
     echo "       -h    Help menu"
-    echo "       -v    Version"
     echo "       -d    Debug mode: display raw Slurm data"
     exit 1
 }
 
 debug=0
-while getopts "hvd" opt
+while getopts "hd" opt
 do
     case $opt in
-        v) echo "seff Version $VERSION"; exit 1 ;;
         d) debug=1 ;;
         *) usage ;;
     esac
