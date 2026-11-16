@@ -168,11 +168,10 @@ function jobreport() {
 subject="$SLURM_CLUSTER_NAME $2"
 recipient=$3
 
-# Only end records have an ending state, the 3rd comma-separated part of the subject.
+# Get the "end_state" as the 3rd string in $2 up to the first , (comma)
 IFS=, read -r _ _ end_state _ <<< "$2"
 
 if [ -n "${end_state// /}" ] && [[ $2 =~ Job_id=([0-9]+(_[0-9]+)?) ]]; then
-    # "Job_id=123_4" -> 123_4 (an array task); "Job_id=123_*" -> 123 (the whole array)
     sleep $JOB_COMPLETION_TIME
     jobreport "${BASH_REMATCH[1]}" | $MAIL -s "$subject" "$recipient"
 else
