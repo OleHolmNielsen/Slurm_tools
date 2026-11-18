@@ -18,9 +18,10 @@ Some convenient scripts for managing Slurm jobs:
 
 * [jobtimelimit](jobtimelimit) Update timelimit of job(s).
 
-* [jobeff](jobeff) prints job efficiency information of a completed or running job.
+* [jobeff](jobeff) Print the CPU, memory and GPU efficiency of a completed or running job: ```jobeff [-h | -d] <jobid>```.
+  See [Job CPU and GPU accounting](#job-cpu-and-gpu-accounting) below.
 
-* [jobmail](jobmail) provides E-mail notifications from ``slurmctld`` to users about job efficiency upon job completion.
+* [jobmail](jobmail) Slurm ```MailProg``` which adds a ```jobeff``` job efficiency report to the E-mail notifications from ``slurmctld`` when a job has ended.
 
 * [sbadjob](sbadjob) Print a warning about bad jobs hanging indefinitely in the queue.
 
@@ -80,19 +81,81 @@ Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 ```
 
 Job CPU and GPU accounting
-------------------------------
+--------------------------
 
-* The [jobmail](jobmail) script provides E-mail notifications from ``slurmctld`` to users about job efficiency upon job completion.
-* The [jobeff](jobeff) script prints job efficiency information of a completed or running job.
+* The [jobeff](jobeff) script prints the CPU, memory and GPU efficiency of a completed or running job.
+* The [jobmail](jobmail) script provides E-mail notifications from ``slurmctld`` to users,
+  and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
 These tools are alternatives to the ``smail`` and ``seff`` scripts from the ``slurm-contribs`` package,
 and they furthermore provide GPU accounting statistics.
 
-Installation: 
-Copy the [jobmail](jobmail) script to `/usr/local/bin/` and configure it in ``slurm.conf``:
+### jobeff
+
+Usage:
+```
+jobeff [Options] <Jobid>
+       Options:
+       -h    Help menu
+       -d    Debug mode: display raw Slurm data
+```
+
+The job efficiency data are read from the Slurm database with ``sacct``.
+For a running job, the statistics so far are printed, and the job steps still running are read with ``sstat``.
+The report contains:
+
+* Job ID, Array Job ID (for array tasks), Job SLUID, cluster, user/group and job state with exit code.
+* Submit, start and end times, and the elapsed time.
+* Number of nodes and cores per node.
+* CPU time used and CPU efficiency relative to the core-walltime.
+* Memory used and memory efficiency relative to the allocated memory (per core or per node).
+  The memory request type is read from ``sacct --json`` and requires the [jq](https://jqlang.org/) tool;
+  without ``jq`` the memory is assumed to be allocated per node.
+* GPU utilization and GPU memory (min/max/average), if the job was allocated GPUs (see the NOTE below).
+
+The exit code of ``jobeff`` is 0 on success, 1 for usage errors, 2 if the job was not found,
+and 4 if the job has not started yet.
+
+Example output from ```jobeff```:
+
+```
+Job ID: 11290539
+Job SLUID: s8FXM7PQZJ0P00
+Cluster: niflheim
+User/Group: user1/group1
+State: COMPLETED (exit code 0)
+Submit time: 2026-11-18T08:11:39
+Start time: 2026-11-18T08:11:42
+Elapsed time: 00:00:10
+End time: 2026-11-18T08:11:52
+Cores: 1
+CPU Utilized: 00:00:00
+CPU Efficiency: 0.00% of 00:00:10 core-walltime
+Memory Utilized: 2.25 MB
+Memory Efficiency: 0.02% of 9.77 GB (9.77 GB/core)
+```
+
+The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.
+
+### jobmail
+
+``slurmctld`` calls the ``MailProg`` as ``<MailProg> -s "<subject>" <recipient>``
+for the job events requested by the user with ``sbatch --mail-type``.
+The ``jobmail`` script sends the mail with ``/bin/mail``.
+When the job has ended (the subject contains an ending state such as COMPLETED, FAILED or TIMEOUT),
+``jobmail`` waits a few seconds (``JOB_COMPLETION_TIME``) for the accounting data to be committed to ``slurmdbd``,
+and then puts the ``jobeff`` report of the job (or array task) in the mail body.
+Other mails, such as job start notifications, are sent without a report.
+
+Installation:
+Copy the [jobeff](jobeff) and [jobmail](jobmail) scripts to `/usr/local/bin/`,
+where they must be readable and executable by the ``SlurmUser``.
+``jobmail`` runs ``jobeff`` from `/usr/local/bin/`.
+Configure ``jobmail`` in ``slurm.conf``:
 ```
 MailProg=/usr/local/bin/jobmail
 ```
+and reconfigure ``slurmctld`` (``scontrol reconfigure``).
 
 NOTE: In order for the Slurm database to record GPU usage information,
 it is required that Slurm has been built with the NVIDIA 
