@@ -86,14 +86,14 @@ function time2str() {
 #   see https://slurm.schedmd.com/squeue.html#OPT_Sluid
 # The job line is the first one without a ".step" suffix. (Not using sacct -X,
 # as TotalCPU then no longer includes the CPU time of the steps.)
-job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End
+job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,Partition,NodeList,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End
 job=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields 2>/dev/null | awk -F'|' '$1 !~ /\./' | head -1)
 if [ -z "$job" ]
 then
 	echo "Job not found." >&2
 	exit 2
 fi
-IFS='|' read -r id raw_id sluid user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
+IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
 state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
 
 # Statistics are available for running jobs (so far) and for jobs that have ended.
@@ -133,6 +133,8 @@ echo "Job ID: $raw_id"
 [[ $id == *_* ]] && echo "Array Job ID: $id"
 echo "Job SLUID: $sluid"
 echo "Cluster: $cluster"
+echo "Partition: $partition"
+echo "NodeList: $nodelist"
 echo "User/Group: $user/$group"
 if [ $running -eq 1 ]
 then
