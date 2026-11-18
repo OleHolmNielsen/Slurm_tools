@@ -2,6 +2,7 @@
 
 # Send a Slurm notification email from slurmctld for jobs that have ended,
 # and add a job efficiency report (CPU, memory, and GPU) in the mail body.
+# The report is made by the "jobeff" script, which must be installed in /usr/local/bin.
 #
 # This script must be readable and executable by SlurmUser and is called as:
 #   <MailProg> -s "<subject>" <recipient>
@@ -12,167 +13,12 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/jobs
 
 MAIL=/bin/mail			# This command must be available on the system
-export PATH=/usr/bin:/bin:$PATH	# slurmctld may run with a minimal or empty PATH
+export PATH=/usr/local/bin:/usr/bin:/bin:$PATH	# slurmctld may run with a minimal or empty PATH
 unset SLURM_TIME_FORMAT		# Use the Slurm default time format, whatever the caller sets
 
 # Define the time for the job to finish and its accounting data to be committed to slurmdbd.
 # Note: `systemctl stop/restart slurmctld` may wait for this sleep to end.
 JOB_COMPLETION_TIME=5
-
-### Helpers
-
-# Print the values of KEY in TRES strings ("cpu=4,mem=40000M,node=1") read from stdin.
-function tres() { grep -oE "(^|,)$1=[^,]*" | cut -d= -f2-; }
-
-# Lowest and highest of a list of sizes such as 1500, 900M, 2G (n/a if empty).
-function lowest() { sort -h | head -1 | grep . || echo n/a; }
-function highest() { sort -h | tail -1 | grep . || echo n/a; }
-
-# Evaluate a floating point expression: calc FORMAT EXPRESSION
-function calc() { awk "BEGIN { printf \"$1\", $2 }"; }
-
-# Convert a memory size such as 40000M (or plain bytes) to bytes.
-function to_bytes() {
-	local value=${1:-0}
-	case $value in
-		*K) echo $(( ${value%K} * 1024 )) ;;
-		*M) echo $(( ${value%M} * 1024**2 )) ;;
-		*G) echo $(( ${value%G} * 1024**3 )) ;;
-		*T) echo $(( ${value%T} * 1024**4 )) ;;
-		*)  echo "$value" ;;
-	esac
-}
-
-# Format bytes as e.g. "361.20 MB".
-function bytes2str() {
-	awk -v b="$1" 'BEGIN {
-		if (b <= 0) { print "0.00 MB"; exit }
-		split("B KB MB GB TB PB", unit, " ")
-		e = int(log(b) / log(1024)); if (e > 5) e = 5
-		printf "%.2f %s", b / 1024^e, unit[e + 1]
-	}'
-}
-
-# Convert a sacct time ([D-][HH:]MM:SS[.mmm]) to whole seconds, rounded.
-function time2sec() {
-	awk -v t="$1" 'BEGIN {
-		if (split(t, a, "-") == 2) { days = a[1]; t = a[2] }
-		n = split(t, p, ":")
-		for (i = 1; i <= n; i++) s = s * 60 + p[i]
-		printf "%d", days * 86400 + s + 0.5
-	}'
-}
-
-# Format seconds as [D-]HH:MM:SS.
-function time2str() {
-	local t=$1 days=$(($1 / 86400))
-	[ $days -ge 1 ] && printf "%d-" $days
-	printf "%02d:%02d:%02d" $((t % 86400 / 3600)) $((t % 3600 / 60)) $((t % 60))
-}
-
-### Job Efficiency report
-
-# Print the efficiency report of a finished job: 
-# Problems are printed too, so that they end up in the mail body.
-# Note: SLUID (Slurm Lexicographically-sortable Unique ID) parameter was added in Slurm 24.11,
-#   see https://slurm.schedmd.com/squeue.html#OPT_Sluid
-function jobreport() {
-	local jobid=$1
-
-	# The job line is the first one without a ".step" suffix. (Not using sacct -X,
-	# as TotalCPU then no longer includes the CPU time of the steps.)
-	local job
-	job=$(sacct -P -n --noconvert -j "$jobid" \
-			-o JobID,JobIDRaw,SLUID,User,Group,State,Cluster,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End |
-		awk -F'|' '$1 !~ /\./' | head -1)
-	if [ -z "$job" ]
-	then
-		echo "Job $jobid not found in the accounting database."
-		return
-	fi
-	local id raw_id sluid user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end
-	IFS='|' read -r id raw_id sluid user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
-	state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
-
-	# Statistics are only complete once the job has ended.
-	case $state in
-		COMPLETED|FAILED|CANCELLED|TIMEOUT|OUT_OF_MEMORY|NODE_FAIL|BOOT_FAIL|DEADLINE|PREEMPTED) ;;
-		*) echo "Job $jobid is in state $state: efficiency statistics are only available after the job has ended."
-		   return ;;
-	esac
-	[ "${ncpus:-0}" -eq 0 ] && ncpus=1
-	[ "${nnodes:-0}" -eq 0 ] && nnodes=1
-
-	echo "Job ID: $raw_id"
-	[[ $id == *_* ]] && echo "Array Job ID: $id"
-	echo "Job SLUID: $sluid"
-	echo "Cluster: $cluster"
-	echo "User/Group: $user/$group"
-	echo "State: $state (exit code ${exitcode%%:*})"	 # ExitCode is "exit:signal"
-	echo "Submit time: $submit"
-	echo "Start time: $start"
-	echo "Elapsed time: $(time2str $walltime)"
-	echo "End time: $end"
-	if [ $ncpus -eq 1 ]
-	then
-		echo "Cores: 1"
-	else
-		echo "Nodes: $nnodes"
-		echo "Cores per node: $((ncpus / nnodes))"
-	fi
-
-	# CPU: TotalCPU of the job is the sum over all its steps.
-	local cputime=$(time2sec "${totalcpu:-0}")
-	local corewalltime=$((walltime * ncpus))
-	echo "CPU Utilized: $(time2str $cputime)"
-	echo "CPU Efficiency: $(calc %.2f "$corewalltime ? $cputime / $corewalltime * 100 : 0")% of $(time2str $corewalltime) core-walltime"
-
-	# Memory used: TRESUsageInTot mem is the sum of the memory peaks of all tasks of a step.
-	# Take the step with the largest sum, and the max and average task peak of that step.
-	local used=0 task_max=0 task_ave=0 step tot max ave
-	while IFS='|' read -r step tot max ave; do
-		tot=$(tres mem <<< "$tot")
-		if [[ $step == "$id".* ]] && (( ${tot:-0} > used ))
-	then
-			used=$tot
-			task_max=$(tres mem <<< "$max")
-			task_ave=$(tres mem <<< "$ave")
-		fi
-	done < <(sacct -P -n --noconvert -j "$jobid" -o JobID,TRESUsageInTot,TRESUsageInMax,TRESUsageInAve)
-	echo "Memory Utilized: $(bytes2str $used)"
-
-	# Memory allocated, per core or per node. sacct's parsable output does not tell which
-	# was requested, but the JSON output does (needs jq; otherwise assume per node).
-	local allocated=$(to_bytes "$(tres mem <<< "$alloc")")
-	local per=node divisor=$nnodes
-	if command -v jq > /dev/null &&
-		[ "$(sacct --json -j "$jobid" |
-		jq --argjson id "$raw_id" '[.jobs[] | select(.job_id == $id)][0].required.memory_per_cpu.set')" = true ]
-	then
-		per=core divisor=$ncpus
-	fi
-	echo "Memory Efficiency: $(calc %.2f "$allocated ? $used / $allocated * 100 : 0")% of $(bytes2str $allocated) ($(bytes2str $((allocated / divisor)))/$per)"
-	if (( ${task_ave:-0} > 0 && ${task_max:-0} > task_ave ))
-	then
-		echo "The task which had the largest memory consumption differs by $(calc %.2f "$task_max / $task_ave * 100")% from the average task max memory consumption"
-	fi
-
-	# GPUs, if any were allocated. Over all steps: the lowest task minimum,
-	# the highest task maximum, and the highest step average.
-	if [[ $alloc == *gres/gpu* ]]
-	then
-		local usage=$(sacct -P -n -j "$jobid" -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
-		local min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
-		local gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
-		echo "GPU AllocTRES: $alloc"
-		echo "GPU utilization: min $(tres gres/gpuutil <<< "$min" | lowest)%," \
-			 "max $(tres gres/gpuutil <<< "$max" | highest)%," \
-			 "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
-		echo "GPU memory:      min $(tres gres/gpumem <<< "$min" | lowest)," \
-			 "max $(tres gres/gpumem <<< "$max" | highest)," \
-			 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
-	fi
-}
 
 ### Main: send the mail
 
@@ -186,7 +32,8 @@ if [ -n "${end_state// /}" ] && [[ $2 =~ Job_id=([0-9]+(_[0-9]+)?) ]]
 then
 	# "Job_id=123_4" -> 123_4 (an array task); "Job_id=123_*" -> 123 (the whole array)
 	sleep $JOB_COMPLETION_TIME
-	jobreport "${BASH_REMATCH[1]}" | $MAIL -s "$subject" "$recipient"
+	# Errors from jobeff (such as "Job not found") go into the mail body as well.
+	jobeff "${BASH_REMATCH[1]}" 2>&1 | $MAIL -s "$subject" "$recipient"
 else
 	$MAIL -s "$subject" "$recipient"
 fi
