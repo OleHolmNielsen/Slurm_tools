@@ -119,22 +119,26 @@ and 4 if the job has not started yet.
 Example output from ```jobeff```:
 
 ```
-Job ID: 11290539
-Job SLUID: s8FXM7PQZJ0P00
+Job ID: 11293137
+Job SLUID: s8FXM7QBF5ED00
 Cluster: niflheim
-Partition: xeon24el9_test
-NodeList: x007
+Partition: a100el9
+NodeList: sd653
 User/Group: user1/group1
 State: COMPLETED (exit code 0)
-Submit time: 2026-11-18T08:11:39
-Start time: 2026-11-18T08:11:42
+Submit time: 2026-11-18T13:52:14
+Start time: 2026-11-18T13:52:32
 Elapsed time: 00:00:10
-End time: 2026-11-18T08:11:52
-Cores: 1
+End time: 2026-11-18T13:52:42
+Nodes: 1
+Cores per node: 32
 CPU Utilized: 00:00:00
-CPU Efficiency: 0.00% of 00:00:10 core-walltime
-Memory Utilized: 2.25 MB
-Memory Efficiency: 0.02% of 9.77 GB (9.77 GB/core)
+CPU Efficiency: 0.00% of 00:05:20 core-walltime
+Memory Utilized: 19.85 MB
+Memory Efficiency: 0.06% of 31.25 GB (1000.00 MB/core)
+GPU AllocTRES: billing=128,cpu=32,energy=10218,gres/gpu:a100=1,gres/gpu=1,mem=32000M,node=1
+GPU utilization: min 0%, max 0%, avg 0% (gres/gpu=1)
+GPU memory:      min 0, max 0, avg 0 (MB) (gres/gpu=1)
 ```
 
 The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.
