@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# Send a Slurm notification email, and for jobs that have ended,
+# Send a Slurm notification email from slurmctld for jobs that have ended,
 # and add a job efficiency report (CPU, memory, and GPU) in the mail body.
 #
-# This script must be readable and executable by SlurmUser.
-# It is called by slurmctld as: <MailProg> -s "<subject>" <recipient>
-# where the MailProg parameter is configured in slurm.conf.
-# Note that PATH and HOME variables are unset when MailProg is called by slurmctld.
+# This script must be readable and executable by SlurmUser and is called as:
+#   <MailProg> -s "<subject>" <recipient>
+# where the <MailProg> parameter is configured in slurm.conf.
+# Note that PATH and HOME variables are unset when slurmctld calls MailProg.
 #
 # Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/jobs
 
-MAIL=/bin/mail
-export PATH=/usr/bin:/bin:$PATH	 # slurmctld may run with a minimal or empty PATH
-unset SLURM_TIME_FORMAT	 # Use the Slurm default time format, whatever the caller sets
+MAIL=/bin/mail			# This command must be available on the system
+export PATH=/usr/bin:/bin:$PATH	# slurmctld may run with a minimal or empty PATH
+unset SLURM_TIME_FORMAT		# Use the Slurm default time format, whatever the caller sets
 
-# Time for the job to finish and its accounting data to reach slurmdbd.
+# Define the time for the job to finish and its accounting data to be committed to slurmdbd.
 # Note: `systemctl stop/restart slurmctld` may wait for this sleep to end.
 JOB_COMPLETION_TIME=5
 
@@ -74,6 +74,8 @@ function time2str() {
 
 # Print the efficiency report of a finished job: 
 # Problems are printed too, so that they end up in the mail body.
+# Note: SLUID (Slurm Lexicographically-sortable Unique ID) parameter was added in Slurm 24.11,
+#   see https://slurm.schedmd.com/squeue.html#OPT_Sluid
 function jobreport() {
 	local jobid=$1
 
@@ -81,28 +83,29 @@ function jobreport() {
 	# as TotalCPU then no longer includes the CPU time of the steps.)
 	local job
 	job=$(sacct -P -n --noconvert -j "$jobid" \
-			-o JobID,JobIDRaw,User,Group,State,Cluster,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End |
+			-o JobID,JobIDRaw,SLUID,User,Group,State,Cluster,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End |
 		awk -F'|' '$1 !~ /\./' | head -1)
 	if [ -z "$job" ]
 	then
 		echo "Job $jobid not found in the accounting database."
 		return
 	fi
-	local id raw_id user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end
-	IFS='|' read -r id raw_id user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
+	local id raw_id sluid user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end
+	IFS='|' read -r id raw_id sluid user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
 	state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
 
 	# Statistics are only complete once the job has ended.
 	case $state in
 		COMPLETED|FAILED|CANCELLED|TIMEOUT|OUT_OF_MEMORY|NODE_FAIL|BOOT_FAIL|DEADLINE|PREEMPTED) ;;
 		*) echo "Job $jobid is in state $state: efficiency statistics are only available after the job has ended."
-			return ;;
+		   return ;;
 	esac
 	[ "${ncpus:-0}" -eq 0 ] && ncpus=1
 	[ "${nnodes:-0}" -eq 0 ] && nnodes=1
 
 	echo "Job ID: $raw_id"
 	[[ $id == *_* ]] && echo "Array Job ID: $id"
+	echo "Job SLUID: $sluid"
 	echo "Cluster: $cluster"
 	echo "User/Group: $user/$group"
 	echo "State: $state (exit code ${exitcode%%:*})"	 # ExitCode is "exit:signal"
