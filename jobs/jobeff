@@ -5,22 +5,25 @@
 # output similar to the "seff" tool from the slurm-contribs RPM package.
 # For a running job, the steps still running are read with "sstat".
 # Exit codes: 0 OK, 1 usage, 2 job not found, 4 job is not running or ended.
+#
+# Author: Ole Holm Nielsen <Ole.H.Nielsen@fysik.dtu.dk>
+# Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/jobs
 
-usage() {
-    echo "Usage: seff [Options] <Jobid>"
-    echo "       Options:"
-    echo "       -h    Help menu"
-    echo "       -d    Debug mode: display raw Slurm data"
-    exit 1
+function usage() {
+	echo "Usage: jobeff [Options] <Jobid>"
+	echo "       Options:"
+	echo "       -h    Help menu"
+	echo "       -d    Debug mode: display raw Slurm data"
+	exit 1
 }
 
 debug=0
 while getopts "hd" opt
 do
-    case $opt in
-        d) debug=1 ;;
-        *) usage ;;
-    esac
+	case $opt in
+		d) debug=1 ;;
+		*) usage ;;
+	esac
 done
 shift $((OPTIND - 1))
 [ $# -ne 1 ] && usage
@@ -29,78 +32,77 @@ jobid=$1
 ### Helpers
 
 # Print the values of KEY in TRES strings ("cpu=4,mem=40000M,node=1") read from stdin.
-tres() {
-    grep -oE "(^|,)$1=[^,]*" | cut -d= -f2-
-}
+function tres() { grep -oE "(^|,)$1=[^,]*" | cut -d= -f2-; }
 
 # Lowest and highest of a list of sizes such as 1500, 900M, 2G (n/a if empty).
-lowest()  { sort -h | head -1 | grep . || echo n/a; }
-highest() { sort -h | tail -1 | grep . || echo n/a; }
+function lowest() { sort -h | head -1 | grep . || echo n/a; }
+function highest() { sort -h | tail -1 | grep . || echo n/a; }
 
 # Evaluate a floating point expression: calc FORMAT EXPRESSION
-calc() {
-    awk "BEGIN { printf \"$1\", $2 }"
-}
+function calc() { awk "BEGIN { printf \"$1\", $2 }"; }
 
 # Convert a memory size such as 40000M (or plain bytes) to bytes.
-to_bytes() {
-    local value=${1:-0}
-    case $value in
-        *K) echo $(( ${value%K} * 1024 )) ;;
-        *M) echo $(( ${value%M} * 1024**2 )) ;;
-        *G) echo $(( ${value%G} * 1024**3 )) ;;
-        *T) echo $(( ${value%T} * 1024**4 )) ;;
-        *)  echo "$value" ;;
-    esac
+function to_bytes() {
+	local value=${1:-0}
+	case $value in
+		*K) echo $(( ${value%K} * 1024 )) ;;
+		*M) echo $(( ${value%M} * 1024**2 )) ;;
+		*G) echo $(( ${value%G} * 1024**3 )) ;;
+		*T) echo $(( ${value%T} * 1024**4 )) ;;
+		*)  echo "$value" ;;
+	esac
 }
 
 # Format bytes as e.g. "361.20 MB".
-bytes2str() {
-    awk -v b="$1" 'BEGIN {
-        if (b <= 0) { print "0.00 MB"; exit }
-        split("B KB MB GB TB PB", unit, " ")
-        e = int(log(b) / log(1024)); if (e > 5) e = 5
-        printf "%.2f %s", b / 1024^e, unit[e + 1]
-    }'
+function bytes2str() {
+	awk -v b="$1" 'BEGIN {
+		if (b <= 0) { print "0.00 MB"; exit }
+		split("B KB MB GB TB PB", unit, " ")
+		e = int(log(b) / log(1024)); if (e > 5) e = 5
+		printf "%.2f %s", b / 1024^e, unit[e + 1]
+	}'
 }
 
 # Convert a sacct time ([D-][HH:]MM:SS[.mmm]) to whole seconds, rounded.
-time2sec() {
-    awk -v t="$1" 'BEGIN {
-        if (split(t, a, "-") == 2) { days = a[1]; t = a[2] }
-        n = split(t, p, ":")
-        for (i = 1; i <= n; i++) s = s * 60 + p[i]
-        printf "%d", days * 86400 + s + 0.5
-    }'
+function time2sec() {
+	awk -v t="$1" 'BEGIN {
+		if (split(t, a, "-") == 2) { days = a[1]; t = a[2] }
+		n = split(t, p, ":")
+		for (i = 1; i <= n; i++) s = s * 60 + p[i]
+		printf "%d", days * 86400 + s + 0.5
+	}'
 }
 
 # Format seconds as [D-]HH:MM:SS.
-time2str() {
-    local t=$1 days=$(($1 / 86400))
-    [ $days -ge 1 ] && printf "%d-" $days
-    printf "%02d:%02d:%02d" $((t % 86400 / 3600)) $((t % 3600 / 60)) $((t % 60))
+function time2str() {
+	local t=$1 days=$(($1 / 86400))
+	[ $days -ge 1 ] && printf "%d-" $days
+	printf "%02d:%02d:%02d" $((t % 86400 / 3600)) $((t % 3600 / 60)) $((t % 60))
 }
 
 ### Job data
 
+# Note: SLUID (Slurm Lexicographically-sortable Unique ID) parameter was added in Slurm 24.11,
+#   see https://slurm.schedmd.com/squeue.html#OPT_Sluid
 # The job line is the first one without a ".step" suffix. (Not using sacct -X,
 # as TotalCPU then no longer includes the CPU time of the steps.)
-job_fields=JobID,JobIDRaw,User,Group,State,Cluster,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode
+job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End
 job=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields 2>/dev/null | awk -F'|' '$1 !~ /\./' | head -1)
-if [ -z "$job" ]; then
-    echo "Job not found." >&2
-    exit 2
+if [ -z "$job" ]
+then
+	echo "Job not found." >&2
+	exit 2
 fi
-IFS='|' read -r id raw_id user group state cluster ncpus nnodes alloc totalcpu walltime exitcode <<< "$job"
-state=${state%% *}              # "CANCELLED by 123" -> "CANCELLED"
+IFS='|' read -r id raw_id sluid user group state cluster ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
+state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
 
 # Statistics are available for running jobs (so far) and for jobs that have ended.
 running=0
 case $state in
-    RUNNING) running=1 ;;
-    COMPLETED|FAILED|CANCELLED|TIMEOUT|OUT_OF_MEMORY|NODE_FAIL|BOOT_FAIL|DEADLINE|PREEMPTED) ;;
-    *)  echo "Job $jobid is in state $state: efficiency statistics are only available once the job is running." >&2
-        exit 4 ;;
+	RUNNING) running=1 ;;
+	COMPLETED|FAILED|CANCELLED|TIMEOUT|OUT_OF_MEMORY|NODE_FAIL|BOOT_FAIL|DEADLINE|PREEMPTED) ;;
+	*) echo "Job $jobid is in state $state: efficiency statistics are only available once the job is running." >&2
+	   exit 4 ;;
 esac
 [ "${ncpus:-0}" -eq 0 ] && ncpus=1
 [ "${nnodes:-0}" -eq 0 ] && nnodes=1
@@ -108,63 +110,72 @@ esac
 # Usage data of the job steps: step_usage [--noconvert] -o FIELDS
 # sacct has the data of steps that have ended. For a running job, sstat adds the
 # steps still running (sstat lists them by the raw job ID, also for array jobs).
-step_usage() {
-    sacct -P -n -j "$jobid" "$@" 2>/dev/null
-    [ $running -eq 1 ] && sstat -P -n -a -j "$raw_id" "$@" 2>/dev/null
+function step_usage() {
+	sacct -P -n -j "$jobid" "$@" 2>/dev/null
+	[ $running -eq 1 ] && sstat -P -n -a -j "$raw_id" "$@" 2>/dev/null
 }
 
 step_fields=JobID,TRESUsageInTot,TRESUsageInMax,TRESUsageInAve
 steps=$(step_usage --noconvert -o $step_fields)
 
-if [ $debug -eq 1 ]; then
-    echo "Slurm data ($job_fields):"
-    echo "$job"
-    echo "Slurm step data ($step_fields):"
-    echo "$steps"
-    echo
+if [ $debug -eq 1 ]
+then
+	echo "Slurm data ($job_fields):"
+	echo "$job"
+	echo "Slurm step data ($step_fields):"
+	echo "$steps"
+	echo
 fi
 
 ### Report
 
 echo "Job ID: $raw_id"
 [[ $id == *_* ]] && echo "Array Job ID: $id"
+echo "Job SLUID: $sluid"
 echo "Cluster: $cluster"
 echo "User/Group: $user/$group"
-if [ $running -eq 1 ]; then
-    echo "State: $state (statistics so far)"
+if [ $running -eq 1 ]
+then
+	echo "State: $state (statistics so far)"
 else
-    echo "State: $state (exit code ${exitcode%%:*})"     # ExitCode is "exit:signal"
+	echo "State: $state (exit code ${exitcode%%:*})"	 # ExitCode is "exit:signal"
 fi
-if [ $ncpus -eq 1 ]; then
-    echo "Cores: 1"
+echo "Submit time: $submit"
+echo "Start time: $start"
+echo "Elapsed time: $(time2str $walltime)"
+echo "End time: $end"
+if [ $ncpus -eq 1 ]
+then
+	echo "Cores: 1"
 else
-    echo "Nodes: $nnodes"
-    echo "Cores per node: $((ncpus / nnodes))"
+	echo "Nodes: $nnodes"
+	echo "Cores per node: $((ncpus / nnodes))"
 fi
 
 # CPU: TotalCPU of the job is the sum over all its steps that have ended.
 # Add the CPU time of the steps still running, from sstat (the cpu entry of TRESUsageInTot).
 cputime=$(time2sec "${totalcpu:-0}")
-if [ $running -eq 1 ]; then
-    for t in $(sstat -P -n -a -j "$raw_id" -o TRESUsageInTot 2>/dev/null | tres cpu); do
-        cputime=$((cputime + $(time2sec "$t")))
-    done
+if [ $running -eq 1 ]
+then
+	for t in $(sstat -P -n -a -j "$raw_id" -o TRESUsageInTot 2>/dev/null | tres cpu); do
+		cputime=$((cputime + $(time2sec "$t")))
+	done
 fi
 corewalltime=$((walltime * ncpus))
 echo "CPU Utilized: $(time2str $cputime)"
 echo "CPU Efficiency: $(calc %.2f "$corewalltime ? $cputime / $corewalltime * 100 : 0")% of $(time2str $corewalltime) core-walltime"
-echo "Job Wall-clock time: $(time2str $walltime)"
 
 # Memory used: TRESUsageInTot mem is the sum of the memory peaks of all tasks of a step.
 # Take the step with the largest sum, and the max and average task peak of that step.
 used=0 task_max=0 task_ave=0
 while IFS='|' read -r step tot max ave; do
-    tot=$(tres mem <<< "$tot")
-    if [[ $step == "$id".* || $step == "$raw_id".* ]] && (( ${tot:-0} > used )); then
-        used=$tot
-        task_max=$(tres mem <<< "$max")
-        task_ave=$(tres mem <<< "$ave")
-    fi
+	tot=$(tres mem <<< "$tot")
+	if [[ $step == "$id".* || $step == "$raw_id".* ]] && (( ${tot:-0} > used ))
+	then
+		used=$tot
+		task_max=$(tres mem <<< "$max")
+		task_ave=$(tres mem <<< "$ave")
+	fi
 done <<< "$steps"
 echo "Memory Utilized: $(bytes2str $used)"
 
@@ -173,26 +184,29 @@ echo "Memory Utilized: $(bytes2str $used)"
 allocated=$(to_bytes "$(tres mem <<< "$alloc")")
 per=node divisor=$nnodes
 if command -v jq > /dev/null &&
-   [ "$(sacct --json -j "$jobid" 2>/dev/null |
-        jq --argjson id "$raw_id" '[.jobs[] | select(.job_id == $id)][0].required.memory_per_cpu.set')" = true ]; then
-    per=core divisor=$ncpus
+	[ "$(sacct --json -j "$jobid" 2>/dev/null |
+	jq --argjson id "$raw_id" '[.jobs[] | select(.job_id == $id)][0].required.memory_per_cpu.set')" = true ]
+then
+	per=core divisor=$ncpus
 fi
 echo "Memory Efficiency: $(calc %.2f "$allocated ? $used / $allocated * 100 : 0")% of $(bytes2str $allocated) ($(bytes2str $((allocated / divisor)))/$per)"
-if (( ${task_ave:-0} > 0 && ${task_max:-0} > task_ave )); then
-    echo "The task which had the largest memory consumption differs by $(calc %.2f "$task_max / $task_ave * 100")% from the average task max memory consumption"
+if (( ${task_ave:-0} > 0 && ${task_max:-0} > task_ave ))
+then
+	echo "The task which had the largest memory consumption differs by $(calc %.2f "$task_max / $task_ave * 100")% from the average task max memory consumption"
 fi
 
 # GPUs, if any were allocated. Over all steps: the lowest task minimum,
 # the highest task maximum, and the highest step average.
-if [[ $alloc == *gres/gpu* ]]; then
-    usage=$(step_usage -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
-    min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
-    gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
-    echo "GPU AllocTRES: $alloc"
-    echo "GPU utilization: min $(tres gres/gpuutil <<< "$min" | lowest)%," \
-         "max $(tres gres/gpuutil <<< "$max" | highest)%," \
-         "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
-    echo "GPU memory:      min $(tres gres/gpumem <<< "$min" | lowest)," \
-         "max $(tres gres/gpumem <<< "$max" | highest)," \
-         "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
+if [[ $alloc == *gres/gpu* ]]
+then
+	usage=$(step_usage -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
+	min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
+	gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
+	echo "GPU AllocTRES: $alloc"
+	echo "GPU utilization: min $(tres gres/gpuutil <<< "$min" | lowest)%," \
+		 "max $(tres gres/gpuutil <<< "$max" | highest)%," \
+		 "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
+	echo "GPU memory:      min $(tres gres/gpumem <<< "$min" | lowest)," \
+		 "max $(tres gres/gpumem <<< "$max" | highest)," \
+		 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
 fi
