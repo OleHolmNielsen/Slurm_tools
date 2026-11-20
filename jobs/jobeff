@@ -99,7 +99,7 @@ function time2str() {
 #   see https://slurm.schedmd.com/squeue.html#OPT_Sluid
 # The job line is the first one without a ".step" suffix. (Not using sacct -X,
 # as TotalCPU then no longer includes the CPU time of the steps.)
-job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,Partition,NodeList,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End
+job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,Partition,NodeList,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End,ConsumedEnergyRaw
 # sacct fails (non-zero exit status, error message on stderr) when the Slurm database is not responding.
 job=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields 2>&1)
 status=$?
@@ -116,7 +116,7 @@ then
 	echo "Job not found." >&2
 	exit 2
 fi
-IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end <<< "$job"
+IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end energy <<< "$job"
 state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
 
 # Statistics are available for running jobs (so far) and for jobs that have ended.
@@ -251,10 +251,12 @@ then
 		 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
 fi
 
-# Energy consumed by the job, if measured: the energy field of AllocTRES is in Joules (1 kWh = 3600000 J).
-energy=$(tres energy <<< "$alloc")
-if (( ${energy:-0} > 0 ))
-then
-	kwh=$(awk -v e="$energy" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
-	field "Energy consumed" "$energy J ($kwh kWh)"
-fi
+# Energy consumed by the job in Joules (ConsumedEnergyRaw), if measured (1 kWh = 3600000 J).
+# Due to former Slurm bugs the value may be astronomically large: values above
+# max_energy are assumed to be errors. (Compared in awk, as they may overflow Bash integers.)
+max_energy=10000000000		# 10 GJ = 2778 kWh
+kwh=$(awk -v e="${energy:-0}" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
+case $(awk -v e="${energy:-0}" -v max=$max_energy 'BEGIN { print (e > max ? "error" : e > 0 ? "ok" : "none") }') in
+	ok)	field "Energy consumed" "$kwh kWh ($energy J)" ;;
+	error)	field "Energy consumed" "n/a (Slurm reported an invalid value of $kwh kWh)" ;;
+esac

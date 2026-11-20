@@ -113,7 +113,8 @@ The report contains:
   without ``jq`` the memory is assumed to be allocated per node.
 * GPU utilization and GPU memory (min/max/average), if the job was allocated GPUs (see the NOTE below).
   A warning is printed if the max or average GPU utilization is below 10% (the ``gpu_util_threshold`` variable in ``jobeff``).
-* The energy consumed by the job in Joules and kWh, if Slurm has measured it (the ``energy`` field of the job's ``AllocTRES``).
+* The energy consumed by the job in Joules and kWh, if Slurm has measured it (the ``sacct`` field ``ConsumedEnergyRaw``).
+  Values above 10 GJ (2778 kWh) are reported as invalid, as former Slurm bugs sometimes gave astronomically large values.
 
 The exit code of ``jobeff`` is 0 on success, 1 for usage errors, 2 if the job was not found
 or ``sacct`` failed (for example when the Slurm database is not responding), and 4 if the job has not started yet.
@@ -148,7 +149,7 @@ GPU utilization:    min 0%, max 0%, avg 0% (gres/gpu=1)
 Warning:            The max or avg GPU utilization is below 10%:
                     the job seems not to use the allocated GPUs efficiently
 GPU memory:         min 0, max 0, avg 0 (MB) (gres/gpu=1)
-Energy consumed:    10218 J (0.00284 kWh)
+Energy consumed:    0.00284 kWh (10218 J)
 ```
 
 The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.
