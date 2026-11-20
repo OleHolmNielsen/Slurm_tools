@@ -75,6 +75,8 @@ function time2sec() {
 
 # Width of the label column in the report.
 label_width=19
+# Warn about inefficient GPU usage when the max or average GPU utilization (%) is below this value.
+gpu_util_threshold=10
 
 # Print a report line with the label and the value(s) in aligned columns: field LABEL VALUE...
 # An empty LABEL prints a continuation line of the previous value.
@@ -232,9 +234,18 @@ then
 	min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
 	gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
 	field "GPU AllocTRES" "$alloc"
+	gpu_max=$(tres gres/gpuutil <<< "$max" | highest)
+	gpu_avg=$(tres gres/gpuutil <<< "$ave" | highest)
 	field "GPU utilization" "min $(tres gres/gpuutil <<< "$min" | lowest)%," \
-		 "max $(tres gres/gpuutil <<< "$max" | highest)%," \
-		 "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
+		 "max $gpu_max%," \
+		 "avg $gpu_avg% ($gpus)"
+	# Warn when the max or average GPU utilization is below the threshold (skipped when there is no GPU data)
+	if [[ $gpu_max != n/a && $gpu_avg != n/a ]] &&
+		awk -v max="$gpu_max" -v avg="$gpu_avg" -v t="$gpu_util_threshold" 'BEGIN { exit !(max < t || avg < t) }'
+	then
+		field "Warning" "The max or avg GPU utilization is below ${gpu_util_threshold}%:"
+		field "" "the job seems not to use the allocated GPUs efficiently"
+	fi
 	field "GPU memory" "min $(tres gres/gpumem <<< "$min" | lowest)," \
 		 "max $(tres gres/gpumem <<< "$max" | highest)," \
 		 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
