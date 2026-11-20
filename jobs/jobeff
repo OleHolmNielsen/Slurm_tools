@@ -85,6 +85,11 @@ function time2sec() {
 
 # Width of the label column in the report.
 label_width=19
+# Energy values (Joules) above this are assumed to be errors: due to former Slurm bugs the
+# value may be astronomically large (such as 18446744073709551614, Slurm's NO_VAL64).
+max_energy=10000000000		# 10 GJ = 2778 kWh
+# The SlurmUser of slurm.conf (sacct shows all jobs to root and SlurmUser).
+slurm_user=slurm
 # Warn about inefficient GPU usage when the max or average GPU utilization (%) is below this value.
 gpu_util_threshold=10
 
@@ -109,24 +114,30 @@ function time2str() {
 #   see https://slurm.schedmd.com/squeue.html#OPT_Sluid
 # The job line is the first one without a ".step" suffix. (Not using sacct -X,
 # as TotalCPU then no longer includes the CPU time of the steps.)
-job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,Partition,NodeList,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End,ConsumedEnergyRaw
+job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,Partition,NodeList,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End,ConsumedEnergyRaw,Exclusive
 # sacct fails (non-zero exit status, error message on stderr) when the Slurm database is not responding.
-job=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields 2>&1)
+# The times are printed in the standard format YYYY-MM-DDTHH:MM:SS, which is also used in sacct queries below.
+export SLURM_TIME_FORMAT=standard
+# The usage data of the job steps (step_fields) are read in the same sacct call,
+# after the job fields, to minimize the number of calls to the Slurm database.
+step_fields=JobID,TRESUsageInTot,TRESUsageInMax,TRESUsageInAve
+sacct_data=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields,${step_fields#JobID,} 2>&1)
 status=$?
 if [ $status -ne 0 ]
 then
 	echo "sacct failed (exit status $status):" >&2
-	echo "$job" >&2
+	echo "$sacct_data" >&2
 	exit 2
 fi
-# Keep only the parsable job lines (skipping any warnings from sacct).
-job=$(awk -F'|' 'NF > 1 && $1 !~ /\./' <<< "$job" | head -1)
+# Keep only the parsable lines (skipping any warnings from sacct).
+sacct_data=$(awk -F'|' 'NF > 1' <<< "$sacct_data")
+job=$(awk -F'|' '$1 !~ /\./' <<< "$sacct_data" | head -1)
 if [ -z "$job" ]
 then
 	echo "Job not found." >&2
 	exit 2
 fi
-IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end energy <<< "$job"
+IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end energy exclusive _ <<< "$job"
 state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
 
 # Statistics are available for running jobs (so far) and for jobs that have ended.
@@ -148,8 +159,20 @@ function step_usage() {
 	[ $running -eq 1 ] && sstat -P -n -a -j "$raw_id" "$@" 2>/dev/null
 }
 
-step_fields=JobID,TRESUsageInTot,TRESUsageInMax,TRESUsageInAve
-steps=$(step_usage --noconvert -o $step_fields)
+# The step fields from sacct: JobID and the last fields after the job fields.
+steps=$(awk -F'|' -v OFS='|' -v n=$(( $(tr -cd , <<< "$job_fields" | wc -c) + 1 )) '{ print $1, $(n+1), $(n+2), $(n+3) }' <<< "$sacct_data")
+# For a running job, sstat also gives the energy consumed so far by the running steps
+# (ConsumedEnergyRaw, in Joules), as sacct has the energy only when the job has ended.
+# The steps overlap in time (the extern step spans the whole job), so take the largest value.
+# Invalid values above max_energy (see above) are skipped.
+running_steps=""
+if [ $running -eq 1 ]
+then
+	running_steps=$(sstat -P -n -a --noconvert -j "$raw_id" -o $step_fields,ConsumedEnergyRaw 2>/dev/null)
+	energy=$(awk -F'|' -v e="${energy:-0}" -v max=$max_energy '$5 > e && $5 <= max { e = $5 } END { printf "%.0f", e }' <<< "$running_steps")
+	running_steps=$(cut -s -d'|' -f1-4 <<< "$running_steps")
+fi
+[ -n "$running_steps" ] && steps+=$'\n'"$running_steps"
 
 if [ $debug -eq 1 ]
 then
@@ -195,12 +218,9 @@ fi
 # CPU: TotalCPU of the job is the sum over all its steps that have ended.
 # Add the CPU time of the steps still running, from sstat (the cpu entry of TRESUsageInTot).
 cputime=$(time2sec "${totalcpu:-0}")
-if [ $running -eq 1 ]
-then
-	for t in $(sstat -P -n -a -j "$raw_id" -o TRESUsageInTot 2>/dev/null | tres cpu); do
-		cputime=$((cputime + $(time2sec "$t")))
-	done
-fi
+for t in $(cut -s -d'|' -f2 <<< "$running_steps" | tres cpu); do
+	cputime=$((cputime + $(time2sec "$t")))
+done
 corewalltime=$((walltime * ncpus))
 field "CPU Utilized" "$(time2str $cputime)"
 field "CPU Efficiency" "$(calc %.2f "$corewalltime ? $cputime / $corewalltime * 100 : 0")% of $(time2str $corewalltime) core-walltime"
@@ -262,11 +282,34 @@ then
 fi
 
 # Energy consumed by the job in Joules (ConsumedEnergyRaw), if measured (1 kWh = 3600000 J).
-# Due to former Slurm bugs the value may be astronomically large: values above
-# max_energy are assumed to be errors. (Compared in awk, as they may overflow Bash integers.)
-max_energy=10000000000		# 10 GJ = 2778 kWh
+# Values above max_energy are assumed to be errors. (Compared in awk, as they may overflow Bash integers.)
 kwh=$(awk -v e="${energy:-0}" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
 case $(awk -v e="${energy:-0}" -v max=$max_energy 'BEGIN { print (e > max ? "error" : e > 0 ? "ok" : "none") }') in
-	ok)	field "Energy consumed" "$kwh kWh ($(joule2str "$energy"))" ;;
+	ok)	field "Energy consumed" "$kwh kWh ($(joule2str "$energy"))"
+		# Slurm measures the energy of entire nodes. If other jobs ran on the nodes
+		# while this job was running (node state Mixed), the energy also includes theirs.
+		# Exclusive=NODE (sbatch --exclusive): the job had its nodes to itself.
+		# Otherwise look up the other jobs with sacct, using times in the standard (sortable) format.
+		if [[ ${exclusive^^} != NODE ]]
+		then
+			t_end=$end
+			[[ $t_end == Unknown || -z $t_end ]] && t_end=$(date +%Y-%m-%dT%H:%M:%S)
+			shared=$(sacct -a -n -P -X -s R -N "$nodelist" -S "$start" -E "$t_end" \
+				-o JobIDRaw,Start,End 2>/dev/null |
+				awk -F'|' -v id="$raw_id" -v s="$start" -v e="$t_end" '$1 != id && ($3 > s || $3 == "Unknown") && $2 < e' | wc -l)
+			# Unless run by root or SlurmUser, sacct may only show the user's own jobs (PrivateData
+			# in slurmdbd.conf). Then other users' jobs may have shared the nodes without being seen,
+			# if this job did not allocate all CPUs of its nodes (scontrol is only called in that case).
+			if (( shared > 0 ))
+			then
+				field "" "Note: This is the energy of the entire nodes, which were shared with $shared other job(s)"
+				field "" "(Mixed node state), so it is not the energy of this job alone"
+			elif [[ $(id -un) != root && $(id -un) != "$slurm_user" ]] &&
+				(( ncpus < $(scontrol show node -o "$nodelist" 2>/dev/null | grep -oE 'CPUTot=[0-9]+' | awk -F= '{ n += $2 } END { print n + 0 }') ))
+			then
+				field "" "Note: This is the energy of the entire nodes, and it may include other jobs"
+				field "" "which shared the nodes (Mixed node state), so it may not be the energy of this job alone"
+			fi
+		fi ;;
 	error)	field "Energy consumed" "n/a (Slurm reported an invalid value of $kwh kWh)" ;;
 esac

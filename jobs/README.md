@@ -114,7 +114,13 @@ The report contains:
 * GPU utilization and GPU memory (min/max/average), if the job was allocated GPUs (see the NOTE below).
   A warning is printed if the max or average GPU utilization is below 10% (the ``gpu_util_threshold`` variable in ``jobeff``).
 * The energy consumed by the job in Joules and kWh, if Slurm has measured it (the ``sacct`` field ``ConsumedEnergyRaw``).
-  Values above 10 GJ (2778 kWh) are reported as invalid, as former Slurm bugs sometimes gave astronomically large values.
+  Values above 10 GJ (2778 kWh) are reported as invalid (the ``max_energy`` variable in ``jobeff``), as former Slurm bugs sometimes gave astronomically large values.
+  For a running job, the energy so far of the running job steps is read with ``sstat``.
+  Slurm measures the energy of entire nodes, so the energy is only that of the job if it had the nodes to itself
+  (``sacct`` field ``Exclusive=NODE``, from ``sbatch --exclusive``).
+  Otherwise a note is printed if other jobs ran on the same nodes during the job (Mixed node state).
+  Normal users can usually only see their own jobs with ``sacct``, so if the job did not allocate all CPUs of its nodes,
+  a note says that the energy may include other jobs (except when ``jobeff`` is run by root or SlurmUser, the ``slurm_user`` variable in ``jobeff``).
 
 The exit code of ``jobeff`` is 0 on success, 1 for usage errors, 2 if the job was not found
 or ``sacct`` failed (for example when the Slurm database is not responding), and 4 if the job has not started yet.
@@ -150,6 +156,8 @@ Warning:            The max or avg GPU utilization is below 10%:
                     the job seems not to use the allocated GPUs efficiently
 GPU memory:         min 0, max 0, avg 0 (MB) (gres/gpu=1)
 Energy consumed:    0.00284 kWh (10.22 kJ)
+                    Note: This is the energy of the entire nodes, and it may include other jobs
+                    which shared the nodes (Mixed node state), so it may not be the energy of this job alone
 ```
 
 The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.
