@@ -149,7 +149,7 @@ GPU utilization:    min 0%, max 0%, avg 0% (gres/gpu=1)
 Warning:            The max or avg GPU utilization is below 10%:
                     the job seems not to use the allocated GPUs efficiently
 GPU memory:         min 0, max 0, avg 0 (MB) (gres/gpu=1)
-Energy consumed:    0.00284 kWh (10218 J)
+Energy consumed:    0.00284 kWh (10.22 kJ)
 ```
 
 The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.

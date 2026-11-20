@@ -63,6 +63,16 @@ function bytes2str() {
 	}'
 }
 
+# Format an energy in Joules as e.g. "2.87 kJ" (in awk, as Slurm may give values too large for Bash integers).
+function joule2str() {
+	awk -v j="$1" 'BEGIN {
+		if (j < 1000) { printf "%d J", j; exit }
+		split("J kJ MJ GJ TJ PJ EJ", unit, " ")
+		for (e = 0; j >= 999.995 && e < 6; e++) j /= 1000	# 999.995 would round up to 1000.00
+		printf "%.2f %s", j, unit[e + 1]
+	}'
+}
+
 # Convert a sacct time ([D-][HH:]MM:SS[.mmm]) to whole seconds, rounded.
 function time2sec() {
 	awk -v t="$1" 'BEGIN {
@@ -257,6 +267,6 @@ fi
 max_energy=10000000000		# 10 GJ = 2778 kWh
 kwh=$(awk -v e="${energy:-0}" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
 case $(awk -v e="${energy:-0}" -v max=$max_energy 'BEGIN { print (e > max ? "error" : e > 0 ? "ok" : "none") }') in
-	ok)	field "Energy consumed" "$kwh kWh ($energy J)" ;;
+	ok)	field "Energy consumed" "$kwh kWh ($(joule2str "$energy"))" ;;
 	error)	field "Energy consumed" "n/a (Slurm reported an invalid value of $kwh kWh)" ;;
 esac
