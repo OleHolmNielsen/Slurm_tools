@@ -113,32 +113,37 @@ The report contains:
   without ``jq`` the memory is assumed to be allocated per node.
 * GPU utilization and GPU memory (min/max/average), if the job was allocated GPUs (see the NOTE below).
 
-The exit code of ``jobeff`` is 0 on success, 1 for usage errors, 2 if the job was not found,
-and 4 if the job has not started yet.
+The exit code of ``jobeff`` is 0 on success, 1 for usage errors, 2 if the job was not found
+or ``sacct`` failed (for example when the Slurm database is not responding), and 4 if the job has not started yet.
 
 Example output from ```jobeff```:
 
 ```
-Job ID: 11293137
-Job SLUID: s8FXM7QBF5ED00
-Cluster: niflheim
-Partition: a100el9
-NodeList: sd653
-User/Group: user1/group1
-State: COMPLETED (exit code 0)
-Submit time: 2026-11-18T13:52:14
-Start time: 2026-11-18T13:52:32
-Elapsed time: 00:00:10
-End time: 2026-11-18T13:52:42
-Nodes: 1
-Cores per node: 32
-CPU Utilized: 00:00:00
-CPU Efficiency: 0.00% of 00:05:20 core-walltime
-Memory Utilized: 19.85 MB
-Memory Efficiency: 0.06% of 31.25 GB (1000.00 MB/core)
-GPU AllocTRES: billing=128,cpu=32,energy=10218,gres/gpu:a100=1,gres/gpu=1,mem=32000M,node=1
-GPU utilization: min 0%, max 0%, avg 0% (gres/gpu=1)
-GPU memory:      min 0, max 0, avg 0 (MB) (gres/gpu=1)
+Efficiency report for Slurm job 11293137
+========================================
+
+Parameter           Value
+---------           -----
+Job ID:             11293137
+Job SLUID:          s8FXM7QBF5ED00
+Cluster:            niflheim
+Partition:          a100el9
+NodeList:           sd653
+User/Group:         user1/group1
+State:              COMPLETED (exit code 0)
+Submit time:        2026-11-18T13:52:14
+Start time:         2026-11-18T13:52:32
+Elapsed time:       00:00:10
+End time:           2026-11-18T13:52:42
+Nodes:              1
+Cores per node:     32
+CPU Utilized:       00:00:00
+CPU Efficiency:     0.00% of 00:05:20 core-walltime
+Memory Utilized:    19.85 MB
+Memory Efficiency:  0.06% of 31.25 GB (1000.00 MB/core)
+GPU AllocTRES:      billing=128,cpu=32,energy=10218,gres/gpu:a100=1,gres/gpu=1,mem=32000M,node=1
+GPU utilization:    min 0%, max 0%, avg 0% (gres/gpu=1)
+GPU memory:         min 0, max 0, avg 0 (MB) (gres/gpu=1)
 ```
 
 The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.
