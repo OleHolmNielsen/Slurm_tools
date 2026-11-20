@@ -285,35 +285,41 @@ then
 		 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
 fi
 
-# Energy consumed by the job in Joules (ConsumedEnergyRaw), if measured (1 kWh = 3600000 J).
-# Values above max_energy are assumed to be errors. (Compared in awk, as they may overflow Bash integers.)
-kwh=$(awk -v e="${energy:-0}" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
-case $(awk -v e="${energy:-0}" -v max=$max_energy 'BEGIN { print (e > max ? "error" : e > 0 ? "ok" : "none") }') in
-	ok)	field "Energy consumed" "$kwh kWh ($(joule2str "$energy"))"
-		# Slurm measures the energy of entire nodes. If other jobs ran on the nodes
-		# while this job was running (node state Mixed), the energy also includes theirs.
-		# Exclusive=NODE (sbatch --exclusive): the job had its nodes to itself.
-		# Otherwise look up the other jobs with sacct, using times in the standard (sortable) format.
-		if [[ ${exclusive^^} != NODE ]]
-		then
-			t_end=$end
-			[[ $t_end == Unknown || -z $t_end ]] && t_end=$(date +%Y-%m-%dT%H:%M:%S)
-			shared=$(sacct -a -n -P -X -s R -N "$nodelist" -S "$start" -E "$t_end" \
-				-o JobIDRaw,Start,End 2>/dev/null |
-				awk -F'|' -v id="$raw_id" -v s="$start" -v e="$t_end" '$1 != id && ($3 > s || $3 == "Unknown") && $2 < e' | wc -l)
-			# Unless run by root or SlurmUser, sacct may only show the user's own jobs (PrivateData
-			# in slurmdbd.conf). Then other users' jobs may have shared the nodes without being seen,
-			# if this job did not allocate all CPUs of its nodes (scontrol is only called in that case).
-			if (( shared > 0 ))
+# Energy: the code below only deals with the energy consumed by the job. It is not executed
+# if Slurm has not measured the energy (ConsumedEnergyRaw is 0 or empty), which is the case
+# on clusters without energy accounting (AcctGatherEnergyType in slurm.conf).
+if [[ ${energy:-0} != 0 ]]
+then
+	# Energy consumed by the job in Joules (ConsumedEnergyRaw), if measured (1 kWh = 3600000 J).
+	# Values above max_energy are assumed to be errors. (Compared in awk, as they may overflow Bash integers.)
+	kwh=$(awk -v e="${energy:-0}" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
+	case $(awk -v e="${energy:-0}" -v max=$max_energy 'BEGIN { print (e > max ? "error" : e > 0 ? "ok" : "none") }') in
+		ok)	field "Energy consumed" "$kwh kWh ($(joule2str "$energy"))"
+			# Slurm measures the energy of entire nodes. If other jobs ran on the nodes
+			# while this job was running (node state Mixed), the energy also includes theirs.
+			# Exclusive=NODE (sbatch --exclusive): the job had its nodes to itself.
+			# Otherwise look up the other jobs with sacct, using times in the standard (sortable) format.
+			if [[ ${exclusive^^} != NODE ]]
 			then
-				field "" "Note: This is the energy of the entire nodes, which were shared with $shared other job(s)"
-				field "" "(Mixed node state), so it is not the energy of this job alone"
-			elif [[ $(id -un) != root && $(id -un) != "$slurm_user" ]] &&
-				(( ncpus < $(scontrol show node -o "$nodelist" 2>/dev/null | grep -oE 'CPUTot=[0-9]+' | awk -F= '{ n += $2 } END { print n + 0 }') ))
-			then
-				field "" "Note: This is the energy of the entire nodes, and it may include other jobs"
-				field "" "which shared the nodes (Mixed node state), so it may not be the energy of this job alone"
-			fi
-		fi ;;
-	error)	field "Energy consumed" "n/a (Slurm reported an invalid value of $kwh kWh)" ;;
-esac
+				t_end=$end
+				[[ $t_end == Unknown || -z $t_end ]] && t_end=$(date +%Y-%m-%dT%H:%M:%S)
+				shared=$(sacct -a -n -P -X -s R -N "$nodelist" -S "$start" -E "$t_end" \
+					-o JobIDRaw,Start,End 2>/dev/null |
+					awk -F'|' -v id="$raw_id" -v s="$start" -v e="$t_end" '$1 != id && ($3 > s || $3 == "Unknown") && $2 < e' | wc -l)
+				# Unless run by root or SlurmUser, sacct may only show the user's own jobs (PrivateData
+				# in slurmdbd.conf). Then other users' jobs may have shared the nodes without being seen,
+				# if this job did not allocate all CPUs of its nodes (scontrol is only called in that case).
+				if (( shared > 0 ))
+				then
+					field "" "Note: This is the energy of the entire nodes, which were shared with $shared other job(s)"
+					field "" "(Mixed node state), so it is not the energy of this job alone"
+				elif [[ $(id -un) != root && $(id -un) != "$slurm_user" ]] &&
+					(( ncpus < $(scontrol show node -o "$nodelist" 2>/dev/null | grep -oE 'CPUTot=[0-9]+' | awk -F= '{ n += $2 } END { print n + 0 }') ))
+				then
+					field "" "Note: This is the energy of the entire nodes, and it may include other jobs"
+					field "" "which shared the nodes (Mixed node state), so it may not be the energy of this job alone"
+				fi
+			fi ;;
+		error)	field "Energy consumed" "n/a (Slurm reported an invalid value of $kwh kWh)" ;;
+	esac
+fi
