@@ -77,10 +77,11 @@ function time2sec() {
 label_width=19
 
 # Print a report line with the label and the value(s) in aligned columns: field LABEL VALUE...
+# An empty LABEL prints a continuation line of the previous value.
 function field() {
-	local label=$1
+	local label=${1:+$1:}
 	shift
-	printf "%-${label_width}s %s\n" "$label:" "$*"
+	printf "%-${label_width}s %s\n" "$label" "$*"
 }
 
 # Format seconds as [D-]HH:MM:SS.
@@ -219,7 +220,8 @@ fi
 field "Memory Efficiency" "$(calc %.2f "$allocated ? $used / $allocated * 100 : 0")% of $(bytes2str $allocated) ($(bytes2str $((allocated / divisor)))/$per)"
 if (( ${task_ave:-0} > 0 && ${task_max:-0} > task_ave ))
 then
-	echo "The task which had the largest memory consumption differs by $(calc %.2f "$task_max / $task_ave * 100")% from the average task max memory consumption"
+	field "Please note" "The task which had the largest memory consumption"
+	field "" "differs by $(calc %.2f "$task_max / $task_ave * 100")% from the average task max memory consumption"
 fi
 
 # GPUs, if any were allocated. Over all steps: the lowest task minimum,
