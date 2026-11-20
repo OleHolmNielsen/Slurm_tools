@@ -73,6 +73,16 @@ function time2sec() {
 	}'
 }
 
+# Width of the label column in the report.
+label_width=19
+
+# Print a report line with the label and the value(s) in aligned columns: field LABEL VALUE...
+function field() {
+	local label=$1
+	shift
+	printf "%-${label_width}s %s\n" "$label:" "$*"
+}
+
 # Format seconds as [D-]HH:MM:SS.
 function time2str() {
 	local t=$1 days=$(($1 / 86400))
@@ -87,7 +97,17 @@ function time2str() {
 # The job line is the first one without a ".step" suffix. (Not using sacct -X,
 # as TotalCPU then no longer includes the CPU time of the steps.)
 job_fields=JobID,JobIDRaw,SLUID,User,Group,State,Cluster,Partition,NodeList,AllocCPUS,AllocNodes,AllocTRES,TotalCPU,ElapsedRaw,ExitCode,Submit,Start,End
-job=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields 2>/dev/null | awk -F'|' '$1 !~ /\./' | head -1)
+# sacct fails (non-zero exit status, error message on stderr) when the Slurm database is not responding.
+job=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields 2>&1)
+status=$?
+if [ $status -ne 0 ]
+then
+	echo "sacct failed (exit status $status):" >&2
+	echo "$job" >&2
+	exit 2
+fi
+# Keep only the parsable job lines (skipping any warnings from sacct).
+job=$(awk -F'|' 'NF > 1 && $1 !~ /\./' <<< "$job" | head -1)
 if [ -z "$job" ]
 then
 	echo "Job not found." >&2
@@ -129,29 +149,34 @@ fi
 
 ### Report
 
-echo "Job ID: $raw_id"
-[[ $id == *_* ]] && echo "Array Job ID: $id"
-echo "Job SLUID: $sluid"
-echo "Cluster: $cluster"
-echo "Partition: $partition"
-echo "NodeList: $nodelist"
-echo "User/Group: $user/$group"
+heading="Efficiency report for Slurm job $id"
+echo "$heading"
+echo "${heading//?/=}"	# Underline of the same length
+echo
+printf "%-${label_width}s %s\n" "Parameter" "Value" "---------" "-----"	# Column headings, aligned as in field()
+field "Job ID" "$raw_id"
+[[ $id == *_* ]] && field "Array Job ID" "$id"
+field "Job SLUID" "$sluid"
+field "Cluster" "$cluster"
+field "Partition" "$partition"
+field "NodeList" "$nodelist"
+field "User/Group" "$user/$group"
 if [ $running -eq 1 ]
 then
-	echo "State: $state (statistics so far)"
+	field "State" "$state (statistics so far)"
 else
-	echo "State: $state (exit code ${exitcode%%:*})"	 # ExitCode is "exit:signal"
+	field "State" "$state (exit code ${exitcode%%:*})"	 # ExitCode is "exit:signal"
 fi
-echo "Submit time: $submit"
-echo "Start time: $start"
-echo "Elapsed time: $(time2str $walltime)"
-echo "End time: $end"
+field "Submit time" "$submit"
+field "Start time" "$start"
+field "Elapsed time" "$(time2str $walltime)"
+field "End time" "$end"
 if [ $ncpus -eq 1 ]
 then
-	echo "Cores: 1"
+	field "Cores" "1"
 else
-	echo "Nodes: $nnodes"
-	echo "Cores per node: $((ncpus / nnodes))"
+	field "Nodes" "$nnodes"
+	field "Cores per node" "$((ncpus / nnodes))"
 fi
 
 # CPU: TotalCPU of the job is the sum over all its steps that have ended.
@@ -164,8 +189,8 @@ then
 	done
 fi
 corewalltime=$((walltime * ncpus))
-echo "CPU Utilized: $(time2str $cputime)"
-echo "CPU Efficiency: $(calc %.2f "$corewalltime ? $cputime / $corewalltime * 100 : 0")% of $(time2str $corewalltime) core-walltime"
+field "CPU Utilized" "$(time2str $cputime)"
+field "CPU Efficiency" "$(calc %.2f "$corewalltime ? $cputime / $corewalltime * 100 : 0")% of $(time2str $corewalltime) core-walltime"
 
 # Memory used: TRESUsageInTot mem is the sum of the memory peaks of all tasks of a step.
 # Take the step with the largest sum, and the max and average task peak of that step.
@@ -179,7 +204,7 @@ while IFS='|' read -r step tot max ave; do
 		task_ave=$(tres mem <<< "$ave")
 	fi
 done <<< "$steps"
-echo "Memory Utilized: $(bytes2str $used)"
+field "Memory Utilized" "$(bytes2str $used)"
 
 # Memory allocated, per core or per node. sacct's parsable output does not tell which
 # was requested, but the JSON output does (needs jq; otherwise assume per node).
@@ -191,7 +216,7 @@ if command -v jq > /dev/null &&
 then
 	per=core divisor=$ncpus
 fi
-echo "Memory Efficiency: $(calc %.2f "$allocated ? $used / $allocated * 100 : 0")% of $(bytes2str $allocated) ($(bytes2str $((allocated / divisor)))/$per)"
+field "Memory Efficiency" "$(calc %.2f "$allocated ? $used / $allocated * 100 : 0")% of $(bytes2str $allocated) ($(bytes2str $((allocated / divisor)))/$per)"
 if (( ${task_ave:-0} > 0 && ${task_max:-0} > task_ave ))
 then
 	echo "The task which had the largest memory consumption differs by $(calc %.2f "$task_max / $task_ave * 100")% from the average task max memory consumption"
@@ -204,11 +229,11 @@ then
 	usage=$(step_usage -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
 	min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
 	gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
-	echo "GPU AllocTRES: $alloc"
-	echo "GPU utilization: min $(tres gres/gpuutil <<< "$min" | lowest)%," \
+	field "GPU AllocTRES" "$alloc"
+	field "GPU utilization" "min $(tres gres/gpuutil <<< "$min" | lowest)%," \
 		 "max $(tres gres/gpuutil <<< "$max" | highest)%," \
 		 "avg $(tres gres/gpuutil <<< "$ave" | highest)% ($gpus)"
-	echo "GPU memory:      min $(tres gres/gpumem <<< "$min" | lowest)," \
+	field "GPU memory" "min $(tres gres/gpumem <<< "$min" | lowest)," \
 		 "max $(tres gres/gpumem <<< "$max" | highest)," \
 		 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
 fi
