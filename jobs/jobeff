@@ -262,7 +262,11 @@ if [[ $alloc == *gres/gpu* ]]
 then
 	usage=$(step_usage -o TRESUsageInMin,TRESUsageInMax,TRESUsageInAve)
 	min=$(cut -d'|' -f1 <<< "$usage") max=$(cut -d'|' -f2 <<< "$usage") ave=$(cut -d'|' -f3 <<< "$usage")
-	gpus="gres/gpu=$(tres gres/gpu <<< "$alloc")"
+	ngpus=$(tres gres/gpu <<< "$alloc")
+	gpus="gres/gpu=$ngpus"
+	# The GPU type(s), if any, from AllocTRES entries such as gres/gpu:a100=1
+	gpu_types=$(grep -oE '(^|,)gres/gpu:[^=,]+' <<< "$alloc" | cut -d: -f2 | paste -sd,)
+	field "GPUs per node" "$((ngpus / nnodes))${gpu_types:+ ($gpu_types)}"
 	field "GPU AllocTRES" "$alloc"
 	gpu_max=$(tres gres/gpuutil <<< "$max" | highest)
 	gpu_avg=$(tres gres/gpuutil <<< "$ave" | highest)

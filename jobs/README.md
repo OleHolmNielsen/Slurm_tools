@@ -111,7 +111,7 @@ The report contains:
 * Memory used and memory efficiency relative to the allocated memory (per core or per node).
   The memory request type is read from ``sacct --json`` and requires the [jq](https://jqlang.org/) tool;
   without ``jq`` the memory is assumed to be allocated per node.
-* GPU utilization and GPU memory (min/max/average), if the job was allocated GPUs (see the NOTE below).
+* GPUs per node (with the GPU type, if any), GPU utilization and GPU memory (min/max/average), if the job was allocated GPUs (see the NOTE below).
   A warning is printed if the max or average GPU utilization is below 10% (the ``gpu_util_threshold`` variable in ``jobeff``).
 * The energy consumed by the job in Joules and kWh, if Slurm has measured it (the ``sacct`` field ``ConsumedEnergyRaw``).
   Values above 10 GJ (2778 kWh) are reported as invalid (the ``max_energy`` variable in ``jobeff``), as former Slurm bugs sometimes gave astronomically large values.
@@ -150,6 +150,7 @@ CPU Utilized:       00:00:00
 CPU Efficiency:     0.00% of 00:05:20 core-walltime
 Memory Utilized:    19.85 MB
 Memory Efficiency:  0.06% of 31.25 GB (1000.00 MB/core)
+GPUs per node:      1 (a100)
 GPU AllocTRES:      billing=128,cpu=32,energy=10218,gres/gpu:a100=1,gres/gpu=1,mem=32000M,node=1
 GPU utilization:    min 0%, max 0%, avg 0% (gres/gpu=1)
 Warning:            The max or avg GPU utilization is below 10%:
