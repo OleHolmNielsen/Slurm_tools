@@ -250,3 +250,11 @@ then
 		 "max $(tres gres/gpumem <<< "$max" | highest)," \
 		 "avg $(tres gres/gpumem <<< "$ave" | highest) (MB) ($gpus)"
 fi
+
+# Energy consumed by the job, if measured: the energy field of AllocTRES is in Joules (1 kWh = 3600000 J).
+energy=$(tres energy <<< "$alloc")
+if (( ${energy:-0} > 0 ))
+then
+	kwh=$(awk -v e="$energy" 'BEGIN { kwh = e / 3600000; printf (kwh < 1 ? "%.3g" : kwh > 10 ? "%.0f" : "%.3f"), kwh }')
+	field "Energy consumed" "$energy J ($kwh kWh)"
+fi
