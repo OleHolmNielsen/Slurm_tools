@@ -83,7 +83,7 @@ Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 Job CPU and GPU accounting
 --------------------------
 
-Job accounting reports are provided by the tools:
+Job accounting reports are provided by:
 
 * The [jobeff](jobeff) script prints the CPU, memory and GPU efficiency of a completed or running job.
   This script can be used with the [jobmail](jobmail) script,
@@ -92,8 +92,7 @@ Job accounting reports are provided by the tools:
   and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
 They are drop-in alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
-
-Besides CPU and memory accounting, these tools provide:
+Besides CPU and memory accounting, the present tools also provide:
 
 * **GPU accounting** using NVIDIA
   [NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml).
