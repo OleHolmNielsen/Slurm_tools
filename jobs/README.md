@@ -90,7 +90,11 @@ Job CPU and GPU accounting
   and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
 These tools are alternatives to the ``smail`` and ``seff`` scripts from the ``slurm-contribs`` package,
-and they furthermore provide GPU accounting statistics.
+and they furthermore provide **GPU accounting** 
+with [NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml)
+as well as **energy accounting** using
+[IPMI power monitoring](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#ipmi-power-monitoring)
+(if configured in your Slurm installation).
 
 ### jobeff
 
