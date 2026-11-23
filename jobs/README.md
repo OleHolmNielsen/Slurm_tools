@@ -83,18 +83,24 @@ Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
 Job CPU and GPU accounting
 --------------------------
 
+Job accounting reports are provided by the tools:
+
 * The [jobeff](jobeff) script prints the CPU, memory and GPU efficiency of a completed or running job.
   This script can be used with the [jobmail](jobmail) script,
   used by itself on the command line, or used from inside a running Slurm job.
 * The [jobmail](jobmail) script provides E-mail notifications from ``slurmctld`` to users,
   and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
-These tools provide **GPU accounting** with NVIDIA
-[NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml)
-as well as **energy accounting** using
-[IPMI power monitoring](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#ipmi-power-monitoring)
-(if configured in your Slurm installation).
 They are drop-in alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
+
+Besides CPU and memory accounting, these tools provide:
+
+* **GPU accounting** using NVIDIA
+  [NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml).
+* **Energy consumption accounting** using
+  [IPMI power monitoring](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#ipmi-power-monitoring).
+
+The mentioned Slurm plugins would first have to be configured in your installation.
 
 Installation: 
 Copy the scripts to the ``/usr/local/bin/`` folder:
@@ -199,20 +205,3 @@ When the job has ended (the subject contains an ending state such as COMPLETED, 
 ``jobmail`` waits a few seconds (``JOB_COMPLETION_TIME``) for the accounting data to be committed to ``slurmdbd``,
 and then puts the ``jobeff`` report of the job (or array task) in the mail body.
 Other mails, such as job start notifications, are sent without a report.
-
-Installation:
-Copy the [jobeff](jobeff) and [jobmail](jobmail) scripts to `/usr/local/bin/`,
-where they must be readable and executable by the ``SlurmUser``.
-``jobmail`` runs ``jobeff`` from `/usr/local/bin/`.
-Configure ``jobmail`` in ``slurm.conf``:
-```
-MailProg=/usr/local/bin/jobmail
-```
-and reconfigure ``slurmctld`` (``scontrol reconfigure``).
-
-NOTE: In order for the Slurm database to record GPU usage information,
-it is required that Slurm has been built with the NVIDIA 
-[NVML](https://developer.nvidia.com/management-library-nvml) library.
-The details of configuring Slurm with [NVML](https://developer.nvidia.com/management-library-nvml) 
-are discussed in the Wiki page
-[NVIDIA NVML library and GPU GRES](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#nvidia-nvml-library-and-gpu-gres).
