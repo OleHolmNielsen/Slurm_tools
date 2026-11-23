@@ -94,7 +94,7 @@ These tools provide **GPU accounting** with
 as well as **energy accounting** using
 [IPMI power monitoring](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#ipmi-power-monitoring)
 (if configured in your Slurm installation).
-These tools are alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
+They are drop-in alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
 
 ### jobeff
 
