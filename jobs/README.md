@@ -18,7 +18,7 @@ Some convenient scripts for managing Slurm jobs:
 
 * [jobtimelimit](jobtimelimit) Update timelimit of job(s).
 
-* [jobeff](jobeff) Print the CPU, memory and GPU efficiency of a completed or running job: ```jobeff [-h | -d] <jobid>```.
+* [jobeff](jobeff) Print the CPU, memory and GPU efficiency of a completed or running job: ```jobeff [-h | -d] [jobid | SLUID]```.
   See [Job CPU and GPU accounting](#job-cpu-and-gpu-accounting) below.
 
 * [jobmail](jobmail) Slurm ```MailProg``` which adds a ```jobeff``` job efficiency report to the E-mail notifications from ``slurmctld`` when a job has ended.
@@ -94,11 +94,18 @@ and they furthermore provide GPU accounting statistics.
 
 Usage:
 ```
-jobeff [Options] <Jobid>
+jobeff [Options] [Jobid | SLUID]
+       The job may be given by its Jobid or its Slurm SLUID.
+       If omitted, the environment variable SLURM_JOB_ID is used.
        Options:
        -h    Help menu
        -d    Debug mode: display raw Slurm data
 ```
+
+The job can be specified by its numeric ``Jobid`` or by its SLUID (Slurm Lexicographically-sortable Unique ID),
+for example ``jobeff 11293137`` or ``jobeff s8FXM7QBF5ED00``, provided that the ``sacct -j`` option of your Slurm version accepts a SLUID.
+Inside a Slurm job the argument can be omitted, since ``jobeff`` then reads the job ID from ``SLURM_JOB_ID``.
+An explicit ``Jobid`` or SLUID takes precedence. If none is given, an error message is printed and the exit code is 1.
 
 The job efficiency data are read from the Slurm database with ``sacct``.
 For a running job, the statistics so far are printed, and the job steps still running are read with ``sstat``.

@@ -10,7 +10,9 @@
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/tree/master/jobs
 
 function usage() {
-	echo "Usage: jobeff [Options] <Jobid>"
+	echo "Usage: jobeff [Options] [Jobid | SLUID]"
+	echo "       The job may be given by its Jobid or its Slurm SLUID."
+	echo "       If omitted, the environment variable SLURM_JOB_ID is used."
 	echo "       Options:"
 	echo "       -h    Help menu"
 	echo "       -d    Debug mode: display raw Slurm data"
@@ -26,8 +28,20 @@ do
 	esac
 done
 shift $((OPTIND - 1))
-[ $# -ne 1 ] && usage
-jobid=$1
+[ $# -gt 1 ] && usage
+# An explicit Jobid or SLUID argument takes precedence over SLURM_JOB_ID from a Slurm job environment.
+# The value is passed on to "sacct -j", which accepts both. sstat is called with the numeric JobIDRaw from sacct.
+if [ $# -eq 1 ]
+then
+	jobid=$1
+else
+	jobid=$SLURM_JOB_ID
+fi
+if [ -z "$jobid" ]
+then
+	echo "Error: No Jobid or SLUID was given and the environment variable SLURM_JOB_ID is not set." >&2
+	usage
+fi
 
 ### Helpers
 
