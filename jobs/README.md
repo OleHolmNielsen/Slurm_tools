@@ -103,11 +103,11 @@ chmod +x jobeff jobmail
 cp jobeff /usr/local/bin/	# All nodes
 cp jobmail /usr/local/bin/	# Only the slurmctld server
 ```
-Configure ``slurm.conf`` with [MailProg](https://slurm.schedmd.com/slurm.conf.html#OPT_MailProg):
+Configure [MailProg](https://slurm.schedmd.com/slurm.conf.html#OPT_MailProg) in  ``slurm.conf``:
 ```
 MailProg=/usr/local/bin/jobmail
 ```
-and reconfigure with ``scontrol reconfigure``.
+and reconfigure Slurm with ``scontrol reconfigure``.
 
 ### jobeff
 
