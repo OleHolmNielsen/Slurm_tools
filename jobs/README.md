@@ -89,12 +89,12 @@ Job CPU and GPU accounting
 * The [jobmail](jobmail) script provides E-mail notifications from ``slurmctld`` to users,
   and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
-These tools are alternatives to the ``smail`` and ``seff`` scripts from the ``slurm-contribs`` package,
-and they furthermore provide **GPU accounting** 
-with [NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml)
+These tools provide **GPU accounting** with
+[NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml)
 as well as **energy accounting** using
 [IPMI power monitoring](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#ipmi-power-monitoring)
 (if configured in your Slurm installation).
+These tools are alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
 
 ### jobeff
 
