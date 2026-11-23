@@ -135,7 +135,8 @@ export SLURM_TIME_FORMAT=standard
 # The usage data of the job steps (step_fields) are read in the same sacct call,
 # after the job fields, to minimize the number of calls to the Slurm database.
 step_fields=JobID,TRESUsageInTot,TRESUsageInMax,TRESUsageInAve
-sacct_data=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields,${step_fields#JobID,} 2>&1)
+# WorkDir (not available from sstat) is the last field, so that a "|" in the directory name cannot shift other fields.
+sacct_data=$(sacct -P -n --noconvert -j "$jobid" -o $job_fields,${step_fields#JobID,},WorkDir 2>&1)
 status=$?
 if [ $status -ne 0 ]
 then
@@ -151,7 +152,7 @@ then
 	echo "Job not found." >&2
 	exit 2
 fi
-IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end energy exclusive _ <<< "$job"
+IFS='|' read -r id raw_id sluid user group state cluster partition nodelist ncpus nnodes alloc totalcpu walltime exitcode submit start end energy exclusive _ _ _ workdir <<< "$job"
 state=${state%% *}			# "CANCELLED by 123" -> "CANCELLED"
 
 # Statistics are available for running jobs (so far) and for jobs that have ended.
@@ -210,7 +211,12 @@ field "Job SLUID" "$sluid"
 field "Cluster" "$cluster"
 field "Partition" "$partition"
 field "NodeList" "$nodelist"
-field "User/Group" "$user/$group"
+# The user's full name is the first comma-separated item of the passwd GECOS field,
+# where "&" stands for the capitalized login name. It may be missing.
+fullname=$(getent passwd "$user" 2>/dev/null | cut -d: -f5 | cut -d, -f1)
+fullname=${fullname//&/${user^}}
+field "User/Group" "$user/$group${fullname:+ ($fullname)}"
+field "WorkDir" "${workdir:-n/a}"
 if [ $running -eq 1 ]
 then
 	field "State" "$state (statistics so far)"

@@ -111,7 +111,7 @@ The job efficiency data are read from the Slurm database with ``sacct``.
 For a running job, the statistics so far are printed, and the job steps still running are read with ``sstat``.
 The report contains:
 
-* Job ID, Array Job ID (for array tasks), Job SLUID, cluster, partition, node list, user/group and job state with exit code.
+* Job ID, Array Job ID (for array tasks), Job SLUID, cluster, partition, node list, user/group with the user's full name (from the passwd GECOS field, if available), working directory (``WorkDir`` from ``sacct``) and job state with exit code.
 * Submit, start and end times, and the elapsed time.
 * Number of nodes and cores per node.
 * CPU time used and CPU efficiency relative to the core-walltime.
@@ -145,7 +145,8 @@ Job SLUID:          s8FXM7QBF5ED00
 Cluster:            niflheim
 Partition:          a100el9
 NodeList:           sd653
-User/Group:         user1/group1
+User/Group:         user1/group1 (Full Name)
+WorkDir:            /home/user1
 State:              COMPLETED (exit code 0)
 Submit time:        2026-11-18T13:52:14
 Start time:         2026-11-18T13:52:32
