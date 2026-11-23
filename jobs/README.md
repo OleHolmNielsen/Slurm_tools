@@ -161,38 +161,38 @@ or ``sacct`` failed (for example when the Slurm database is not responding), and
 Example output from ```jobeff```:
 
 ```
-Efficiency report for Slurm job 11293137
+Efficiency report for Slurm job 11326159
 ========================================
 
 Parameter           Value
 ---------           -----
-Job ID:             11293137
-Job SLUID:          s8FXM7QBF5ED00
+Job ID:             11326159
+Job SLUID:          s8FXM7Z40K2Q00
 Cluster:            niflheim
-Partition:          a100el9
-NodeList:           sd653
+Partition:          h200el9
+NodeList:           sd656
 User/Group:         user1/group1 (Full Name)
 WorkDir:            /home/user1
-State:              COMPLETED (exit code 0)
-Submit time:        2026-11-18T13:52:14
-Start time:         2026-11-18T13:52:32
-Elapsed time:       00:00:10
-End time:           2026-11-18T13:52:42
+State:              RUNNING (statistics so far)
+Submit time:        2026-11-21T14:15:52
+Start time:         2026-11-21T14:15:53
+Elapsed time:       2-01:39:52
+End time:           Unknown
 Nodes:              1
-Cores per node:     32
-CPU Utilized:       00:00:00
-CPU Efficiency:     0.00% of 00:05:20 core-walltime
-Memory Utilized:    19.85 MB
-Memory Efficiency:  0.06% of 31.25 GB (1000.00 MB/core)
-GPUs per node:      1 (a100)
-GPU AllocTRES:      billing=128,cpu=32,energy=10218,gres/gpu:a100=1,gres/gpu=1,mem=32000M,node=1
-GPU utilization:    min 0%, max 0%, avg 0% (gres/gpu=1)
-Warning:            The max or avg GPU utilization is below 10%:
-                    the job seems not to use the allocated GPUs efficiently
-GPU memory:         min 0, max 0, avg 0 (MB) (gres/gpu=1)
-Energy consumed:    0.00284 kWh (10.22 kJ)
-                    Note: This is the energy of the entire nodes, and it may include other jobs
-                    which shared the nodes (Mixed node state), so it may not be the energy of this job alone
+Cores per node:     8
+CPU Utilized:       3-09:18:13
+CPU Efficiency:     20.46% of 16-13:18:56 core-walltime
+Memory Utilized:    79.95 GB
+Memory Efficiency:  99.94% of 80.00 GB (10.00 GB/core)
+Please note:        The task which had the largest memory consumption
+                    differs by 100.02% from the average task max memory consumption
+GPUs per node:      1 (h200)
+GPU AllocTRES:      billing=256,cpu=8,gres/gpu:h200=1,gres/gpu=1,mem=81920M,node=1
+GPU utilization:    min 87%, max 87%, avg 85% (gres/gpu=1)
+GPU memory:         min 21920M, max 21920M, avg 21920M (MB) (gres/gpu=1)
+Energy consumed:    99 kWh (358.11 MJ)
+                    Note: This is the energy of the entire nodes, which were shared with 5 other job(s)
+                    (Mixed node state), so it is not the energy of this job alone
 ```
 
 The SLUID (*Slurm Lexicographically-sortable Unique ID*) job field was added in Slurm 24.11.
