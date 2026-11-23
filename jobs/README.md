@@ -99,9 +99,15 @@ They are drop-in alternatives to the ``smail`` and ``seff`` scripts available fr
 Installation: 
 Copy the scripts to the ``/usr/local/bin/`` folder:
 ```
+chmod +x jobeff jobmail
 cp jobeff /usr/local/bin/	# All nodes
 cp jobmail /usr/local/bin/	# Only the slurmctld server
 ```
+Configure ``slurm.conf`` with [MailProg](https://slurm.schedmd.com/slurm.conf.html#OPT_MailProg):
+```
+MailProg=/usr/local/bin/jobmail
+```
+and reconfigure with ``scontrol reconfigure``.
 
 ### jobeff
 
