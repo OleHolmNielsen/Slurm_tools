@@ -92,14 +92,15 @@ Job accounting reports are provided by:
   and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
 They are drop-in alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
-Besides CPU and memory accounting, the present tools also provide:
+Besides CPU and memory accounting, the present tools can also provide:
 
 * **GPU accounting** using NVIDIA
   [NVML](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_installation/#configuring-slurm-with-nvml).
 * **Energy consumption accounting** using
   [IPMI power monitoring](https://wiki.fysik.dtu.dk/Niflheim_system/Slurm_configuration/#ipmi-power-monitoring).
 
-The mentioned Slurm plugins would first have to be configured in your installation.
+These two Slurm plugins would have to be configured in your installation as described in the links,
+otherwise GPU and energy accounting will be absent from the reports.
 
 Installation: 
 Copy the scripts to the ``/usr/local/bin/`` folder:
