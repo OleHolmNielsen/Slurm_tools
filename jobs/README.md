@@ -96,9 +96,7 @@ as well as **energy accounting** using
 (if configured in your Slurm installation).
 They are drop-in alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
 
-Installation: Copy the [jobeff](jobeff) script to the ``/usr/local/bin/`` folder
-on the `slurmctld` server and (optionally) on login nodes and the `slurmd` nodes.
-Copy the [jobmail](jobmail) script to the ``/usr/local/bin/`` folder on the `slurmctld` server.
+Installation: 
 Copy the scripts to the ``/usr/local/bin/`` folder:
 ```
 cp jobeff /usr/local/bin/	# All nodes
@@ -108,14 +106,14 @@ cp jobmail /usr/local/bin/	# Only the slurmctld server
 ### jobeff
 
 Usage:
-``
+```
 jobeff [Options] [Jobid | SLUID]
        The job may be given by its Jobid or its Slurm SLUID.
        If omitted, the environment variable SLURM_JOB_ID is used.
        Options:
        -h    Help menu
        -d    Debug mode: display raw Slurm data
-``
+```
 
 The job can be specified by its numeric ``Jobid`` or by its SLUID (*Slurm Lexicographically-sortable Unique ID*),
 for example ``jobeff 11293137`` or ``jobeff s8FXM7QBF5ED00``, provided that the ``sacct -j`` option of your Slurm version accepts a SLUID.
