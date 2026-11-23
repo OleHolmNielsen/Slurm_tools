@@ -108,7 +108,7 @@ jobeff [Options] [Jobid | SLUID]
        -d    Debug mode: display raw Slurm data
 ```
 
-The job can be specified by its numeric ``Jobid`` or by its SLUID (`Slurm Lexicographically-sortable Unique ID`),
+The job can be specified by its numeric ``Jobid`` or by its SLUID (*Slurm Lexicographically-sortable Unique ID*),
 for example ``jobeff 11293137`` or ``jobeff s8FXM7QBF5ED00``, provided that the ``sacct -j`` option of your Slurm version accepts a SLUID.
 Inside a Slurm job the argument can be omitted, since ``jobeff`` then reads the job ID from ``SLURM_JOB_ID``.
 An explicit ``Jobid`` or SLUID takes precedence. If none is given, an error message is printed and the exit code is 1.
