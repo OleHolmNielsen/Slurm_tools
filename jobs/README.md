@@ -96,8 +96,9 @@ as well as **energy accounting** using
 (if configured in your Slurm installation).
 They are drop-in alternatives to the ``smail`` and ``seff`` scripts available from the ``slurm-contribs`` package.
 
-Installation: Copy the scripts to the ``/usr/local/bin/`` folder
+Installation: Copy the [jobeff](jobeff) script to the ``/usr/local/bin/`` folder
 on the `slurmctld` server and (optionally) on login nodes and the `slurmd` nodes.
+Copy the [jobmail](jobmail) script to the ``/usr/local/bin/`` folder on the `slurmctld` server.
 
 ### jobeff
 
