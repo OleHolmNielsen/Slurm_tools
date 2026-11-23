@@ -85,9 +85,10 @@ Job CPU and GPU accounting
 
 Job accounting reports are provided by:
 
-* The [jobeff](jobeff) script prints the CPU, memory and GPU efficiency of a completed or running job.
-  This script can be used with the [jobmail](jobmail) script,
-  used by itself on the command line, or used from inside a running Slurm job.
+* The [jobeff](jobeff) script prints the CPU, memory, GPU efficiency,
+  and energy consumption of a completed or running job.
+  This script may be used with the [jobmail](jobmail) script,
+  or used by itself on the command line, or used from inside a running Slurm job.
 * The [jobmail](jobmail) script provides E-mail notifications from ``slurmctld`` to users,
   and adds a ``jobeff`` job efficiency report to the mail body when a job has ended.
 
