@@ -188,7 +188,7 @@ Energy consumed:    0.00284 kWh (10.22 kJ)
                     which shared the nodes (Mixed node state), so it may not be the energy of this job alone
 ```
 
-The SLUID (Slurm Lexicographically-sortable Unique ID) job field was added in Slurm 24.11.
+The SLUID (*Slurm Lexicographically-sortable Unique ID*) job field was added in Slurm 24.11.
 
 ### jobmail
 
