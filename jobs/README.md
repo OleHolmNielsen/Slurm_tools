@@ -8,7 +8,10 @@ Some convenient scripts for managing Slurm jobs:
   The scratch disk usage with Slurm *job_container/tmpfs* (if configured) is printed.
   GPU usage may also be printed.
 
-* [showjob](showjob) Show status of Slurm job(s). Both queue information and accounting information is printed.
+* [showjob](showjob) Show status of a Slurm job: ```showjob <jobid | jobid_arraytaskid | SLUID>```.
+  Both queue information and accounting information is printed, including the CPU, memory and GPU usage of each job step,
+  and the relevant limits for pending job reasons.
+  See [showjob](#showjob) below.
 
 * [showjobreasons](showjobreasons) Show list of non-resource reasons for pending jobs, such as AssocGrpCpuLimit and AssocGrpNodeLimit
 
@@ -78,6 +81,140 @@ d064
 27676    5 S user1    22:42:27 00:00:00  0.0 15132 orted --hnp --set-sid --report-uri 8 --singleton-
 Total: 3 processes and 9 threads
 Uptime: 08:58:25 up 8 days, 12:01,  0 users,  load average: 2.01, 2.02, 2.04
+```
+
+showjob
+-------
+
+Usage:
+```
+showjob <jobid | jobid_arraytaskid | SLUID>
+```
+
+The job can be specified by its numeric ``jobid``, by an array task as ``jobid_arraytaskid`` (for example ``showjob 11340632_11``),
+or by its SLUID (*Slurm Lexicographically-sortable Unique ID*, for example ``showjob s8FXM83YXNWJ00``).
+A SLUID is converted to the jobid by looking first in the queue (``squeue``) and then in the Slurm database (``sacct``),
+and the line ``SLUID <sluid> is JobID <jobid>`` is printed.
+Note that the Slurm database has a separate SLUID per job record, which changes when a job is requeued or resized.
+
+Requirements:
+
+* GNU awk (``gawk``) version 4.0 or newer. The script checks this and stops with an error message if ``gawk`` is missing or too old.
+* The ``showuserlimits`` command from [Slurm_tools](https://github.com/OleHolmNielsen/Slurm_tools/) is used for some pending job reasons.
+  It is optional: if it is not installed, a message is printed only when it would have been used.
+* A Slurm version with SLUID support (Slurm 24.11 or newer) for the SLUID argument.
+
+### Jobs in the queue
+
+For a job in the queue ``showjob`` prints:
+
+* A job summary: user, account, submit time, state, number of CPUs, the time limit and the ``TRESRunMin`` (CPUs times time limit in minutes).
+  A time limit such as ``UNLIMITED`` is reported as such, and then the ``TRESRunMin`` cannot be calculated.
+* For a pending job, the reason why it is pending, with more information for these reasons:
+  * ``AssocGrpCPURunMinutesLimit``, ``AssocGrpCPUMinutesLimit``, ``AssocGrpCpuLimit``, ``AssocGrpGRES`` and ``AssocMaxJobsLimit``:
+    what the job requires, the current usage of the user in the job's account, and the limits from ``showuserlimits``.
+    For ``AssocGrpGRES`` the GRES request is found whether it was given per job (``--gpus``), per node (``--gres``), per socket or per task.
+    If the job was submitted to several partitions, the limits for all partitions are shown.
+  * All QOS reasons (``QOSGrpCpuLimit``, ``QOSMaxCpuPerUserLimit``, ``QOSMaxJobsPerUserLimit``, ``QOSMaxWallDurationPerJobLimit`` etc.):
+    the TRES and time limit requested by the job, and the limits that are set in the job's QOS, with their current usage,
+    for the whole QOS and for the job's account and user (from ``scontrol show assoc_mgr flags=qos``).
+    If a partition of the job has a partition QOS, its limits are shown as well.
+  * ``Dependency`` and ``DependencyNeverSatisfied``: the job's dependency.
+* The queued job information from ``scontrol --details show job``.
+* The E-mail notification settings (``MailUser`` and ``MailType``), if the user requested E-mail notification
+  with ``sbatch --mail-user`` or ``--mail-type`` in the job script or on the command line.
+* When the job has started (any state except ``PENDING``, for example ``RUNNING``, ``SUSPENDED`` or ``COMPLETING``),
+  the accounting information described below.
+
+If the jobid of a job array with several jobs in the queue is given, ``showjob`` lists the array jobs and asks you to select one of them.
+For a heterogeneous job the job summary is for the first component, and the queued job information is for all components.
+
+Example of the additional information for a job pending with a QOS reason:
+
+```
+Information about QOSMaxCpuPerUserLimit:
+This job requests TRES: cpu=96,mem=720000M,node=1,billing=384
+This job has a time limit of: 10:00:00
+
+Limits of QOS high (the QOS of the job), with the current usage in parentheses:
+   The whole QOS high:
+      MaxWallPJ=600 (minutes)
+      MaxTRESPJ=cpu=1000
+   Account account1 in QOS high: no limits
+   User user1 in QOS high:
+      MaxTRESPU=cpu=1000(192)
+```
+
+### Accounting information
+
+For a job that is no longer in the queue, or that has started, ``showjob`` prints the accounting information from the Slurm database:
+
+* The job parameters and job details (``sacct``).
+* The resource usage of each job step (the batch step and the ``srun`` steps, and for a job array the steps of each array task):
+  elapsed time, CPUs, CPU time and CPU utilization, memory used, allocated and utilization,
+  and for jobs with GPUs also the GPUs, average GPU utilization and maximum GPU memory.
+  Finished steps are read from the Slurm database with ``sacct``, and running or suspended steps are read with ``sstat``.
+  * CPU util = CPU time / (Elapsed * CPUs).
+  * Mem used = the sum over the tasks of the peak memory of each task (``TRESUsageInTot mem``).
+  * Max GPU mem is shown as reported by Slurm (``TRESUsageInMax gres/gpumem``).
+  * Steps without usage data (such as the ``extern`` step) are not shown.
+    If ``sstat`` cannot get the usage of a running step, the step is shown with blank values and a note.
+* The ``SubmitLine`` and ``WorkDir`` of the job (each different line is printed once for a job array).
+* The user's fairshare information (``sshare``).
+* The batch script, if ``AccountingStoreFlags=job_script`` is enabled in ``slurm.conf``.
+  For a job array the batch script is printed only once, since all array tasks use the same batch script.
+
+A job array may have very many array tasks and job steps,
+so each accounting table prints at most 50 lines, followed by a note about how many lines were not shown.
+This maximum may be changed with the environment variable ``SHOWJOB_MAXLINES``, for example:
+```
+SHOWJOB_MAXLINES=200 showjob 11340632
+```
+
+The accounting information may only be inquired by the job owner or by root.
+Normal users can usually only see their own jobs with ``sacct``, so for other jobs ``showjob`` reports
+that the job was not found in the Slurm database, or that it is not visible to you.
+
+The exit code of ``showjob`` is 0 on success,
+and 1 for usage errors, if ``gawk`` is missing, if the job or SLUID was not found or is not visible to you,
+if a job array with several jobs in the queue was given, or if the job belongs to another user.
+
+Example output from ```showjob``` for a job that has ended:
+
+```
+Job 11336969 is not in the current Slurm queue
+
+Accounting information from the Slurm database:
+
+Job parameters for jobid 11336969:
+   JobID JobName  User  Account Partition Timelimit 
+-------- ------- ----- -------- --------- --------- 
+11336969  gpujob user1 account1   a100el9  00:10:00 
+
+Job details information for jobid 11336969:
+   JobID              Submit            Eligible               Start  Elapsed                 End  CPUTime NNodes NCPUS ExitCode NodeList  State ConsumedEnergyRaw 
+-------- ------------------- ------------------- ------------------- -------- ------------------- -------- ------ ----- -------- -------- ------ ----------------- 
+11336969 2026-11-23T11:23:05 2026-11-23T11:23:05 2026-11-23T11:28:02 00:00:11 2026-11-23T11:28:13 00:05:52      1    32    127:0    sd651 FAILED             25008 
+
+Resource usage per job step for jobid 11336969:
+----------------------------------------------
+JobID          State   Elapsed CPUs CPU time CPU util Mem used Mem alloc Mem util GPUs Avg GPU util Max GPU mem 
+-------------- ------ -------- ---- -------- -------- -------- --------- -------- ---- ------------ ----------- 
+11336969.batch FAILED 00:00:11   32 00:00:01       0%    20.0M     31.2G       0%    1           0%           0 
+CPU util = CPU time / (Elapsed * CPUs)
+Mem used = sum over the tasks of the peak memory of each task (TRESUsageInTot mem)
+Max GPU mem is shown as reported by Slurm (TRESUsageInMax gres/gpumem)
+
+SubmitLine:
+-----------
+sbatch gpujob.sh
+
+WorkDir:
+--------
+/home/user1
+
+User fairshare information:
+...
 ```
 
 Job CPU and GPU accounting
@@ -194,8 +331,7 @@ Energy consumed:    99 kWh (358.11 MJ)
                     Note: This is the energy of the entire nodes, which were shared with 5 other job(s)
                     (Mixed node state), so it is not the energy of this job alone
 ```
-
-The SLUID (*Slurm Lexicographically-sortable Unique ID*) job field was added in Slurm 24.11.
+Note: The SLUID (*Slurm Lexicographically-sortable Unique ID*) job field was added in Slurm 24.11.
 
 ### jobmail
 

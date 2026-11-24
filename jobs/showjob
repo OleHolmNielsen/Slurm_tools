@@ -3,50 +3,186 @@
 # Show status of Slurm job(s).
 # Both queue information and accounting information is printed.
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
+# Requirements: GNU awk (gawk) version 4.0 or newer (used for arrays of arrays and printf "%*s")
 
+# Check that gawk 4.0 or newer is installed
+if ! command -v gawk > /dev/null
+then
+	echo "ERROR: This script requires GNU awk (gawk), please install it (for example: dnf install gawk)"
+	exit 1
+fi
+gawk_major=`gawk 'BEGIN {split(PROCINFO["version"], v, "."); print v[1] + 0}'`
+if (( gawk_major < 4 ))
+then
+	echo "ERROR: This script requires GNU awk (gawk) version 4.0 or newer, found version: `gawk 'BEGIN {print PROCINFO["version"]}'`"
+	exit 1
+fi
+
+usage="Usage: $0 <jobid | jobid_arraytaskid | SLUID>"
 # Check number of arguments
 if [[ $# -ne 1 ]]
 then
-	echo "Usage: $0 <jobid>"
+	echo "$usage"
 	exit 1
 fi
-# Check that jobid is a number (possibly with _ separating job array_task_id)
-if ! [[ ${1} =~ ^[0-9_]+$ ]]
+# Regular expressions for a jobid (possibly with _ separating job array_task_id),
+# and for a SLUID (Slurm Lexicographically-sortable Unique Identifier, for example s8FXM7T3TP1Z00)
+jobid_regex='^[0-9]+(_[0-9]+)?$'
+sluid_regex='^s[0-9A-Za-z]{13}$'
+if ! [[ ${1} =~ $jobid_regex || ${1} =~ $sluid_regex ]]
 then
-	echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
-	echo "Usage: $0 <jobid>"
+	echo "ERROR: The argument must be a jobid, jobid_arraytaskid or SLUID (for example s8FXM7T3TP1Z00)"
+	echo "$usage"
 	exit 1
 fi
 
 # Unset any SLURM_TIME_FORMAT environment variable
 unset SLURM_TIME_FORMAT
 
-jobid=$1
-TMPFILE=/tmp/showjob.$$
-# Check the showuserlimits command
-showuserlimits=`which showuserlimits`
-if [[ -z "$showuserlimits" ]]
+# The maximum number of lines printed in each accounting table, i.e. array tasks in the
+# job tables and job steps in the resource usage table (a large job array may have very
+# many array tasks and job steps). May be set in the environment as SHOWJOB_MAXLINES.
+maxlines=${SHOWJOB_MAXLINES:-50}
+if ! [[ $maxlines =~ ^[1-9][0-9]*$ ]]
 then
-	echo Did not find the showuserlimits command, please install it.
-	showuserlimits="echo showuserlimits"
+	echo "ERROR: SHOWJOB_MAXLINES must be a number of at least 1, got: $maxlines"
+	exit 1
 fi
+
+jobid=$1
+# Convert a SLUID to the jobid (or jobid_arraytaskid), which is used by the rest of this script
+if [[ $jobid =~ $sluid_regex ]]
+then
+	sluid=$jobid
+	jobid=""
+	# First look for the SLUID in the queue
+	IFS='|' read -r qjobid qarrayjobid qarraytaskid < <(squeue -h -O "JobID:|,ArrayJobID:|,ArrayTaskID:" -j $sluid 2>/dev/null)
+	if [[ -n "$qjobid" ]]
+	then
+		# Show an array task as jobid_arraytaskid. Pending array tasks that have not
+		# been split off yet have a range of ArrayTaskIDs, then use the jobid.
+		if [[ $qarraytaskid =~ ^[0-9]+$ ]]
+		then
+			jobid=${qarrayjobid}_${qarraytaskid}
+		else
+			jobid=$qjobid
+		fi
+	else
+		# Then look for the SLUID in the accounting database.
+		# Note: The database has a separate SLUID per record, which changes when a job is requeued or resized.
+		jobid=`sacct -nP -X -j $sluid -o JobID 2>/dev/null | head -1`
+	fi
+	if [[ -z "$jobid" ]]
+	then
+		echo "ERROR: SLUID $sluid was not found in the Slurm queue or database, or it is not visible to you"
+		exit 1
+	fi
+	if ! [[ $jobid =~ $jobid_regex ]]
+	then
+		echo "ERROR: SLUID $sluid gave the unexpected JobID: $jobid"
+		exit 1
+	fi
+	echo "SLUID $sluid is JobID $jobid"
+fi
+
+# Print the limits of a QOS that are set, with their current usage, for the whole QOS
+# and for the account and user of the job (from the slurmctld association manager).
+# scontrol prints each limit as limit(usage), where a limit of N means no limit.
+function print_qos_limits()
+{
+	local qos=$1 description=$2
+	echo
+	echo "Limits of QOS $qos ($description), with the current usage in parentheses:"
+	scontrol show assoc_mgr flags=qos qos="$qos" 2>/dev/null | gawk -v qos="$qos" -v user="$jobuser" -v account="$jobaccount" '
+	# Return the token Key=Value with only the items that have a limit, or "" if none have a limit.
+	# Value may be a single limit like N(2) or 600, or a TRES list like cpu=1000(192),mem=N(1440000)
+	function limited(token,   key, value, n, a, i, v, out) {
+		key = substr(token, 1, index(token, "=") - 1)
+		value = substr(token, index(token, "=") + 1)
+		# Only Grp*, Max* and Min* are limits (MinPrioThresh is a priority threshold)
+		if (key !~ /^(Grp|Max|Min)/ || key == "MinPrioThresh") return ""
+		if (value ~ /=/) {
+			n = split(value, a, ",")
+			out = ""
+			for (i = 1; i <= n; i++) {
+				v = substr(a[i], index(a[i], "=") + 1)
+				if (v != "" && v !~ /^N/) out = out (out == "" ? "" : ",") a[i]
+			}
+			return (out == "") ? "" : key "=" out
+		}
+		if (value == "" || value ~ /^N/) return ""
+		# Wall time limits are in minutes
+		if (key ~ /Wall/) return key "=" value " (minutes)"
+		return key "=" value
+	}
+	/^QOS=/                 { section = "qos"; found = 1; next }
+	/^    Account Limits/   { section = "account"; next }
+	/^    User Limits/      { section = "user"; next }
+	# An account name, or a user name like username(uid)
+	(section == "account" || section == "user") && /^      [^ ]/ {
+		name = $1
+		sub(/\(.*/, "", name)
+		next
+	}
+	section != "" {
+		if (section == "account" && name != account) next
+		if (section == "user" && name != user) next
+		for (i = 1; i <= NF; i++) {
+			t = limited($i)
+			if (t != "") limits[section] = limits[section] "      " t "\n"
+		}
+	}
+	END {
+		if (!found) {
+			print "   QOS " qos " was not found"
+			exit
+		}
+		label["qos"] = "The whole QOS " qos
+		label["account"] = "Account " account " in QOS " qos
+		label["user"] = "User " user " in QOS " qos
+		split("qos account user", order, " ")
+		for (i = 1; i <= 3; i++) {
+			s = order[i]
+			if (limits[s] == "") print "   " label[s] ": no limits"
+			else printf("   %s:\n%s", label[s], limits[s])
+		}
+	}'
+}
+
+# Run the showuserlimits command with the given arguments, if it is installed.
+# It is only needed for some pending job reasons, so only warn when it is actually used.
+function run_showuserlimits()
+{
+	if [[ "$partition" == *,* ]]
+	then
+		echo "Note: The job was submitted to several partitions ($partition), showing the limits for all partitions"
+	fi
+	if command -v showuserlimits > /dev/null
+	then
+		showuserlimits "$@"
+	else
+		echo "Did not find the showuserlimits command, please install it from https://github.com/OleHolmNielsen/Slurm_tools/"
+		echo "(would have run: showuserlimits $*)"
+	fi
+}
 
 ###########################################################################
 # Execute sacct and print nicely formatted output
 
 function format_sacct()
 {
-	# echo Called format_sacct with $@
 	# Add -P flag for parseable output with fields separated by "|"
-	sacct --parsable2 $@ | awk -F "|" '
+	# Only the header and the first maxlines lines are printed (a job array may have very many tasks)
+	sacct --parsable2 "$@" | gawk -F "|" -v maxlines="$maxlines" '
 {
+	lines=NR
+	if (NR > maxlines + 1) next
 	for (i=1; i<= NF; i++) {
 		column[i][NR] = $i
 		len = length($i)
 		if (len > colwidth[i]) colwidth[i] = len	# Column width
 	}
 	cols=NF
-	lines=NR
 } END {
 	# Print a header
 	for (i=1; i<= cols; i++) {
@@ -54,18 +190,182 @@ function format_sacct()
 	}
 	printf("\n")
 	for (i=1; i<= cols; i++) {
-		printf("%.*s ", colwidth[i], "-----------------------------------------------------")
+		# A line of dashes as wide as the column
+		dashes = sprintf("%*s", colwidth[i], "")
+		gsub(/ /, "-", dashes)
+		printf("%s ", dashes)
 	}
 	printf("\n")
 	# Print lines
-	for (l=2; l<=lines; l++) {
+	for (l=2; l<=lines && l<=maxlines+1; l++) {
 		for (i=1; i<= cols; i++) {
 			printf("%*s ", colwidth[i], column[i][l])
 		}
 		printf("\n")
 	}
+	if (lines - 1 > maxlines)
+		printf("Note: Only the first %d lines are shown, %d more lines were not shown (set SHOWJOB_MAXLINES to change this)\n", maxlines, lines - 1 - maxlines)
 }'
 
+}
+
+# Print CPU, memory and GPU usage for each job step
+# (batch and srun steps, and for a job array: the steps of each array task).
+# Finished steps: the usage recorded in the Slurm database (sacct).
+# Running steps: the current usage inquired from the compute nodes (sstat).
+function print_step_usage()
+{
+	echo
+	echo "Resource usage per job step for jobid $jobid:"
+	echo "----------------------------------------------"
+	nsteps=0
+	sacct -nP -j $jobid -o JobID,State,ElapsedRaw,AllocCPUS,TotalCPU,AllocTRES,TRESUsageInTot,TRESUsageInAve,TRESUsageInMax |
+	while IFS='|' read -r stepid stepstate elapsed cpus totalcpu alloc usagetot usageave usagemax
+	do
+		# Skip the job allocation line (no "." in JobID), only job steps have usage data
+		[[ "$stepid" == *.* ]] || continue
+		# The extern step has no CPU, memory or GPU usage data
+		[[ "$stepid" == *.extern ]] && continue
+		# Skip finished steps without recorded usage data, so that they are not counted below.
+		# (Running and suspended steps get their usage data from sstat below)
+		if [[ "$stepstate" != "RUNNING" && "$stepstate" != "SUSPENDED" && ",$usagetot" != *,mem=* ]]
+		then
+			continue
+		fi
+		# A large job array may have very many steps, so limit the number of steps printed
+		# (this also limits the number of sstat inquiries of running steps)
+		nsteps=$((nsteps+1))
+		if (( nsteps > maxlines ))
+		then
+			echo "#skipped"
+			continue
+		fi
+		sstatfailed=0
+		if [[ "$stepstate" == "RUNNING" || "$stepstate" == "SUSPENDED" ]]
+		then
+			# TotalCPU is only recorded when a step ends, so use the TRESUsageInTot cpu time from sstat
+			totalcpu=""
+			usagetot=""
+			usageave=""
+			usagemax=""
+			IFS='|' read -r usagetot usageave usagemax < <(sstat -nP -j "$stepid" -o TRESUsageInTot,TRESUsageInAve,TRESUsageInMax 2>/dev/null < /dev/null)
+			[[ -z "$usagetot$usageave$usagemax" ]] && sstatfailed=1
+		fi
+		echo "$stepid|$stepstate|$elapsed|$cpus|$totalcpu|$alloc|$usagetot|$usageave|$usagemax|$sstatfailed"
+	done | gawk -F'|' -v maxlines="$maxlines" '
+	# Print the value of the item "name" from a comma-separated TRES list like "cpu=32,gres/gpu=1,mem=32000M"
+	function tres(list, name,   n, a, i, l) {
+		n = split(list, a, ",")
+		l = length(name) + 1
+		for (i = 1; i <= n; i++)
+			if (substr(a[i], 1, l) == name "=") return substr(a[i], l + 1)
+		return ""
+	}
+	# Convert a time [days-][hours:]minutes:seconds[.milliseconds] to seconds
+	function seconds(t,   d, n, a) {
+		if (t == "") return ""
+		d = 0
+		if (index(t, "-")) {
+			d = substr(t, 1, index(t, "-") - 1)
+			t = substr(t, index(t, "-") + 1)
+		}
+		n = split(t, a, ":")
+		if (n == 3) return d*86400 + a[1]*3600 + a[2]*60 + a[3]
+		if (n == 2) return d*86400 + a[1]*60 + a[2]
+		return d*86400 + a[1]
+	}
+	# Convert seconds to [days-]hh:mm:ss
+	function hms(s,   d, h, m) {
+		if (s == "") return ""
+		s = int(s + 0.5)
+		d = int(s/86400); s -= d*86400
+		h = int(s/3600);  s -= h*3600
+		m = int(s/60);    s -= m*60
+		if (d > 0) return sprintf("%d-%02d:%02d:%02d", d, h, m, s)
+		return sprintf("%02d:%02d:%02d", h, m, s)
+	}
+	# Convert a memory size with an optional unit suffix K, M, G, T or P (powers of 1024) to bytes
+	function bytes(v,   p) {
+		if (v == "") return ""
+		p = index("KMGTP", toupper(substr(v, length(v))))
+		if (p > 0) return substr(v, 1, length(v) - 1) * 1024^p
+		return v + 0
+	}
+	# Convert bytes to a human readable size
+	function human(b,   p) {
+		if (b == "") return ""
+		p = 0
+		while (b >= 1024 && p < 5) { b /= 1024; p++ }
+		return (p == 0) ? sprintf("%d", b) : sprintf("%.1f%s", b, substr("KMGTP", p, 1))
+	}
+	function percent(a, b) {
+		return (a != "" && b > 0) ? sprintf("%.0f%%", 100*a/b) : ""
+	}
+	$1 == "#skipped" {
+		skipped++
+		next
+	}
+	{
+		stepid = $1; state = $2; elapsed = $3; cpus = $4; totalcpu = $5
+		alloc = $6; usagetot = $7; usageave = $8; usagemax = $9; failed = $10
+		mem = bytes(tres(usagetot, "mem"))
+		# Skip steps without usage data (for example the extern step),
+		# but print a blank line for a running step when sstat failed, so that the step is not hidden
+		if (mem == "" && !failed) next
+		if (failed) sstatfailed = 1
+		cpusecs = (totalcpu != "") ? seconds(totalcpu) : seconds(tres(usagetot, "cpu"))
+		memalloc = bytes(tres(alloc, "mem"))
+		gpus = tres(alloc, "gres/gpu")
+		if (gpus != "") hasgpu = 1
+		gpuutil = tres(usageave, "gres/gpuutil")
+		n++
+		cell[n,1] = stepid
+		cell[n,2] = state
+		cell[n,3] = hms(elapsed)
+		cell[n,4] = cpus
+		cell[n,5] = hms(cpusecs)
+		cell[n,6] = percent(cpusecs, elapsed*cpus)
+		cell[n,7] = human(mem)
+		cell[n,8] = human(memalloc)
+		cell[n,9] = percent(mem, memalloc)
+		cell[n,10] = gpus
+		cell[n,11] = (gpuutil != "") ? gpuutil "%" : ""
+		cell[n,12] = tres(usagemax, "gres/gpumem")
+	} END {
+		if (n == 0) {
+			print "No usage data has been recorded for the job steps"
+			if (skipped) printf("Note: %d more job steps were not shown (set SHOWJOB_MAXLINES to change this)\n", skipped)
+			exit
+		}
+		split("JobID|State|Elapsed|CPUs|CPU time|CPU util|Mem used|Mem alloc|Mem util|GPUs|Avg GPU util|Max GPU mem", header, "|")
+		# Only print the GPU columns if GPUs were allocated
+		cols = hasgpu ? 12 : 9
+		for (i = 1; i <= cols; i++) {
+			cell[0,i] = header[i]
+			for (l = 0; l <= n; l++)
+				if (length(cell[l,i]) > width[i]) width[i] = length(cell[l,i])
+		}
+		for (l = 0; l <= n; l++) {
+			for (i = 1; i <= cols; i++) {
+				# Left align JobID and State, right align the numbers
+				printf((i <= 2) ? "%-*s " : "%*s ", width[i], cell[l,i])
+			}
+			printf("\n")
+			if (l == 0) {
+				for (i = 1; i <= cols; i++) {
+					dashes = sprintf("%*s", width[i], "")
+					gsub(/ /, "-", dashes)
+					printf("%s ", dashes)
+				}
+				printf("\n")
+			}
+		}
+		print "CPU util = CPU time / (Elapsed * CPUs)"
+		print "Mem used = sum over the tasks of the peak memory of each task (TRESUsageInTot mem)"
+		if (hasgpu) print "Max GPU mem is shown as reported by Slurm (TRESUsageInMax gres/gpumem)"
+		if (sstatfailed) print "Note: sstat could not get the current usage of some running steps (shown as blank)"
+		if (skipped) printf("Note: Only the first %d job steps are shown, %d more steps were not shown (set SHOWJOB_MAXLINES to change this)\n", maxlines, skipped)
+	}'
 }
 
 # Get job accounting information
@@ -74,11 +374,28 @@ function print_job_accounting()
 	if [[ -z "`sacct -nP -o JobID -j $jobid`" ]]
 	then
 		echo
-		echo "ERROR: Invalid JobID: $jobid is not found in the Slurm database"
+		# sacct also returns nothing for jobs that the current user is not permitted to see
+		echo "ERROR: JobID $jobid was not found in the Slurm database, or it is not visible to you"
 		exit 1
 	fi
-	# Check the the current user is either root or the job owner
-	jobuser="`sacct -nP -o User --allocations -j $jobid`"
+	# Check that the current user is either root or the job owner.
+	# A job array (jobid without _arraytaskid) returns one line per array task (jobid_arraytaskid),
+	# and a heterogeneous job returns one line per component (jobid+offset),
+	# so only use the first line (all array tasks and components have the same owner).
+	jobuser="`sacct -nP -o User --allocations -j $jobid | head -1`"
+	allocids="`sacct -nP -o JobID --allocations -j $jobid`"
+	numtasks=`echo "$allocids" | grep -c '_'`
+	numcomponents=`echo "$allocids" | grep -c '+'`
+	if (( numtasks > 1 ))
+	then
+		echo
+		echo "Note: JobID $jobid is a job array with $numtasks array task records"
+	fi
+	if (( numcomponents > 1 ))
+	then
+		echo
+		echo "Note: JobID $jobid is a heterogeneous job with $numcomponents components"
+	fi
 	currentuser="`id -nu`"
 	if [[ "$currentuser" != "root" && "$currentuser" != "$jobuser" ]]
 	then
@@ -89,60 +406,47 @@ function print_job_accounting()
 	echo "Accounting information from the Slurm database:"
 	echo
 	echo "Job parameters for jobid $jobid:"
-	export jobvars="jobid,jobname,user,account,partition,Timelimit"
-	format_sacct --allocations -j $jobid -o $jobvars
+	format_sacct --allocations -j $jobid -o "jobid,jobname,user,account,partition,Timelimit"
 
 	echo
 	echo "Job details information for jobid $jobid:"
-	export jobvars="jobid,Submit,Eligible,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist,State,ConsumedEnergyRaw"
-	format_sacct --allocations -j $jobid -o $jobvars
+	format_sacct --allocations -j $jobid -o "jobid,Submit,Eligible,Start,elapsed,End,CPUTime,NNodes,NCPUS,ExitCode,nodelist,State,ConsumedEnergyRaw"
 
-	# Detect if any GPU resources were allocated
-	alloctres="`sacct -nP -o AllocTRES --allocations -j $jobid`"
-	if [[ -n "`echo $alloctres | grep gres/gpu`" ]]
-	then
-		echo
-		echo "GPU usage details information for jobid $jobid:"
-		echo "-------------------------------------------------"
-		state="`sacct -nP -o State -j $jobid.batch`"
-		echo "Job state is: $state"
-		echo "AllocTRES: $alloctres"
-		gresgpu="`echo $alloctres | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpu='`"
-		# Use sstat for running jobs, sacct for completed jobs
-		if [[ "$state" =~ "RUNNING" ]]
-		then
-			gpuutil="`sstat -nP -j $jobid.batch -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpuutil'`"
-			gpumem="`sstat -nP -j $jobid.batch -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpumem'`"
-		else
-			gpuutil="`sacct -nP -j $jobid -o TRESUsageInAve | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpuutil'`"
-			gpumem="`sacct -nP -j $jobid -o TRESUsageInMax | awk -F, '{for (i=1; i<= NF; i++) print $i}' | grep 'gres/gpumem'`"
-		fi
-		echo "Avg GPU utilization: $gpuutil% ($gresgpu)"
-		echo "Max GPU memory:      $gpumem (MB) ($gresgpu)"
-	fi
+	# CPU, memory and GPU usage for each job step
+	print_step_usage
 
 	echo
 	echo "SubmitLine:"
 	echo "-----------"
-	sacct -nP --allocations -j $jobid -o "SubmitLine"
+	# A job array has one line per array task, so print each different line only once
+	sacct -nP --allocations -j $jobid -o "SubmitLine" | gawk '!seen[$0]++'
 
 	echo
 	echo "WorkDir:"
 	echo "--------"
-	sacct -nP --allocations -j $jobid -o "WorkDir"
+	sacct -nP --allocations -j $jobid -o "WorkDir" | gawk '!seen[$0]++'
 
 	# Get user fairshare information
 	echo
 	echo "User fairshare information:"
 	echo "---------------------------"
-	jobuser="`sacct -nP --allocations -j $jobid -o user`"
-	sshare -lUm -u $jobuser
+	sshare -lUm -u "$jobuser"
 
 	# Print job script if AccountingStoreFlags=job_script was enabled in slurm.conf
 	if [[ -n "`scontrol show config | grep AccountingStoreFlags | grep job_script`" ]]
 	then
 		echo
-		sacct --allocations -j $jobid --batch-script
+		if (( numtasks > 1 ))
+		then
+			# All tasks of a job array use the same batch script, so only print it once
+			# (use the first single array task, not a record of pending tasks such as 123_[5-10])
+			firsttask=`echo "$allocids" | grep -m1 -E '^[0-9]+_[0-9]+$'`
+			firsttask=${firsttask:-$jobid}
+			echo "All array tasks use the same batch script, printing it for array task $firsttask only:"
+			sacct --allocations -j $firsttask --batch-script
+		else
+			sacct --allocations -j $jobid --batch-script
+		fi
 		echo
 	fi
 }
@@ -152,77 +456,90 @@ function print_job_accounting()
 # Get Slurm queue information
 #
 
-# Check if job is in the queue and squeue displays job information
-jobfound=`squeue -hO JobID -j $jobid 2>/dev/null`
-if [[ $? -ne 0 || -z "$jobfound" ]]
+# Check if job is in the queue. squeue prints one record per job, so there are several records
+# for a job array with several array tasks, and for a heterogeneous job (one per component, as jobid+offset).
+# squeue fails (or prints nothing) when the job is no longer in the queue.
+jobrecords=`squeue -h -O "JobID:" -j $jobid 2>/dev/null`
+if [[ $? -ne 0 || -z "$jobrecords" ]]
 then
 	echo
-	echo Job $jobid is not in the current Slurm queue
+	echo "Job $jobid is not in the current Slurm queue"
 	print_job_accounting
 	exit 0
 fi
-
-# Check if this jobid can be inquired successfully.
-JOBSTATE="`squeue -h -O State -j $jobid`"
-if [[ "$?" != "0" ]]
+numrecords=`echo "$jobrecords" | wc -l`
+if (( numrecords > 1 ))
 then
-	echo Error inquiring about job $jobid 
-	exit 1
-fi
-
-# Detect job arrays by counting number of words in JOBSTATE
-words=( $JOBSTATE )
-if [[ ${#words[@]} > 1 ]]
-then
-	echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
-	squeue -j $jobid
-	exit 1
+	if [[ "$jobrecords" == *+* ]]
+	then
+		# The components of a heterogeneous job are shown together
+		echo "Note: Job $jobid is a heterogeneous job with $numrecords components."
+		echo "The job summary below is for the first component, the queued job information is for all components."
+		echo
+	else
+		echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
+		squeue -j $jobid
+		exit 1
+	fi
 fi
 
 # 
 # Print basic job information
 #
-# Get required job information from a single squeue command:
-# Note: Some fields may be very long!
-# Alternative: scontrol show job 8079707 | tr -s '[:blank:]' '\n' | awk -F= '{printf("%s=\"%s\"\n", $1, $2)}'
-# Send squeue output to a temporary file
-tmpfile=`mktemp`
-squeue -hO "UserName,Account,Partition:200,State,NumCPUs,TimeLimit,Reason: ,SubmitTime,Dependency:30" -j $jobid | awk '{
-	print "jobuser=" $1
-	print "jobaccount=" $2
-	print "partition=" $3
-	print "jobstate=" $4
-	print "NCPUS=" $5
-	print "timelimit=" $6
-	print "reason=" $7
-	print "submittime=" $8	# Note: Time %V may modified by SLURM_TIME_FORMAT
-	# Note: Dependency %E may be a null string and must be last
-	# Dependency may contain problem characters () that must be enclosed in ""
-	print "dependency=\"" $9 "\""
-}' > $tmpfile
-source $tmpfile
-rm -f $tmpfile
+# Get required job information from a single squeue command.
+# Each field is given without a size (so it is printed at its actual length, not padded or truncated)
+# and with the suffix "|" as a field separator, because e.g. Reason may contain spaces.
+# Note: SubmitTime may be modified by SLURM_TIME_FORMAT (unset above)
+# Note: Dependency may be a null string and must be last
+IFS='|' read -r jobuser jobaccount partition jobstate NCPUS timelimit reason submittime jobqos dependency < <(
+	squeue -h -O "UserName:|,Account:|,Partition:|,State:|,NumCPUs:|,TimeLimit:|,Reason:|,SubmitTime:|,QOS:|,Dependency:" -j $jobid
+)
 
-# Get time limit as a number of minutes
-minutes=`echo $timelimit | awk -F- '
-{
-	if (NF == 1)
-		# If timelimit has 0 days there is only the hour:minute:second field
-		hms = $1
-	else {
-		days = $1
-		hms = $2
-	}
-	n=split(hms,a,":")	# Split hour:minute:second
-	if (n==1) minutes=a[1]/60.0
-	else if (n==2) minutes=a[1]
-	else if (n==3) minutes=a[1]*60+a[2]
-	print days*24*60 + minutes	# Print number of minutes
-}'`
+# The partition option for showuserlimits, which accepts only one partition.
+# A pending job may have been submitted to several partitions (a comma-separated list),
+# then show the limits for all partitions.
+if [[ "$partition" == *,* ]]
+then
+	partition_option=()
+else
+	partition_option=(-p "$partition")
+fi
+
+# Get time limit as a whole number of minutes (seconds are rounded up).
+# squeue prints the time limit as [days-][hours:]minutes:seconds, but it may also be
+# a word such as UNLIMITED or NOT_SET, and then minutes is left empty.
+minutes=""
+if [[ "$timelimit" =~ ^([0-9]+-)?[0-9]+(:[0-9]+){0,2}$ ]]
+then
+	minutes=`echo "$timelimit" | gawk -F- '
+	{
+		if (NF == 1) {
+			# If timelimit has 0 days there is only the [hours:]minutes:seconds field
+			days = 0
+			hms = $1
+		} else {
+			days = $1
+			hms = $2
+		}
+		n = split(hms, a, ":")
+		if (NF == 2 && n == 1)      { h = a[1]; m = 0;    s = 0 }	# days-hours
+		else if (NF == 2 && n == 2) { h = a[1]; m = a[2]; s = 0 }	# days-hours:minutes
+		else if (n == 3)            { h = a[1]; m = a[2]; s = a[3] }	# hours:minutes:seconds
+		else if (n == 2)            { h = 0;    m = a[1]; s = a[2] }	# minutes:seconds
+		else                        { h = 0;    m = a[1]; s = 0 }	# minutes
+		print days*24*60 + h*60 + m + (s > 0 ? 1 : 0)
+	}'`
+fi
 echo "Job $jobid was submitted by user $jobuser in account $jobaccount on $submittime"
 echo "Job has state=$jobstate"
-echo "Job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
-echo "Job TRESRunMin: $((NCPUS*minutes))"
+if [[ -n "$minutes" ]]
+then
+	echo "Job requests $NCPUS CPUs and has a time limit of $timelimit (days-hh:mm:ss) = $minutes min."
+	echo "Job TRESRunMin: $((NCPUS*minutes))"
+else
+	echo "Job requests $NCPUS CPUs and has a time limit of $timelimit"
+	echo "Job TRESRunMin: cannot be calculated without a time limit"
+fi
 echo
 
 # Display job reason code (if other than "None")
@@ -233,50 +550,112 @@ then
 	then
 		echo
 		echo Information about $reason:
-		JobValue=$((NCPUS*minutes))
-		echo "This job requires TRESRunMins:   cpu=$JobValue"
+		if [[ -n "$minutes" ]]
+		then
+			echo "This job requires TRESRunMins:   cpu=$((NCPUS*minutes))"
+		else
+			echo "This job requires TRESRunMins:   cpu=unknown (time limit is $timelimit)"
+		fi
 		echo
 		echo Information about Account and User limits:
-		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESRunMins -s cpu
+		run_showuserlimits -u "$jobuser" -A "$jobaccount" "${partition_option[@]}" -l GrpTRESRunMins -s cpu
 	elif [[ "$reason" = "AssocGrpCPUMinutesLimit" ]]
 	then
 		echo
 		echo Information about $reason:
-		echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
+		if [[ -n "$minutes" ]]
+		then
+			echo "This job requires TRESMins:    cpu=$((NCPUS*minutes))"
+		else
+			echo "This job requires TRESMins:    cpu=unknown (time limit is $timelimit)"
+		fi
 		echo
 		echo Information about Account and User limits:
-		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRESMins -s cpu
+		run_showuserlimits -u "$jobuser" -A "$jobaccount" "${partition_option[@]}" -l GrpTRESMins -s cpu
 	elif [[ "$reason" = "AssocGrpCpuLimit" ]]
 	then
 		echo
 		echo Information about $reason:
-		echo -n "Current user TRES is:      "
-		# Count number of CPUs for running jobs
-		squeue -hO NumCPUs -u $jobuser -t running | awk '{ncpus+=$1}END{print "cpu=" ncpus}'
-		NCPUS=`squeue -hO NumCPUs -j $jobid`
-		echo "This job requires TRES:    cpu=$NCPUS"
+		echo -n "Current user TRES in account $jobaccount is: "
+		# Count number of CPUs for the running jobs of the user in this account (the association of the limit)
+		squeue -hO NumCPUs -u $jobuser -A $jobaccount -t running | gawk '{ncpus+=$1}END{print "cpu=" ncpus+0}'
+		echo "This job requires TRES: cpu=$NCPUS"
 		echo
 		echo Information about Account and User limits:
-		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s cpu
+		run_showuserlimits -u "$jobuser" -A "$jobaccount" "${partition_option[@]}" -l GrpTRES -s cpu
 	elif [[ "$reason" = "AssocGrpGRES" ]]
 	then
 		echo
 		echo Information about $reason:
-		gres=`squeue -hO tres-per-job -j $jobid`
-		grestype=`echo $gres | awk -F: '{print $1}'`
-		echo "This job requires GRES: $gres"
+		# GRES may be requested per job (--gpus), per node (--gres), per socket or per task (--gpus-per-task).
+		# Report the first of these that contains a gres/ request (TresPerTask normally also contains cpu=N)
+		gres=""
+		IFS='|' read -r tresperjob trespernode trespersocket trespertask < <(
+			squeue -h -O "tres-per-job:|,tres-per-node:|,tres-per-socket:|,tres-per-task:" -j $jobid
+		)
+		for scope in job node socket task
+		do
+			case $scope in
+				job) value=$tresperjob ;;
+				node) value=$trespernode ;;
+				socket) value=$trespersocket ;;
+				task) value=$trespertask ;;
+			esac
+			# Keep only the gres/ items of the comma-separated list
+			value=`echo "$value" | tr ',' '\n' | grep '^gres/' | paste -sd,`
+			if [[ -n "$value" ]]
+			then
+				gres=$value
+				gresscope=$scope
+				break
+			fi
+		done
+		# The GRES type is the part before the first ":", for example gres/gpu from gres/gpu:A100:2
+		grestype=`echo "$gres" | gawk -F: '{print $1}'`
+		if [[ -n "$gres" ]]
+		then
+			echo "This job requires GRES: $gres (per $gresscope)"
+		else
+			echo "This job requires GRES: (no GRES request found)"
+		fi
 		echo
 		echo Information about Account and User limits:
-		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l GrpTRES -s $grestype
+		if [[ -n "$grestype" ]]
+		then
+			run_showuserlimits -u "$jobuser" -A "$jobaccount" "${partition_option[@]}" -l GrpTRES -s $grestype
+		else
+			run_showuserlimits -u "$jobuser" -A "$jobaccount" "${partition_option[@]}" -l GrpTRES
+		fi
 	elif [[ "$reason" = "AssocMaxJobsLimit" ]]
 	then
 		echo
 		echo Information about $reason:
-		echo User $jobuser number of running jobs is: `squeue -hO JobID -u $jobuser -t running | wc -l`
+		# Count the running jobs of the user in this account (the association of the limit)
+		echo "User $jobuser number of running jobs in account $jobaccount is: `squeue -hO JobID -u $jobuser -A $jobaccount -t running | wc -l`"
 		echo Information about Account and User limits:
-		$showuserlimits -u $jobuser -A $jobaccount -p $partition -l MaxJobs
-	elif [[ "$reason" = "Dependency" ]]
+		run_showuserlimits -u "$jobuser" -A "$jobaccount" "${partition_option[@]}" -l MaxJobs
+	elif [[ "$reason" == QOS* ]]
 	then
+		# All QOS reasons, for example QOSGrpCpuLimit, QOSMaxCpuPerUserLimit, QOSMaxJobsPerUserLimit,
+		# QOSMaxWallDurationPerJobLimit, QOSGrpGRES: Print all limits that are set in the QOS.
+		echo
+		echo "Information about $reason:"
+		reqtres=`squeue -h -O "tres-alloc:" -j $jobid`
+		echo "This job requests TRES: $reqtres"
+		echo "This job has a time limit of: $timelimit"
+		print_qos_limits "$jobqos" "the QOS of the job"
+		# A partition may also have a QOS, whose limits apply to all jobs in the partition
+		for p in ${partition//,/ }
+		do
+			partitionqos=`scontrol show partition "$p" -o 2>/dev/null | grep -o 'QoS=[^ ]*' | cut -d= -f2`
+			if [[ -n "$partitionqos" && "$partitionqos" != "N/A" ]]
+			then
+				print_qos_limits "$partitionqos" "the QOS of partition $p"
+			fi
+		done
+	elif [[ "$reason" == Dependency* ]]
+	then
+		# Dependency or DependencyNeverSatisfied
 		echo "   Dependency information: $dependency"
 	fi
 	echo
@@ -284,24 +663,25 @@ fi
 
 # Job found in the queue
 echo "Queued job information:"
-scontrol --details show job $jobid | tee $TMPFILE
-# Parse the job status information (read E-mail)
-export jobscript=`grep Command= $TMPFILE | sed 's/^   Command=//' | awk '{print $1}'`
-# Check that jobscript is defined and that the file is readable
-if [[ "$jobscript" != "(null)" && -s "$jobscript" ]]
+jobinfo=`scontrol --details show job $jobid`
+echo "$jobinfo"
+# Print the E-mail notification settings (from sbatch --mail-user and --mail-type,
+# given in the job script or on the command line).
+# scontrol prints MailUser and MailType only when E-mail notification has been requested.
+# Use only the first job record (a job array may have one record per array task).
+mailuser=`echo "$jobinfo" | grep -o -m1 'MailUser=[^ ]*' | cut -d= -f2-`
+mailtype=`echo "$jobinfo" | grep -o -m1 'MailType=[^ ]*' | cut -d= -f2-`
+if [[ -n "$mailuser$mailtype" ]]
 then
-	grep "mail-user" $jobscript > $TMPFILE
-	if [[ -s $TMPFILE ]]
-	then
-		echo Job script E-mail has been set:
-		cat $TMPFILE
-	fi
+	echo "Job E-mail notification has been set:"
+	echo "   MailUser=${mailuser:-(default)} MailType=${mailtype:-(none)}"
 fi
 
-# Print accounting information only when the job is in the Running state
-if [ "$jobstate" = "RUNNING" ]
+# Print accounting information when the job has started, i.e. in all states except PENDING
+# (RUNNING, SUSPENDED, COMPLETING, CONFIGURING, STOPPED, RESIZING etc.).
+# A pending job has no usage data yet.
+if [[ "$jobstate" != "PENDING" ]]
 then
 	print_job_accounting
 fi
 
-rm -f $TMPFILE
