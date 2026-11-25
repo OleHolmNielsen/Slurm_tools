@@ -152,11 +152,16 @@ For a job that is no longer in the queue, or that has started, ``showjob`` print
 * The job parameters and job details (``sacct``).
 * The resource usage of each job step (the batch step and the ``srun`` steps, and for a job array the steps of each array task):
   elapsed time, CPUs, CPU time and CPU utilization, memory used, allocated and utilization,
-  and for jobs with GPUs also the GPUs, average GPU utilization and maximum GPU memory.
+  and for jobs with GPUs also the GPUs, average GPU utilization and maximum GPU memory,
+  and the energy consumed by each step if Slurm has measured it.
   Finished steps are read from the Slurm database with ``sacct``, and running or suspended steps are read with ``sstat``.
   * CPU util = CPU time / (Elapsed * CPUs).
   * Mem used = the sum over the tasks of the peak memory of each task (``TRESUsageInTot mem``).
   * Max GPU mem is shown as reported by Slurm (``TRESUsageInMax gres/gpumem``).
+  * Energy consumed = the energy of the step in kWh and Joules (``ConsumedEnergyRaw``), so far for running steps.
+    The column is only shown if Slurm has measured the energy, which requires energy accounting (``AcctGatherEnergyType`` in ``slurm.conf``).
+    Values above 10 GJ (2778 kWh) are shown as ``n/a``, as former Slurm bugs sometimes gave astronomically large values (the ``max_energy`` variable in ``showjob``).
+    Slurm measures the energy of entire nodes, so the energy includes any other jobs that ran on the same nodes.
   * Steps without usage data (such as the ``extern`` step) are not shown.
     If ``sstat`` cannot get the usage of a running step, the step is shown with blank values and a note.
 * The ``SubmitLine`` and ``WorkDir`` of the job (each different line is printed once for a job array).
@@ -192,18 +197,20 @@ Job parameters for jobid 11336969:
 11336969  gpujob user1 account1   a100el9  00:10:00 
 
 Job details information for jobid 11336969:
-   JobID              Submit            Eligible               Start  Elapsed                 End  CPUTime NNodes NCPUS ExitCode NodeList  State ConsumedEnergyRaw 
--------- ------------------- ------------------- ------------------- -------- ------------------- -------- ------ ----- -------- -------- ------ ----------------- 
-11336969 2026-11-23T11:23:05 2026-11-23T11:23:05 2026-11-23T11:28:02 00:00:11 2026-11-23T11:28:13 00:05:52      1    32    127:0    sd651 FAILED             25008 
+   JobID              Submit            Eligible               Start  Elapsed                 End  CPUTime NNodes NCPUS ExitCode NodeList  State 
+-------- ------------------- ------------------- ------------------- -------- ------------------- -------- ------ ----- -------- -------- ------ 
+11336969 2026-11-23T11:23:05 2026-11-23T11:23:05 2026-11-23T11:28:02 00:00:11 2026-11-23T11:28:13 00:05:52      1    32    127:0    sd651 FAILED 
 
 Resource usage per job step for jobid 11336969:
 ----------------------------------------------
-JobID          State   Elapsed CPUs CPU time CPU util Mem used Mem alloc Mem util GPUs Avg GPU util Max GPU mem 
--------------- ------ -------- ---- -------- -------- -------- --------- -------- ---- ------------ ----------- 
-11336969.batch FAILED 00:00:11   32 00:00:01       0%    20.0M     31.2G       0%    1           0%           0 
+JobID          State   Elapsed CPUs CPU time CPU util Mem used Mem alloc Mem util GPUs Avg GPU util Max GPU mem        Energy consumed 
+-------------- ------ -------- ---- -------- -------- -------- --------- -------- ---- ------------ ----------- ---------------------- 
+11336969.batch FAILED 00:00:11   32 00:00:01       0%    20.0M     31.2G       0%    1           0%           0 0.00695 kWh (25.01 kJ) 
 CPU util = CPU time / (Elapsed * CPUs)
 Mem used = sum over the tasks of the peak memory of each task (TRESUsageInTot mem)
 Max GPU mem is shown as reported by Slurm (TRESUsageInMax gres/gpumem)
+Energy consumed = energy of the step measured by Slurm (ConsumedEnergyRaw), so far for running steps
+Slurm measures the energy of entire nodes, so it includes any other jobs on the same nodes
 
 SubmitLine:
 -----------
