@@ -187,25 +187,25 @@ if a job array with several jobs in the queue was given, or if the job belongs t
 Example output from ```showjob``` for a job that has ended:
 
 ```
-Job 11336969 is not in the current Slurm queue
+Job 11290700 is not in the current Slurm queue
 
 Accounting information from the Slurm database:
 
-Job parameters for jobid 11336969:
+Job parameters for jobid 11290700:
    JobID JobName  User  Account Partition Timelimit 
 -------- ------- ----- -------- --------- --------- 
-11336969  gpujob user1 account1   a100el9  00:10:00 
+11290700  gpujob user1 account1   a100el9  00:10:00 
 
-Job details information for jobid 11336969:
-   JobID              Submit            Eligible               Start  Elapsed                 End  CPUTime NNodes NCPUS ExitCode NodeList  State 
--------- ------------------- ------------------- ------------------- -------- ------------------- -------- ------ ----- -------- -------- ------ 
-11336969 2026-11-23T11:23:05 2026-11-23T11:23:05 2026-11-23T11:28:02 00:00:11 2026-11-23T11:28:13 00:05:52      1    32    127:0    sd651 FAILED 
+Job details information for jobid 11290700:
+   JobID              Submit            Eligible               Start  Elapsed                 End  CPUTime NNodes NCPUS ExitCode NodeList     State 
+-------- ------------------- ------------------- ------------------- -------- ------------------- -------- ------ ----- -------- -------- --------- 
+11290700 2026-11-18T08:35:37 2026-11-18T08:35:37 2026-11-18T08:35:38 00:01:40 2026-11-18T08:37:18 00:53:20      1    32      0:0    sd652 COMPLETED 
 
-Resource usage per job step for jobid 11336969:
+Resource usage per job step for jobid 11290700:
 ----------------------------------------------
-JobID          State   Elapsed CPUs CPU time CPU util Mem used Mem alloc Mem util GPUs Avg GPU util Max GPU mem        Energy consumed 
--------------- ------ -------- ---- -------- -------- -------- --------- -------- ---- ------------ ----------- ---------------------- 
-11336969.batch FAILED 00:00:11   32 00:00:01       0%    20.0M     31.2G       0%    1           0%           0 0.00695 kWh (25.01 kJ) 
+JobID          State      Elapsed CPUs CPU time CPU util Mem used Mem alloc Mem util GPUs Avg GPU util Max GPU mem       Energy consumed 
+-------------- --------- -------- ---- -------- -------- -------- --------- -------- ---- ------------ ----------- --------------------- 
+11290700.batch COMPLETED 00:01:40   32 00:00:01       0%    18.2M     31.2G       0%    1           0%           0 0.0231 kWh (83.02 kJ) 
 CPU util = CPU time / (Elapsed * CPUs)
 Mem used = sum over the tasks of the peak memory of each task (TRESUsageInTot mem)
 Max GPU mem is shown as reported by Slurm (TRESUsageInMax gres/gpumem)
