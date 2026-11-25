@@ -28,6 +28,7 @@ do
 	esac
 done
 shift $((OPTIND - 1))
+# Catch more than 1 arguments
 [ $# -gt 1 ] && usage
 # An explicit Jobid or SLUID argument takes precedence over SLURM_JOB_ID from a Slurm job environment.
 # The value is passed on to "sacct -j", which accepts both. sstat is called with the numeric JobIDRaw from sacct.
