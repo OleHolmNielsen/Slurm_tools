@@ -149,7 +149,12 @@ echo
 #
 for jobid in $JOBLIST
 do
-	if [[ $jobid -le 0 ]]
+	# Check that jobid is a number (possibly with _ separating job array_task_id)
+	if ! [[ ${jobid} =~ ^[0-9_]+$ ]]
+	then
+		echo "ERROR: <jobid> $jobid must be a number or jobid_arraytaskid"
+		continue
+	elif [[ $jobid -le 0 ]]
 	then
 		echo "ERROR: The parameter JobID=$jobid is not an integer"
 		echo
