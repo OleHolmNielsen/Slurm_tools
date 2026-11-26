@@ -9,8 +9,10 @@
 ADMINMAIL=support@your.domain
 # Mail to the superuser
 SUPERUSERMAIL=root@localhost
+# Base URL of the user documentation (used in some of the reasons below)
+BASEURL=https://your.domain
 # Informative web page:
-INFOURL=https://your.domain
+INFOURL=$BASEURL
 ### End CONFIGURE these lines:
 
 # Command usage:
@@ -29,22 +31,24 @@ LOGFILE=/var/log/notifybadjob.log
 # Whether to kill job or not
 action='Notify about'
 killjob=0
-# Temporary files
-MESSAGE=/tmp/jobstatus.$$ 
-JOBMSGS=/tmp/jobmsgs.$$ 
-JOBERRS=/tmp/joberrs.$$ 
-# Catch signals
-trap "rm -f $MESSAGE $JOBMSGS $JOBERRS; exit 2" 1 2 3 14 15 19
+# Temporary files (removed automatically when the script exits)
+TMPDIR_JOB=$(mktemp -d /tmp/notifybadjob.XXXXXX) || exit 1
+trap 'rm -rf "$TMPDIR_JOB"' EXIT
+trap 'exit 2' HUP INT QUIT TERM
+MESSAGE=$TMPDIR_JOB/jobstatus
+JOBMSGS=$TMPDIR_JOB/jobmsgs
+JOBERRS=$TMPDIR_JOB/joberrs
 
 # Process command arguments
 while getopts "k" options; do
 	case $options in
 		k ) killjob=1
-			shift;;
+			action='Kill';;
 		* ) echo $USAGE
 			exit 1;;
 	esac
 done
+shift $((OPTIND - 1))
 
 # Get the jobid as the arguments
 JOBLIST="$*"
@@ -93,7 +97,6 @@ do
 	echo "  5. $reason05"
 	echo "  6. $reason06"
 	echo "  7. $reason07"
-	echo "  8. $reason08"
 	echo "  9. $reason09"
 	echo " 96. $reason96"
 	echo " 97. $reason97"
@@ -111,7 +114,13 @@ do
 	echo " 19. $reason19"
 	echo " 20. $reason20"
 	echo " 21. $reason21"
-	read -p "Please enter reason (no default): " ANS
+	if ! read -r -p "Please enter reason (no default): " ANS
+	then
+		# End of input (e.g. Ctrl-D or stdin is not a terminal)
+		echo
+		echo "ERROR: No reason was given"
+		exit 1
+	fi
 	case $ANS in
 		1) action_reason=$reason01;;
 		2) action_reason=$reason02;;
@@ -120,7 +129,6 @@ do
 		5) action_reason=$reason05;;
 		6) action_reason=$reason06;;
 		7) action_reason=$reason07;;
-		8) action_reason=$reason08;;
 		9) action_reason=$reason09;;
 	       96) action_reason=$reason96;;
 	       97) action_reason=$reason97;;
@@ -147,18 +155,15 @@ echo
 #
 # Big loop over jobs
 #
+status=0
 for jobid in $JOBLIST
 do
 	# Check that jobid is a number (possibly with _ separating job array_task_id)
-	if ! [[ ${jobid} =~ ^[0-9_]+$ ]]
+	if ! [[ ${jobid} =~ ^[0-9]+(_[0-9]+)?$ ]]
 	then
 		echo "ERROR: <jobid> $jobid must be a number or jobid_arraytaskid"
+		status=1
 		continue
-	elif [[ $jobid -le 0 ]]
-	then
-		echo "ERROR: The parameter JobID=$jobid is not an integer"
-		echo
-		exit 1
 	fi
 
 #
@@ -180,16 +185,18 @@ JOBSTATE="`squeue -h -O State -j $jobid`"
 if [[ "$?" != "0" ]]
 then
         echo Error inquiring about job $jobid
-        exit 1
+        status=1
+        continue
 fi
 
 # Detect job arrays by counting number of words in JOBSTATE
 words=( $JOBSTATE )
-if [[ ${#words[@]} > 1 ]]
+if [[ ${#words[@]} -gt 1 ]]
 then
         echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
         squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j $jobid
-        exit 1
+        status=1
+        continue
 fi
 
 echo -n Get job information...
@@ -199,7 +206,8 @@ if [[ -s $JOBERRS ]]
 then
 	echo
 	cat $JOBERRS
-	exit 1
+	status=1
+	continue
 fi
 
 # Get user E-mail address and name (job arrays handled by uniq)
@@ -207,12 +215,13 @@ USERID=`squeue -h -O UserName: -j $jobid | uniq`
 if [[ -z "$USERID" ]]
 then
 	echo ERROR: Could not get userid of job $jobid
-	exit 1
+	status=1
+	continue
 fi
 
 # USERMAIL=`grep Job_Owner $JOBMSGS | awk '{print $3}'`
 USERMAIL=$USERID
-FULLNAME=`getent passwd | grep "^$USERID:" | awk -F: '{print $5}'`
+FULLNAME=`getent passwd "$USERID" | cut -d: -f5`
 # Maybe the user wants to notify this address also
 # NOTIFYMAIL=`grep Mail_Users $JOBMSGS | awk '{print $3}'`
 NOTIFYMAIL=""
@@ -270,22 +279,20 @@ RAM-memory usage and CPU-load usage of your job on the job nodes.
 -----------------------------------------------------------------
 
 Please look at these usage numbers to determine why the job was behaving badly
-(note especially items marked by *): 
+(note especially items marked by *):
 
-  node state  load    pmem ncpu   mem   resi usrs tasks  jobids/users 
 EOF
 
-	# Print job memory and CPU usage by pestat
-	# echo -n RAM and CPU usage...
-	$PESTAT -j $jobid >> $MESSAGE
+	# Print job memory and CPU usage by pestat (which prints its own column header)
+	$PESTAT -j $jobid >> $MESSAGE 2>&1
 	cat <<EOF >> $MESSAGE
 
 Explanation of some columns in the usage list:
-node: The compute node running your job.
-load: The CPU load average (should not exceed the number of physical CPUs).
-pmem: Physical memory (MB) in the node.
-ncpu: Number of physical CPUs in the node.
-resi: Resident memory (MB) in use (should not exceed the physical memory pmem by too much).
+Hostname: The compute node running your job.
+Num_CPU Use/Tot: The number of CPU cores allocated to jobs / total in the node.
+CPUload: The CPU load average (should not exceed the number of allocated CPU cores).
+Memsize: Physical memory (MB) in the node.
+Freemem: Free memory (MB) in the node (should not be close to zero).
 EOF
 
 	# Information about the job processes on the nodes
@@ -300,7 +307,7 @@ EOF
 
 	# Print job processes by sshjob (local command)
 	echo -n Process status...
-	$PSJOB $jobid 2>&1 >> $MESSAGE
+	$PSJOB $jobid >> $MESSAGE 2>&1
 fi
 
 # Amount of job wallclock time 
@@ -310,7 +317,8 @@ fi
 #	WALLTIME="Walltime:unknown"
 #fi
 # List of nodes used
-NODELIST=`grep NodeList= $JOBMSGS | awk -F= '{print $2}'`
+# (match NodeList= exactly, not ReqNodeList= or ExcNodeList=)
+NODELIST=`awk '$1 ~ /^NodeList=/ {sub(/^NodeList=/, "", $1); print $1; exit}' $JOBMSGS`
 if [[ -z "$NODELIST" ]]
 then
 	NODELIST="Nodes:unknown"
@@ -324,7 +332,8 @@ then
 	WORKDIR="WORKDIR:unknown"
 else
 	# Check how many files in workdir
-	NUMFILESINDIR=`ls -1f $WORKDIR | wc -l`
+	# (count without . and ..)
+	NUMFILESINDIR=`find "$WORKDIR" -mindepth 1 -maxdepth 1 -printf . 2>/dev/null | wc -c`
 	if [[ $NUMFILESINDIR -lt 1000 ]]
 	then
 		# If <1000 files then list some of them
@@ -339,7 +348,8 @@ This directory contains $NUMFILESINDIR files in total.
 Newest files in this directory are (max. $MAXFILES files):
 
 EOF
-		ls -lt $WORKDIR | head -$MAXFILES >> $MESSAGE
+		# Skip the "total" line from ls
+		ls -lt "$WORKDIR" | tail -n +2 | head -n $MAXFILES >> $MESSAGE
 	else
 		# If > 1000 files then issue a warning
 		cat <<EOF >> $MESSAGE
@@ -365,7 +375,12 @@ echo Done.
 if [ "${killjob}" = "1" ]; then
   echo Now deleting job $jobid
   echo Reason: "$action_reason"
-  scancel $jobid 
+  if ! scancel $jobid
+  then
+	echo "ERROR: scancel of job $jobid failed, no mail is sent"
+	status=1
+	continue
+  fi
 
   #
   # Write statistics to the Syslog logfile
@@ -391,5 +406,5 @@ echo Sending mail to user=$USERMAIL full name: $FULLNAME
 # End of loop over jobids
 done
 
-# Clean up
-rm -f $MESSAGE $JOBMSGS $JOBERRS
+# Temporary files are removed by the EXIT trap
+exit $status
