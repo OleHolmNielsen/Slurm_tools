@@ -2,3 +2,6 @@ reports/
 *.BAK
 *.OLD
 dyt
+jobs/notifybadjob.diff
+pestat/pestat.test
+slurmaccounts/slurmaccountsettings
