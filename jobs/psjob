@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# Do "ps aux" on a set of nodes belonging to a single job, but exclude system processes.
-export usage="$0 [-c columns | -h] jobid"
+# psjob: Do "ps" on the set of nodes belonging to a single Slurm job,
+# but exclude processes owned by root.
+# Also print GPU usage and job scratch disk usage when relevant.
 
 # Author: Ole.H.Nielsen@fysik.dtu.dk
 # Homepage: https://github.com/OleHolmNielsen/Slurm_tools/
@@ -9,153 +10,214 @@ export usage="$0 [-c columns | -h] jobid"
 # Requires ClusterShell with configuration for parallel commands on Slurm jobs,
 # see https://wiki.fysik.dtu.dk/niflheim/SLURM#clustershell
 # and https://clustershell.readthedocs.io/en/latest/intro.html
+# The ClusterShell group "@sj:<jobid>" (configured as above) resolves to the nodes of the job.
 
-# Default value:
-export columns=100
-# Enable this if the gpustat command has been installed on nodes with GPUs
+#########################################################################
+# Configuration
+#########################################################################
+
+usage="Usage: $0 [-c columns | -h] jobid"
+
+# Default width of the "ps" output lines
+columns=100
+# Set to 1 if the gpustat command (https://github.com/wookayin/gpustat)
+# has been installed on nodes with GPUs, otherwise set to 0
 enable_gpustat=1
-# NVIDIA GPUs may freeze and become non-responding so we must kill gpustat after a timeout
+# NVIDIA GPUs may freeze and become non-responding, so kill gpustat after a timeout (seconds)
 gpustat_timeout=20
 
-# Parse command options
-while getopts "c:h" options; do
-	case $options in
-		c )	export columns=$OPTARG
-			if ! [[ $columns =~ ^[0-9]+$ ]]
-			then
-				echo Number of columns $columns must be a positive number
-				exit 1
-			fi
-			if [[ $columns -lt 5 ]] || [[ $columns -gt 1024 ]]
-			then
-				echo Unreasonable number of columns $columns 
-				exit 1
-			fi
+CLUSH="/usr/bin/clush"
+PS="/bin/ps"
+PSFIELDS="pid,nlwp,state,user,start,cputime,%cpu,rssize,command"
+bar="===================================================="
+
+#########################################################################
+# Helper functions
+#########################################################################
+
+# Print an error message and the usage text, then exit
+die() {
+	echo "ERROR: $*" >&2
+	echo "$usage" >&2
+	exit 1
+}
+
+# Print a section separator and a heading
+section() {
+	echo "$bar"
+	echo "$*"
+}
+
+#########################################################################
+# Parse command line
+#########################################################################
+
+while getopts "c:h" option; do
+	case $option in
+		c)	columns=$OPTARG
+			[[ $columns =~ ^[0-9]+$ ]] || die "Number of columns '$columns' must be a positive number"
+			(( columns >= 5 && columns <= 1024 )) || die "Unreasonable number of columns $columns (allowed: 5-1024)"
 			;;
-		h | * ) echo "Usage: $usage"
-			exit 1;;
+		h)	echo "$usage"
+			exit 0
+			;;
+		*)	die "Invalid option"
+			;;
 	esac
 done
 shift $((OPTIND-1))
 
-CLUSH="/usr/bin/clush"
-PS="/bin/ps"
-PSFLAGS="-o pid,nlwp,state,user,start,cputime,%cpu,rssize,command --columns $columns"
-
-if test $# -ne 1
-then
-	echo ERROR: No jobid given
-	echo Usage: $usage
-	exit -1
-fi
-# Check that jobid is a number (possibly with _ separating jobid and arraytaskid)
-if ! [[ ${1} =~ ^[0-9_]+$ ]]
-then
-	echo "ERROR: <jobid> must be a number or jobid_arraytaskid"
-	echo "Usage: $usage"
-	exit 1
-fi
-
+(( $# == 1 )) || die "Exactly one jobid must be given"
 jobid=$1
-# Check if this jobid can be inquired successfully.
-JOBSTATE="`squeue -h -O State:. -j $jobid`"
-if test "$?" != "0"
+# The jobid must be a number, or jobid_arraytaskid for an array job task
+[[ $jobid =~ ^[0-9]+(_[0-9]+)?$ ]] || die "<jobid> must be a number or jobid_arraytaskid"
+
+#########################################################################
+# Check the job state
+#########################################################################
+
+if ! JOBSTATE=$(squeue -h -O State:. -j "$jobid")
 then
-	echo Error inquiring about job $jobid 
+	echo "ERROR: Cannot inquire about job $jobid" >&2
 	exit 1
 fi
 
-# Detect job arrays by counting number of words in JOBSTATE
-words=( $JOBSTATE )
-if [[ ${#words[@]} > 1 ]]
+# A job array with several tasks gives one line (word) per task
+numstates=$(wc -w <<< "$JOBSTATE")
+if (( numstates == 0 ))
 then
-	echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
-	squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j $jobid
+	echo "ERROR: Job $jobid was not found" >&2
+	exit 1
+elif (( numstates > 1 ))
+then
+	echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:" >&2
+	squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j "$jobid"
 	exit 1
 fi
 
-if test "$JOBSTATE" != "RUNNING"
+if [[ $JOBSTATE != "RUNNING" ]]
 then
-	echo The job $jobid is not running, it has state=$JOBSTATE
+	echo "The job $jobid is not running, it has state=$JOBSTATE"
 	exit 1
 fi
 
-# For an array job, get the individual jobid corresponding to the array job:
-realjobid=`squeue -h -O JobID: -j $jobid`
+#########################################################################
+# Print job information
+#########################################################################
 
-# Print some job information
-if test "$realjobid" = "$jobid"
+# For an array job task (jobid_taskid), get the individual (real) jobid
+realjobid=$(squeue -h -O JobID: -j "$jobid")
+
+if [[ $realjobid == "$jobid" ]]
 then
-	arrayprint=""
+	arrayfields=""
 else
-	# For array jobs
-	arrayprint=",ArrayJobID:13,ArrayTaskID:14"
+	arrayfields=",ArrayJobID:13,ArrayTaskID:14"
 fi
-squeue -O JobID:10,Partition:14,NumNodes:6,NumTasks:6,UserName:10$arrayprint,StartTime,TimeUsed:14,TimeLimit:14,tres-alloc: -j $jobid
-# Print the NodeList
-NODELIST="`squeue -h -O NodeList: -j $jobid`"
-echo NODELIST: $NODELIST
-# Read the job's Username (if needed)
-USERNAME="`squeue -h -O Username -j $jobid`"
+squeue -O "JobID:10,Partition:14,NumNodes:6,NumTasks:6,UserName:10${arrayfields},StartTime,TimeUsed:14,TimeLimit:14,tres-alloc:" -j "$jobid"
 
-bar="===================================================="
-echo "$bar"
-echo "Process list from 'ps' on each node in the job:"
-# Execute parallel shell on the job nodes:
-# The "scontrol listpids" lists all processes belonging to a Slurm job $realjobid
-# Count also the number of processes (numprocs) and threads (numthreads in $2=nlwp) when $1 is a number
-$CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | awk 'int(\$1)>0 {print \$1}') | grep -v ' root    ' | awk '{print \$0; if(\$1~/^[0-9]+\$/) {numprocs++; numthreads+=\$2}} END {printf(\"Total: %d processes and %d threads\n\", numprocs, numthreads)}'; echo -n Uptime:; uptime"
+NODELIST=$(squeue -h -O NodeList: -j "$jobid")
+TRES=$(squeue -h -O tres-alloc: -j "$jobid")
+echo "NODELIST: $NODELIST"
 
-# Check for job nodes with GPU gres
-gpunodes=`mktemp`
-sinfo -h -N -n $NODELIST -O NodeHost,Gres | uniq | grep -i GPU > $gpunodes
-if [[ -s $gpunodes ]]
+#########################################################################
+# Process list on each node
+#########################################################################
+
+section "Process list from 'ps' on each node in the job:"
+
+# Shell commands to be executed on each job node.
+# "scontrol listpids" lists all processes belonging to the job (the first line is a header,
+# and steps without known PIDs are listed with PID=-1).
+# Root processes are omitted.  The number of processes and threads (column 2 = nlwp) are counted.
+# Placeholders __NAME__ are replaced by values below.
+read -r -d '' remote_ps <<'EOF'
+pids=$(scontrol listpids __JOBID__ | awk 'int($1) > 0 {print $1}' | paste -sd, -)
+if [ -z "$pids" ]
 then
-	echo "$bar"
-	echo "Nodes in this job with GPU Generic Resources (Gres):"
-	cat $gpunodes
+	echo "No job processes found on this node"
+else
+	__PS__ -o __PSFIELDS__ --columns __COLUMNS__ -p "$pids" | awk '
+		$4 == "root" { next }
+		{ print }
+		$1 ~ /^[0-9]+$/ { numprocs++; numthreads += $2 }
+		END { printf("Total: %d processes and %d threads\n", numprocs, numthreads) }'
 fi
-rm -f $gpunodes
+echo -n "Uptime:"
+uptime
+EOF
+remote_ps=${remote_ps//__JOBID__/$realjobid}
+remote_ps=${remote_ps//__PS__/$PS}
+remote_ps=${remote_ps//__PSFIELDS__/$PSFIELDS}
+remote_ps=${remote_ps//__COLUMNS__/$columns}
 
-# Check for GPU jobs
-# Using gpustat tool from https://github.com/wookayin/gpustat
-if [[ $enable_gpustat > 0 && "`squeue -h -O tres-alloc: -j $jobid`" =~ "gres/gpu" ]]
+$CLUSH -bw "@sj:$jobid" "$remote_ps"
+
+#########################################################################
+# GPU nodes and GPU processes
+#########################################################################
+
+gpunodes=$(sinfo -h -N -n "$NODELIST" -O NodeHost,Gres | uniq | grep -i GPU)
+if [[ -n $gpunodes ]]
+then
+	section "Nodes in this job with GPU Generic Resources (Gres):"
+	echo "$gpunodes"
+fi
+
+if (( enable_gpustat > 0 )) && [[ $TRES == *gres/gpu* ]]
 then
 	echo
 	echo "Running GPU tasks:"
 	echo "Node: GPU GPU-type                  | Temp   GPU% |   Mem / Tot      | user:process/PID(Mem)"
-	# color="--color"
-	GPUNAME_WIDTH="--gpuname-width 24"
-	color=""
-	# The "/bin/true" catches the case of grep returning an error code
-	# Sort output on nodenames using "sort -k 1"
-	$CLUSH -w $NODELIST "timeout $gpustat_timeout gpustat -upc $GPUNAME_WIDTH $color | grep \$(scontrol listpids $realjobid | awk '{if (int(\$1)>0) {print \"-e \" \$1}else{print \"-e \" \$2}}') || /bin/true" | sort -k 1
+	# gpustat prints processes as "user:command/PID(Mem)", so select the lines
+	# containing "/PID(" for one of the job's PIDs.
+	# "|| true" prevents clush from reporting grep's exit code when there are no matches.
+	read -r -d '' remote_gpu <<'EOF'
+pids=$(scontrol listpids __JOBID__ | awk 'int($1) > 0 {print $1}' | paste -sd'|' -)
+if [ -n "$pids" ]
+then
+	timeout __TIMEOUT__ gpustat -upc --gpuname-width 24 | grep -E "/($pids)\(" || true
+fi
+EOF
+	remote_gpu=${remote_gpu//__JOBID__/$realjobid}
+	remote_gpu=${remote_gpu//__TIMEOUT__/$gpustat_timeout}
+	# Sort output on nodenames
+	$CLUSH -w "@sj:$jobid" "$remote_gpu" | sort -k 1
 fi
 
-# If using JobContainerType=job_container/tmpfs then print also disk space usage
-# Note: The job_container/tmpfs plugin was renamed to namespace/tmpfs in Slurm 25.11.
-# See also https://support.schedmd.com/show_bug.cgi?id=11183
-#   Viewing mounts on a node from outside the job: findmnt -l -o target,source,fstype,propagation
+#########################################################################
+# Job scratch disk usage
+#########################################################################
 
-JobContainerType=`scontrol show config | egrep "namespace/tmpfs|job_container/tmpfs" | awk '{print $3}'`
-if [[ -n "$JobContainerType" ]]
+# With the job_container/tmpfs plugin (renamed to namespace/tmpfs in Slurm 25.11)
+# each job has a private scratch folder BasePath/<jobid> on the compute nodes.
+# See also https://support.schedmd.com/show_bug.cgi?id=11183
+# Viewing mounts on a node from outside the job: findmnt -l -o target,source,fstype,propagation
+
+if scontrol show config | grep -qE "namespace/tmpfs|job_container/tmpfs"
 then
-	echo "$bar"
-	# echo "Slurm job_container temporary scratch spaces:"
-	# grep -i '^BasePath' /etc/slurm/job_container.conf
-	basepath=`grep -i '^BasePath' /etc/slurm/job_container.conf | awk '{split($1,a,"="); print a[2]}'`
-	echo "Scratch disk usage for JobID $realjobid:"
+	# Command listing the job's scratch folder(s) on a node.
+	# Match the jobid as a complete path component (so that job 123 does not match 1234).
+	find_scratch="findmnt -ln -o target -t xfs | grep -E '/${realjobid}(/|\$)'"
+
+	section "Scratch disk usage for JobID $realjobid:"
 	echo "Node: Usage     Scratch folder"
-	# Sort output on nodenames using "sort -k 1"
-	$CLUSH -w $NODELIST "findmnt -l -o target -t xfs | grep $realjobid | xargs du -sh" | sort -k 1
+	$CLUSH -w "@sj:$jobid" "for dir in \$($find_scratch); do du -sh \"\$dir\"; done" | sort -k 1
+
 	echo
 	echo "Scratch disks on JobID $realjobid compute nodes:"
 	echo "Node:        Size   Used  Avail   Use%  Mounted on"
-	# Sort output on nodenames (key 1)
-	$CLUSH -w $NODELIST "df -Ph $basepath | tail -n+2" | awk '{printf("%-10s %6s %6s %6s %6s  %-20s\n", $1, $3, $4, $5, $6, $7)}' | sort -k 1
+	$CLUSH -w "@sj:$jobid" "for dir in \$($find_scratch); do df -Ph \"\$dir\" | tail -n +2; done" |
+		awk '{printf("%-10s %6s %6s %6s %6s  %-20s\n", $1, $3, $4, $5, $6, $7)}' | sort -k 1
 fi
 
 echo "$bar"
 
-# $CLUSH -bw $NODELIST "$PS $PSFLAGS \$(scontrol listpids $realjobid | tail -n+3 | awk '{print \$1}') | grep -v ' root    '" 
-# You could also use: $CLUSH -bw@sj:$realjobid ...
+#########################################################################
+# Job efficiency (if the jobeff script is available)
+#########################################################################
+
+if command -v jobeff > /dev/null 2>&1
+then
+	jobeff "$jobid" 2>&1
+fi
