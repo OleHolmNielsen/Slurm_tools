@@ -200,13 +200,6 @@ EOF
 #
 process_job() {
 	local jobid=$1
-	local action_print
-
-	if (( killjob )); then
-		action_print="Your $CLUSTERNAME job id $jobid has been killed by the superuser."
-	else
-		action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME job id $jobid may have to be killed."
-	fi
 
 	# Check that the job exists and is not a job array with multiple jobs
 	local squeue_state
@@ -231,6 +224,27 @@ process_job() {
 		return 1
 	fi
 
+	# The pending tasks of a job array may be kept in a single record covering
+	# several tasks (e.g. ArrayTaskId=2-4 or 1-100%10). Then the job id means
+	# all of these tasks, and scancel will cancel all of them.
+	local arraytasks jobdesc logjobid
+	arraytasks=$(job_field ArrayTaskId)
+	if [[ -n "$arraytasks" && ! $arraytasks =~ ^[0-9]+$ ]]; then
+		# Omit any throttle limit such as %10
+		logjobid="$(job_field ArrayJobId)_[${arraytasks%%\%*}]"
+		jobdesc="job array $jobid (all pending array tasks $logjobid)"
+	else
+		logjobid=$jobid
+		jobdesc="job id $jobid"
+	fi
+
+	local action_print
+	if (( killjob )); then
+		action_print="Your $CLUSTERNAME $jobdesc has been killed by the superuser."
+	else
+		action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME $jobdesc may have to be killed."
+	fi
+
 	# Get the user name (UserId=name(uid)) and full name
 	local userid fullname
 	userid=$(job_field UserId)
@@ -245,7 +259,7 @@ process_job() {
 
 Job $jobid belongs to user $userid, full name is $fullname
 User groups: $(groups "$userid")
-Action: ${action} a badly behaving job id $jobid
+Action: ${action} a badly behaving $jobdesc
 EOF
 
 	#
@@ -266,7 +280,7 @@ $INFOURL
 
 In the following we display various pieces of information about your badly behaving batch job.
 
-Slurm batch system information about job id $jobid:
+Slurm batch system information about $jobdesc:
 ---------------------------------------------------
 
 EOF
@@ -297,14 +311,14 @@ EOF
 	# Kill the job and log it
 	#
 	if (( killjob )); then
-		echo "Now killing job $jobid"
+		echo "Now killing $jobdesc"
 		echo "Reason: $action_reason"
 		if ! scancel "$jobid"; then
-			echo "ERROR: scancel of job $jobid failed, no mail is sent"
+			echo "ERROR: scancel of $jobdesc failed, no mail is sent"
 			return 1
 		fi
 		echo "Adding entry to logfile $LOGFILE"
-		echo "$(date +'%Y %b %e %T') $jobid $userid $workdir $nodelist $action_reason" >> "$LOGFILE"
+		echo "$(date +'%Y %b %e %T') $logjobid $userid $workdir $nodelist $action_reason" >> "$LOGFILE"
 	fi
 
 	# Send mail to the user (the username is used as the local mail address)
