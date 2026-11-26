@@ -7,7 +7,7 @@
 ### CONFIGURE these lines:
 # Mail to the system managers
 ADMINMAIL=support@your.domain
-# Mail to the superuser
+# Mail to the superuser (receives a Bcc copy of every mail)
 SUPERUSERMAIL=root@localhost
 # Base URL of the user documentation (used in some of the reasons below)
 BASEURL=https://your.domain
@@ -15,228 +15,243 @@ BASEURL=https://your.domain
 INFOURL=$BASEURL
 ### End CONFIGURE these lines:
 
-# Command usage:
-USAGE="Usage: $0 '[-k]' job-id"
-
-# Name of this cluster
-CLUSTERNAME=`scontrol show config | grep ClusterName | awk '{print $3}'`
-
 # Location of our Slurm tools (see https://github.com/OleHolmNielsen/Slurm_tools/tree/master/)
 PSJOB=/usr/local/bin/psjob
 PESTAT=/usr/local/bin/pestat
 # Mail program
 MAIL=/usr/bin/mailx
-# Syslog logfile
+# Logfile of killed jobs
 LOGFILE=/var/log/notifybadjob.log
-# Whether to kill job or not
-action='Notify about'
+# Max. number of files to list from the job's working directory
+MAXFILES=20
+# Warn the user if the working directory contains at least this many files
+MANYFILES=1000
+
+usage() {
+	echo "Usage: $0 [-k] jobid [jobid ...]"
+	echo "  -k: Kill the job(s) (default is to only notify the user)"
+}
+
+#
+# Process command arguments
+#
 killjob=0
+while getopts "kh" option; do
+	case $option in
+		k) killjob=1 ;;
+		h) usage; exit 0 ;;
+		*) usage; exit 1 ;;
+	esac
+done
+shift $((OPTIND - 1))
+if (( $# == 0 )); then
+	usage
+	exit 1
+fi
+
+if (( killjob )); then
+	action='Kill'
+else
+	action='Notify about'
+fi
+
+# Name of this cluster
+CLUSTERNAME=$(scontrol show config | awk '$1 == "ClusterName" {print $3}')
+
 # Temporary files (removed automatically when the script exits)
 TMPDIR_JOB=$(mktemp -d /tmp/notifybadjob.XXXXXX) || exit 1
 trap 'rm -rf "$TMPDIR_JOB"' EXIT
 trap 'exit 2' HUP INT QUIT TERM
-MESSAGE=$TMPDIR_JOB/jobstatus
+MESSAGE=$TMPDIR_JOB/message
 JOBMSGS=$TMPDIR_JOB/jobmsgs
 JOBERRS=$TMPDIR_JOB/joberrs
 
-# Process command arguments
-while getopts "k" options; do
-	case $options in
-		k ) killjob=1
-			action='Kill';;
-		* ) echo $USAGE
-			exit 1;;
-	esac
-done
-shift $((OPTIND - 1))
-
-# Get the jobid as the arguments
-JOBLIST="$*"
-if [[ -z "$JOBLIST" ]]
-then
-	echo $USAGE
-	exit 1
-fi
+#
+# Reasons for notifying/killing a job.
+# The numbers are what the operator types, so keep existing numbers stable.
+#
+declare -A REASONS=(
+	[1]="Your job is doing no useful work and is essentially dead."
+	[2]="Your job has grossly exceeded the available physical RAM memory and is very inefficient."
+	[3]="Your job has grossly exceeded the physical RAM memory available per CPU core."
+	[4]="Your job is running too many processes/threads and is overloading the CPU(s)."
+	[5]="Your job is using more CPU cores than your job has requested."
+	[6]="Your job is not using all of the CPU cores or GPUs that you have requested."
+	[7]="Your job is not using all of the GPUs that you have requested."
+	[9]="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly, see $BASEURL/Niflheim_Getting_Started#correct-usage-of-multi-cpu-nodes"
+	[10]="Your job is unfortunately running on a node that has a hardware or electrical error."
+	[11]="Error in the input file caused job to fail."
+	[12]="Job failed - please examine the output file."
+	[13]="SCF convergence problems - please examine the output file."
+	[14]="Your job seems to be very inefficient with a low CPU utilization."
+	[15]="Your job is doing too heavy I/O on the group shared fileserver."
+	[16]="Your job has filled up the compute node local /tmp disk."
+	[17]="Your GPAW job has grossly exceeded the available physical RAM memory and is very inefficient. Please test the memory requirement as described at https://wiki.fysik.dtu.dk/gpaw/documentation/parallel_runs/parallel_runs.html"
+	[18]="Job failed due to exceeded disk quota - please provide $ADMINMAIL with an estimation of your necessary disk space."
+	[19]="Your job requests resources that cannot be satisfied or do not exist."
+	[20]="Please ask $ADMINMAIL for the reason."
+	[21]="Your MPI job uses 1 Gbit Ethernet in stead of the fast OPA/IB, please correct your MPI command."
+	[96]="Your job is not laid out correctly for 4TB big-memory nodes - you MUST use this partition for big-memory jobs only"
+	[97]="Your job is not laid out correctly for xeon56 multi-CPU nodes - you MUST use the xeon56 partition correctly."
+	[98]="Your job is not laid out correctly for sm3090 GPU nodes - you MUST use the sm3090 partition correctly, see $BASEURL/Niflheim_Getting_Started/#usage-of-gpu-compute-nodes"
+	[99]="Your job is not laid out correctly for xeon40 multi-CPU nodes - you MUST use the xeon40 partition correctly, see $BASEURL/Niflheim_Getting_Started#correct-usage-of-multi-cpu-nodes"
+)
+# The reason numbers in ascending order
+mapfile -t REASON_NUMBERS < <(printf '%s\n' "${!REASONS[@]}" | sort -n)
 
 #
-# Inquire about the reason for notifying/killing this job
+# Ask the operator for the reason (one reason applies to all jobs given)
 #
-reason01="Your job is doing no useful work and is essentially dead."
-reason02="Your job has grossly exceeded the available physical RAM memory and is very inefficient."
-reason03="Your job has grossly exceeded the physical RAM memory available per CPU core."
-reason04="Your job is running too many processes/threads and is overloading the CPU(s)."
-reason05="Your job is using more CPU cores than your job has requested."
-reason06="Your job is not using all of the CPU cores or GPUs that you have requested."
-reason07="Your job is not using all of the GPUs that you have requested."
-reason09="Your job is not laid out correctly for xeon24 multi-CPU nodes - you MUST use the xeon24 partition correctly, see $BASEURL/Niflheim_Getting_Started#correct-usage-of-multi-cpu-nodes"
-reason96="Your job is not laid out correctly for 4TB big-memory nodes - you MUST use this partition for big-memory jobs only"
-reason97="Your job is not laid out correctly for xeon56 multi-CPU nodes - you MUST use the xeon56 partition correctly."
-reason98="Your job is not laid out correctly for sm3090 GPU nodes - you MUST use the sm3090 partition correctly, see $BASEURL/Niflheim_Getting_Started/#usage-of-gpu-compute-nodes"
-reason99="Your job is not laid out correctly for xeon40 multi-CPU nodes - you MUST use the xeon40 partition correctly, see $BASEURL/Niflheim_Getting_Started#correct-usage-of-multi-cpu-nodes"
-reason10="Your job is unfortunately running on a node that has a hardware or electrical error."
-reason11="Error in the input file caused job to fail."
-reason12="Job failed - please examine the output file."
-reason13="SCF convergence problems - please examine the output file."
-reason14="Your job seems to be very inefficient with a low CPU utilization."
-reason15="Your job is doing too heavy I/O on the group shared fileserver."
-reason16="Your job has filled up the compute node local /tmp disk."
-reason17="Your GPAW job has grossly exceeded the available physical RAM memory and is very inefficient. Please test the memory requirement as described at https://wiki.fysik.dtu.dk/gpaw/documentation/parallel_runs/parallel_runs.html"
-reason18="Job failed due to exceeded disk quota - please provide $ADMINMAIL with an estimation of your necessary disk space."
-reason19="Your job requests resources that cannot be satisfied or do not exist."
-reason20="Please ask $ADMINMAIL for the reason."
-reason21="Your MPI job uses 1 Gbit Ethernet in stead of the fast OPA/IB, please correct your MPI command."
-ANS=-1
-while [[ $ANS -le 0 ]]
-do
+action_reason=""
+while [[ -z "$action_reason" ]]; do
 	echo
-	echo Please select one of the following reasons why you want to $action this job:
-	echo "  1. $reason01"
-	echo "  2. $reason02"
-	echo "  3. $reason03"
-	echo "  4. $reason04"
-	echo "  5. $reason05"
-	echo "  6. $reason06"
-	echo "  7. $reason07"
-	echo "  9. $reason09"
-	echo " 96. $reason96"
-	echo " 97. $reason97"
-	echo " 98. $reason98"
-	echo " 99. $reason99"
-	echo " 10. $reason10"
-	echo " 11. $reason11"
-	echo " 12. $reason12"
-	echo " 13. $reason13"
-	echo " 14. $reason14"
-	echo " 15. $reason15"
-	echo " 16. $reason16"
-	echo " 17. $reason17"
-	echo " 18. $reason18"
-	echo " 19. $reason19"
-	echo " 20. $reason20"
-	echo " 21. $reason21"
-	if ! read -r -p "Please enter reason (no default): " ANS
-	then
+	echo "Please select one of the following reasons why you want to $action this job:"
+	for n in "${REASON_NUMBERS[@]}"; do
+		printf '%3d. %s\n' "$n" "${REASONS[$n]}"
+	done
+	if ! read -r -p "Please enter reason (no default): " answer; then
 		# End of input (e.g. Ctrl-D or stdin is not a terminal)
 		echo
 		echo "ERROR: No reason was given"
 		exit 1
 	fi
-	case $ANS in
-		1) action_reason=$reason01;;
-		2) action_reason=$reason02;;
-		3) action_reason=$reason03;;
-		4) action_reason=$reason04;;
-		5) action_reason=$reason05;;
-		6) action_reason=$reason06;;
-		7) action_reason=$reason07;;
-		9) action_reason=$reason09;;
-	       96) action_reason=$reason96;;
-	       97) action_reason=$reason97;;
-	       98) action_reason=$reason98;;
-	       99) action_reason=$reason99;;
-	       10) action_reason=$reason10;;
-	       11) action_reason=$reason11;;
-	       12) action_reason=$reason12;;
-	       13) action_reason=$reason13;;
-	       14) action_reason=$reason14;;
-	       15) action_reason=$reason15;;
-	       16) action_reason=$reason16;;
-	       17) action_reason=$reason17;;
-	       18) action_reason=$reason18;;
-	       19) action_reason=$reason19;;
-	       20) action_reason=$reason20;;
-	       21) action_reason=$reason21;;
-		*) ANS=-1;;
-	esac
+	# Accept only numbers, and strip leading zeros (so that "01" means 1)
+	if [[ $answer =~ ^[0-9]+$ ]]; then
+		action_reason=${REASONS[$((10#$answer))]}
+	fi
 done
-echo Reason: $action_reason
-echo
+echo "Reason: $action_reason"
 
 #
-# Big loop over jobs
+# Print the value of a "Key=Value" field from the scontrol job information.
+# Only exact keys match, so "NodeList" does not match "ReqNodeList".
 #
-status=0
-for jobid in $JOBLIST
-do
-	# Check that jobid is a number (possibly with _ separating job array_task_id)
-	if ! [[ ${jobid} =~ ^[0-9]+(_[0-9]+)?$ ]]
-	then
-		echo "ERROR: <jobid> $jobid must be a number or jobid_arraytaskid"
-		status=1
-		continue
+job_field() {
+	awk -v key="$1=" '{
+		for (i = 1; i <= NF; i++)
+			if (index($i, key) == 1) { print substr($i, length(key) + 1); exit }
+	}' "$JOBMSGS"
+}
+
+#
+# Write the information about the job's working directory to the message
+#
+append_workdir_info() {
+	local workdir=$1
+	local numfiles
+	numfiles=$(find "$workdir" -mindepth 1 -maxdepth 1 -printf . 2>/dev/null | wc -c)
+	cat <<EOF >> "$MESSAGE"
+
+Information about files in job working directory
+------------------------------------------------
+
+Job $jobid working directory $workdir
+This directory contains $numfiles files in total.
+EOF
+	if (( numfiles < MANYFILES )); then
+		echo "Newest files in this directory are (max. $MAXFILES files):" >> "$MESSAGE"
+		echo >> "$MESSAGE"
+		# Skip the "total" line from ls
+		ls -lt "$workdir" | tail -n +2 | head -n "$MAXFILES" >> "$MESSAGE"
+	else
+		cat <<EOF >> "$MESSAGE"
+NOTICE: This is a very large number of files in a single directory,
+and this may possibly cause slow job behavior.
+EOF
+	fi
+}
+
+#
+# Write node usage (pestat) and process information (psjob) to the message
+#
+append_running_job_info() {
+	cat <<EOF >> "$MESSAGE"
+
+RAM-memory usage and CPU-load usage of your job on the job nodes.
+-----------------------------------------------------------------
+
+Please look at these usage numbers to determine why the job was behaving badly
+(note especially items marked by *):
+
+EOF
+	"$PESTAT" -j "$jobid" >> "$MESSAGE" 2>&1
+	cat <<EOF >> "$MESSAGE"
+
+Explanation of some columns in the usage list:
+Hostname: The compute node running your job.
+Num_CPU Use/Tot: The number of CPU cores allocated to jobs / total in the node.
+CPUload: The CPU load average (should not exceed the number of allocated CPU cores).
+Memsize: Physical memory (MB) in the node.
+Freemem: Free memory (MB) in the node (should not be close to zero).
+
+Process information on the nodes of your job.
+---------------------------------------------
+
+Please look at these processes to determine why the job was behaving badly:
+
+EOF
+	echo -n "Process status..."
+	"$PSJOB" "$jobid" >> "$MESSAGE" 2>&1
+}
+
+#
+# Notify about (and possibly kill) one job.
+# Returns non-zero if the job could not be processed.
+#
+process_job() {
+	local jobid=$1
+	local action_print
+
+	if (( killjob )); then
+		action_print="Your $CLUSTERNAME job id $jobid has been killed by the superuser."
+	else
+		action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME job id $jobid may have to be killed."
 	fi
 
-#
-# Define strings to be used in the report
-#
-if [[ $killjob -eq 1 ]]
-then
-	action='Kill'
-	action_done='killed'
-	action_print="Your $CLUSTERNAME job id $jobid has been ${action_done} by the superuser."
-else
-	action='Notify about'
-	action_done='investigated'
-	action_print="Please contact ${ADMINMAIL}: your $CLUSTERNAME job id $jobid may have to be killed."
-fi
+	# Check that the job exists and is not a job array with multiple jobs
+	local squeue_state
+	if ! squeue_state=$(squeue -h -O State -j "$jobid"); then
+		echo "ERROR: Could not inquire about job $jobid"
+		return 1
+	fi
+	if [[ -z "$squeue_state" ]]; then
+		echo "ERROR: Job $jobid was not found in the queue"
+		return 1
+	fi
+	if (( $(wc -l <<< "$squeue_state") > 1 )); then
+		echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
+		squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j "$jobid"
+		return 1
+	fi
 
-# Check if this jobid can be inquired successfully.
-JOBSTATE="`squeue -h -O State -j $jobid`"
-if [[ "$?" != "0" ]]
-then
-        echo Error inquiring about job $jobid
-        status=1
-        continue
-fi
+	echo -n "Get job information..."
+	if ! scontrol --details show job "$jobid" > "$JOBMSGS" 2> "$JOBERRS" || [[ -s "$JOBERRS" ]]; then
+		echo
+		cat "$JOBERRS"
+		return 1
+	fi
 
-# Detect job arrays by counting number of words in JOBSTATE
-words=( $JOBSTATE )
-if [[ ${#words[@]} -gt 1 ]]
-then
-        echo "ERROR: The job $jobid is a job array with multiple jobs. Please select only one of the array jobs:"
-        squeue -O JobArrayID,ArrayJobID,ArrayTaskID,JobID,StartTime,TimeUsed,TimeLimit -j $jobid
-        status=1
-        continue
-fi
+	# Get the user name (UserId=name(uid)) and full name
+	local userid fullname
+	userid=$(job_field UserId)
+	userid=${userid%%(*}
+	if [[ -z "$userid" ]]; then
+		echo "ERROR: Could not get userid of job $jobid"
+		return 1
+	fi
+	fullname=$(getent passwd "$userid" | cut -d: -f5)
 
-echo -n Get job information...
-scontrol --details show job $jobid >$JOBMSGS 2>$JOBERRS
-# Check for errors from job status
-if [[ -s $JOBERRS ]]
-then
-	echo
-	cat $JOBERRS
-	status=1
-	continue
-fi
+	cat <<EOF
 
-# Get user E-mail address and name (job arrays handled by uniq)
-USERID=`squeue -h -O UserName: -j $jobid | uniq`
-if [[ -z "$USERID" ]]
-then
-	echo ERROR: Could not get userid of job $jobid
-	status=1
-	continue
-fi
-
-# USERMAIL=`grep Job_Owner $JOBMSGS | awk '{print $3}'`
-USERMAIL=$USERID
-FULLNAME=`getent passwd "$USERID" | cut -d: -f5`
-# Maybe the user wants to notify this address also
-# NOTIFYMAIL=`grep Mail_Users $JOBMSGS | awk '{print $3}'`
-NOTIFYMAIL=""
-
-cat <<EOF
-
-Job $jobid belongs to user $USERID, full name is $FULLNAME
-User groups: `groups $USERID`
+Job $jobid belongs to user $userid, full name is $fullname
+User groups: $(groups "$userid")
 Action: ${action} a badly behaving job id $jobid
 EOF
 
-#
-# Initialize message to the user
-#
-cat <<EOF > $MESSAGE
+	#
+	# Initialize message to the user
+	#
+	cat <<EOF > "$MESSAGE"
 
 *** WARNING ***
 
@@ -244,7 +259,7 @@ ${action_print}
 
 Reason: ${action_reason}
 
-If you have any questions about this action, please contact ${ADMINMAIL}. 
+If you have any questions about this action, please contact ${ADMINMAIL}.
 
 You may want to consult the Niflheim Wiki page about batch job information:
 $INFOURL
@@ -255,156 +270,61 @@ Slurm batch system information about job id $jobid:
 ---------------------------------------------------
 
 EOF
+	cat "$JOBMSGS" >> "$MESSAGE"
 
-# Copy the job status info from Slurm
-cat $JOBMSGS >> $MESSAGE
-
-# Is the job still in a queued state ?
-JOBSTATE=`grep JobState= $JOBMSGS | awk '{print $1}'`
-echo NOTE: This job has a state of $JOBSTATE
-if [[ "$JOBSTATE" = "JobState=PENDING" ]]
-then
-	JOBQUEUED=1
-else
-	JOBQUEUED=0
-fi
-
-# Only print job information for running jobs
-if [[ "$JOBQUEUED" = 0 ]]
-then
-	# Memory and CPU usage
-	cat <<EOF >> $MESSAGE
-
-RAM-memory usage and CPU-load usage of your job on the job nodes.
------------------------------------------------------------------
-
-Please look at these usage numbers to determine why the job was behaving badly
-(note especially items marked by *):
-
-EOF
-
-	# Print job memory and CPU usage by pestat (which prints its own column header)
-	$PESTAT -j $jobid >> $MESSAGE 2>&1
-	cat <<EOF >> $MESSAGE
-
-Explanation of some columns in the usage list:
-Hostname: The compute node running your job.
-Num_CPU Use/Tot: The number of CPU cores allocated to jobs / total in the node.
-CPUload: The CPU load average (should not exceed the number of allocated CPU cores).
-Memsize: Physical memory (MB) in the node.
-Freemem: Free memory (MB) in the node (should not be close to zero).
-EOF
-
-	# Information about the job processes on the nodes
-	cat <<EOF >> $MESSAGE
-
-Process information on the nodes of your job.
----------------------------------------------
-
-Please look at these processes to determine why the job was behaving badly: 
-
-EOF
-
-	# Print job processes by sshjob (local command)
-	echo -n Process status...
-	$PSJOB $jobid >> $MESSAGE 2>&1
-fi
-
-# Amount of job wallclock time 
-#WALLTIME=`grep resources_used.walltime $JOBMSGS | awk '{print $3}'`
-#if test -z "$WALLTIME"
-#then
-#	WALLTIME="Walltime:unknown"
-#fi
-# List of nodes used
-# (match NodeList= exactly, not ReqNodeList= or ExcNodeList=)
-NODELIST=`awk '$1 ~ /^NodeList=/ {sub(/^NodeList=/, "", $1); print $1; exit}' $JOBMSGS`
-if [[ -z "$NODELIST" ]]
-then
-	NODELIST="Nodes:unknown"
-fi
-
-# Working directory
-echo -n Listing files...
-WORKDIR=`grep WorkDir= $JOBMSGS | awk -F= '{print $2}'`
-if [[ -z "$WORKDIR" ]]
-then
-	WORKDIR="WORKDIR:unknown"
-else
-	# Check how many files in workdir
-	# (count without . and ..)
-	NUMFILESINDIR=`find "$WORKDIR" -mindepth 1 -maxdepth 1 -printf . 2>/dev/null | wc -c`
-	if [[ $NUMFILESINDIR -lt 1000 ]]
-	then
-		# If <1000 files then list some of them
-		MAXFILES=20
-		cat <<EOF >> $MESSAGE
-
-Information about files in job working directory
-------------------------------------------------
-
-Job $jobid working directory $WORKDIR
-This directory contains $NUMFILESINDIR files in total.
-Newest files in this directory are (max. $MAXFILES files):
-
-EOF
-		# Skip the "total" line from ls
-		ls -lt "$WORKDIR" | tail -n +2 | head -n $MAXFILES >> $MESSAGE
-	else
-		# If > 1000 files then issue a warning
-		cat <<EOF >> $MESSAGE
-
-Information about files in job working directory
-------------------------------------------------
-
-Job $jobid working directory $WORKDIR
-This directory contains $NUMFILESINDIR files in total.
-NOTICE: This is a very large number of files in a single directory,
-and this may possibly cause slow job behavior.
-
-EOF
+	# Only print usage and process information for jobs that have started
+	local jobstate
+	jobstate=$(job_field JobState)
+	echo "NOTE: This job has a state of $jobstate"
+	if [[ "$jobstate" != "PENDING" ]]; then
+		append_running_job_info
 	fi
-fi
 
-echo Done.
+	local nodelist workdir
+	nodelist=$(job_field NodeList)
+	nodelist=${nodelist:-unknown}
+	# WorkDir is taken from the rest of the line, since it may contain spaces
+	workdir=$(sed -n 's/^[[:space:]]*WorkDir=//p' "$JOBMSGS" | head -n 1)
+	echo -n "Listing files..."
+	if [[ -n "$workdir" && -d "$workdir" ]]; then
+		append_workdir_info "$workdir"
+	else
+		workdir=unknown
+	fi
+	echo "Done."
+
+	#
+	# Kill the job and log it
+	#
+	if (( killjob )); then
+		echo "Now killing job $jobid"
+		echo "Reason: $action_reason"
+		if ! scancel "$jobid"; then
+			echo "ERROR: scancel of job $jobid failed, no mail is sent"
+			return 1
+		fi
+		echo "Adding entry to logfile $LOGFILE"
+		echo "$(date +'%Y %b %e %T') $jobid $userid $workdir $nodelist $action_reason" >> "$LOGFILE"
+	fi
+
+	# Send mail to the user (the username is used as the local mail address)
+	echo "Sending mail to user=$userid full name: $fullname"
+	{ echo "Dear $fullname"; cat "$MESSAGE"; } |
+		"$MAIL" -s "WARNING: ${action_print}" -b "$SUPERUSERMAIL" "$userid"
+}
 
 #
-# Delete the job
+# Loop over the jobs given on the command line
 #
-
-if [ "${killjob}" = "1" ]; then
-  echo Now deleting job $jobid
-  echo Reason: "$action_reason"
-  if ! scancel $jobid
-  then
-	echo "ERROR: scancel of job $jobid failed, no mail is sent"
-	status=1
-	continue
-  fi
-
-  #
-  # Write statistics to the Syslog logfile
-  #
-  if [[ ! -f $LOGFILE ]]
-  then
-	echo Creating logfile $LOGFILE
-	touch $LOGFILE
-  fi
-  # Time of killing the job
-  TIMESTAMP=`date +"%Y %b %e %T"`
-  # Append a logfile entry
-  echo Adding entry to logfile $LOGFILE
-  echo $TIMESTAMP $jobid $USERID $WORKDIR $WALLTIME $NODELIST ${action_reason} >> $LOGFILE
-
-fi
-
-# Send mail to the user
-echo Sending mail to user=$USERMAIL full name: $FULLNAME
-# (echo Dear $FULLNAME ; cat $MESSAGE) | $MAIL -s "WARNING: ${action_print}" -b $SUPERUSERMAIL $USERMAIL $NOTIFYMAIL
-(echo Dear $FULLNAME ; cat $MESSAGE) | $MAIL -s "WARNING: ${action_print}" -b $SUPERUSERMAIL $USERMAIL $NOTIFYMAIL
-
-# End of loop over jobids
+status=0
+for jobid in "$@"; do
+	echo
+	# A job id is a number, possibly as jobid_arraytaskid
+	if ! [[ $jobid =~ ^[0-9]+(_[0-9]+)?$ ]]; then
+		echo "ERROR: Job id $jobid must be a number or jobid_arraytaskid"
+		status=1
+		continue
+	fi
+	process_job "$jobid" || status=1
 done
-
-# Temporary files are removed by the EXIT trap
 exit $status
