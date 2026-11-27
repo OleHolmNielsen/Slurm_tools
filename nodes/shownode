@@ -34,6 +34,17 @@ echo
 echo "NODE CONFIGURATION:"
 scontrol show node $nodelist
 
+# Show recent jobs on these nodes
+
+if [[ -n "$nodelist" ]]
+then
+	echo
+	# Select period before now where we want to display jobs
+	period=3600
+	echo "RECENT JOBS running on the nodes in the last $period seconds"
+	sacct --nodelist=$nodelist -S now-${period}
+fi
+
 # Show recent node events
 
 # Default period of start of events is 00:00:00 of the previous day, but this can be changed with the Start= option.
@@ -42,6 +53,7 @@ EventStart=Start=now-1weeks
 # EventStart=Start=now-4weeks
 # EventStart=All_Time
 
+echo
 echo "NODE EVENTS from $EventStart:"
 sacctmgr show event $EventStart Format=NodeName,TimeStart,Duration,State%-6,Reason%-40 where nodes=$nodelist
 
