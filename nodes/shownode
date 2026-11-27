@@ -41,8 +41,9 @@ then
 	echo
 	# Select period before now where we want to display jobs
 	period=3600
+	listformat="JobID,JobName,Partition,User,State,ExitCode,End"
 	echo "RECENT JOBS running on the nodes in the last $period seconds"
-	sacct --nodelist=$nodelist -S now-${period}
+	sacct -X --nodelist=${nodelist} -o ${listformat} --starttime now-${period}
 fi
 
 # Show recent node events
